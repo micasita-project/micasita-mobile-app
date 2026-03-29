@@ -1,0 +1,26 @@
+[
+  {
+    "id": "user-001",
+    "email": "demo@micasita.pe",
+    "password": "123456",
+    "name": "Jose",
+    "lastName": "Calderon Huaman",
+    "currentHome": {
+      "address": "Jr. Hermenegildo rojas",
+      "district": "Carabayllo",
+      "coordinates": {
+        "latitude": -11.895317925670293,
+        "longitude": -77.04039860006466
+      }
+    },
+    "workplace": {
+      "name": "Universidad Peruana de Ciencias Aplicadas",
+      "address": "Av. Primavera 2390, Santiago de Surco 15023",
+      "district": "Santiago de Surco",
+      "coordinates": {
+        "latitude": -12.10353771929524,
+        "longitude": -76.96289406790585
+      }
+    }
+  }
+]

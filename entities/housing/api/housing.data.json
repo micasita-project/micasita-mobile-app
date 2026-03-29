@@ -1,0 +1,182 @@
+[
+  {
+    "id": "viv-001",
+    "title": "Departamento Moderno en Surco",
+    "address": "Av. Caminos del Inca 1250, Piso 8",
+    "district": "Santiago de Surco",
+    "price": 1400,
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "area": 72,
+    "description": "Departamento de estreno con vista a parque, áreas comunes premium. A 5 min de Jockey Plaza y a pasos del trabajo en Av. Javier Prado.",
+    "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.1080,
+      "longitude": -76.9720
+    },
+    "features": ["Estacionamiento", "Áreas comunes", "Gimnasio", "Seguridad 24/7"],
+    "type": "apartment"
+  },
+  {
+    "id": "viv-002",
+    "title": "Casa con Jardín en Monterrico",
+    "address": "Calle Los Álamos 345, Urb. Monterrico",
+    "district": "Santiago de Surco",
+    "price": 2200,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "area": 150,
+    "description": "Amplia casa en zona residencial de Monterrico con jardín, cochera doble y acabados de lujo. Zona tranquila a minutos del centro financiero.",
+    "image": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.0990,
+      "longitude": -76.9590
+    },
+    "features": ["Cochera doble", "Jardín", "Zona exclusiva", "Acabados premium"],
+    "type": "house"
+  },
+  {
+    "id": "viv-003",
+    "title": "Minidepartamento en San Borja",
+    "address": "Av. San Borja Sur 680, 4to piso",
+    "district": "San Borja",
+    "price": 1100,
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "area": 40,
+    "description": "Práctico minidepartamento cerca a la Estación San Borja del Metro. Ideal para profesionales que trabajan en la zona sur. Incluye kitchenette moderna.",
+    "image": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.1010,
+      "longitude": -76.9900
+    },
+    "features": ["Metro cercano", "Kitchenette", "Edificio con ascensor", "Zona segura"],
+    "type": "apartment"
+  },
+  {
+    "id": "viv-004",
+    "title": "Dpto. Familiar en Miraflores",
+    "address": "Calle Alcanfores 420, Piso 6",
+    "district": "Miraflores",
+    "price": 1800,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "area": 95,
+    "description": "Departamento amplio en zona premium de Miraflores. A pocas cuadras del Parque Kennedy con fácil acceso a Vía Expresa directo al trabajo.",
+    "image": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.1220,
+      "longitude": -77.0310
+    },
+    "features": ["Vista al parque", "Balcón", "Portería 24h", "Cerca a Vía Expresa"],
+    "type": "apartment"
+  },
+  {
+    "id": "viv-005",
+    "title": "Habitación Amoblada en Surquillo",
+    "address": "Jr. Dante 234, 2do piso",
+    "district": "Surquillo",
+    "price": 650,
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "area": 22,
+    "description": "Habitación completamente amoblada con baño privado. A 10 min en auto de Santiago de Surco. Incluye WiFi, agua y luz.",
+    "image": "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.1130,
+      "longitude": -77.0100
+    },
+    "features": ["Amoblado", "Servicios incluidos", "Baño privado", "WiFi"],
+    "type": "room"
+  },
+  {
+    "id": "viv-006",
+    "title": "Dpto. con Vista en San Isidro",
+    "address": "Av. Conquistadores 890, Torres del Golf, Piso 15",
+    "district": "San Isidro",
+    "price": 2500,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "area": 110,
+    "description": "Lujoso departamento con vista al Club de Golf de San Isidro. Edificio con piscina, gimnasio y salón de eventos. Acceso directo a Av. Javier Prado.",
+    "image": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.0950,
+      "longitude": -77.0370
+    },
+    "features": ["Piscina", "Gimnasio", "Vista panorámica", "Acceso Javier Prado"],
+    "type": "apartment"
+  },
+  {
+    "id": "viv-007",
+    "title": "Casa en La Molina",
+    "address": "Calle Las Camelias 567, Urb. Sol de La Molina",
+    "district": "La Molina",
+    "price": 1600,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "area": 130,
+    "description": "Casa acogedora en zona residencial de La Molina. Terraza con parrilla, cochera y áreas verdes. Conectada a Surco por Av. Raúl Ferrero.",
+    "image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.0860,
+      "longitude": -76.9350
+    },
+    "features": ["Terraza", "Parrilla", "Cochera", "Zona tranquila"],
+    "type": "house"
+  },
+  {
+    "id": "viv-008",
+    "title": "Dpto. Económico en Chorrillos",
+    "address": "Av. Guardia Civil 1250, Condominio Los Pinos",
+    "district": "Chorrillos",
+    "price": 900,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "area": 58,
+    "description": "Departamento en condominio cerrado con vigilancia 24/7 y áreas verdes. Precio accesible con buena conexión a Surco por Av. Guardia Civil.",
+    "image": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.1650,
+      "longitude": -77.0050
+    },
+    "features": ["Condominio cerrado", "Vigilancia 24/7", "Áreas verdes", "Precio accesible"],
+    "type": "apartment"
+  },
+  {
+    "id": "viv-009",
+    "title": "Dpto. Nuevo en Barranco",
+    "address": "Jr. Unión 456, Edificio Arte Barranco",
+    "district": "Barranco",
+    "price": 1350,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "area": 65,
+    "description": "Departamento de diseño moderno en el corazón bohemio de Barranco. Terraza con vista parcial al mar, cerca del Metropolitano y a 15 min de Surco.",
+    "image": "https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.1440,
+      "longitude": -77.0200
+    },
+    "features": ["Terraza", "Vista al mar", "Zona cultural", "Metropolitano cercano"],
+    "type": "apartment"
+  },
+  {
+    "id": "viv-010",
+    "title": "Casa Remodelada en Ate (Salamanca)",
+    "address": "Av. Nicolás Ayllón 3200, Urb. Salamanca",
+    "district": "Ate",
+    "price": 1050,
+    "bedrooms": 4,
+    "bathrooms": 2,
+    "area": 110,
+    "description": "Casa completamente remodelada con acabados de primer nivel. Amplia sala-comedor, cocina americana y patio. A 20 min de Surco por Vía Evitamiento.",
+    "image": "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=400&h=300&fit=crop",
+    "coordinates": {
+      "latitude": -12.0700,
+      "longitude": -76.9450
+    },
+    "features": ["Remodelada", "Cocina americana", "Patio", "Acceso Evitamiento"],
+    "type": "house"
+  }
+]

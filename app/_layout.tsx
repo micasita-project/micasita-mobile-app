@@ -13,12 +13,14 @@ import { AuthProvider, useAuth } from '@/features/auth';
 import { Colors } from '@/shared/config/colors';
 
 function useProtectedRoute() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isInitialized } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
+    if (!isInitialized) return;
+
     // Skip the very first render — Stack needs to mount first
     if (!hasNavigated) {
       setHasNavigated(true);
@@ -32,7 +34,7 @@ function useProtectedRoute() {
     } else if (isAuthenticated && inLoginPage) {
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, hasNavigated]);
+  }, [isAuthenticated, isInitialized, hasNavigated, segments, router]);
 }
 
 function RootNavigator() {

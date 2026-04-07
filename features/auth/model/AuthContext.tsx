@@ -4,7 +4,8 @@
  * Provee estado global de sesión a toda la aplicación.
  */
 
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { AuthContextType, User } from '@/shared/types';
 import { authenticateUser } from '../api/auth.service';
 
@@ -21,6 +22,23 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem('@micasita_user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error('Failed to load user session', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+    loadUser();
+  }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
@@ -30,6 +48,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const authenticatedUser = authenticateUser(email, password);
     if (authenticatedUser) {
       setUser(authenticatedUser);
+      try {
+        await AsyncStorage.setItem('@micasita_user', JSON.stringify(authenticatedUser));
+      } catch (e) {
+        console.error('Failed to save user', e);
+      }
       setIsLoading(false);
       return true;
     }
@@ -37,14 +60,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return false;
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     setUser(null);
+    try {
+      await AsyncStorage.removeItem('@micasita_user');
+    } catch (e) {
+      console.error('Failed to remove user', e);
+    }
   }, []);
 
   const value: AuthContextType = {
     user,
     isAuthenticated: user !== null,
     isLoading,
+    isInitialized,
     login,
     logout,
   };

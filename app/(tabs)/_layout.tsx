@@ -36,7 +36,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Mapa',
-          headerTitle: 'MiCasita — Mapa',
+          headerTitle: 'Mapa',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="map-outline" size={size} color={color} />
           ),
@@ -46,7 +46,7 @@ export default function TabsLayout() {
         name="housing"
         options={{
           title: 'Viviendas',
-          headerTitle: 'MiCasita — Viviendas',
+          headerTitle: 'Viviendas',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
@@ -56,7 +56,7 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: 'Perfil',
-          headerTitle: 'MiCasita — Mi Perfil',
+          headerTitle: 'Mi Perfil',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),

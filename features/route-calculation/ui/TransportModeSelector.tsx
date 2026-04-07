@@ -4,7 +4,7 @@
  * Google Maps-style pill selector with time for each mode.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { TransportMode, MultiModeRoutes } from '@/shared/types';
@@ -16,6 +16,7 @@ interface TransportModeSelectorProps {
   routes: MultiModeRoutes;
   selectedMode: TransportMode;
   optimalMode: TransportMode | null;
+  priorityMode?: TransportMode;
   onModeChange: (mode: TransportMode) => void;
 }
 
@@ -29,11 +30,21 @@ export function TransportModeSelector({
   routes,
   selectedMode,
   optimalMode,
+  priorityMode,
   onModeChange,
 }: TransportModeSelectorProps) {
+  const sortedModes = useMemo(() => {
+    if (!priorityMode) return MODE_CONFIG;
+    return [...MODE_CONFIG].sort((a, b) => {
+      if (a.mode === priorityMode) return -1;
+      if (b.mode === priorityMode) return 1;
+      return 0;
+    });
+  }, [priorityMode]);
+
   return (
     <View style={styles.container}>
-      {MODE_CONFIG.map(({ mode, icon, label }) => {
+      {sortedModes.map(({ mode, icon, label }) => {
         const isSelected = selectedMode === mode;
         const isOptimal = optimalMode === mode;
         const time = routes[mode].timeMinutes;

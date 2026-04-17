@@ -11,7 +11,7 @@ export {
   getHousingByDistrict,
   getAvailableDistricts,
   getHousingByPriceRange,
-} from './model/housing.service';
+} from './api/housing.service';
 
 // UI (componentes de presentación)
 export { HousingCard } from './ui/HousingCard';

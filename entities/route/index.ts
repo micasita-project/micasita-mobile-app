@@ -11,6 +11,6 @@ export {
   formatDistance,
   formatTravelTime,
   getOptimalMode,
-} from './model/location.service';
+} from './api/location.service';
 
 export { RoutePolyline } from './ui/RoutePolyline';

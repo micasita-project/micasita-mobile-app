@@ -30,7 +30,7 @@ export function HousingMarker({
 
   return (
     <Marker
-      coordinate={housing.coordinates}
+      coordinate={{ latitude: housing.latitude, longitude: housing.longitude }}
       onPress={() => onPress?.(housing)}
       tracksViewChanges={false}
     >

@@ -1,9 +1,11 @@
 /**
  * @layer app (pages)
  * @description Housing list page with district filters.
+ * Adds a FAB to publish a new housing listing and a "My listings" button.
  *
  * FSD Composition:
  * - entities/housing → getAllHousing, getAvailableDistricts, HousingCard
+ * - features/publish-housing → (routes to PublishWizard and MyListingsPanel)
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -16,6 +18,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { HousingCard, getAllHousing, getAvailableDistricts } from '@/entities/housing';
 import { Colors } from '@/shared/config/colors';
 import type { Housing } from '@/shared/types';
@@ -41,6 +44,19 @@ export default function HousingScreen() {
 
   return (
     <View style={styles.container}>
+      {/* My listings shortcut banner */}
+      <TouchableOpacity
+        style={styles.myListingsBanner}
+        onPress={() => router.push('/my-listings')}
+        activeOpacity={0.85}
+      >
+        <View style={styles.myListingsBannerLeft}>
+          <Ionicons name="list-outline" size={18} color={Colors.primary} />
+          <Text style={styles.myListingsBannerText}>Mis publicaciones</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+      </TouchableOpacity>
+
       <View style={styles.filterSection}>
         <Text style={styles.filterLabel}>Filtrar por distrito:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
@@ -83,12 +99,34 @@ export default function HousingScreen() {
           </View>
         }
       />
+
+      {/* FAB — Publicar vivienda */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/publish-housing')}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="add" size={26} color={Colors.textOnPrimary} />
+        <Text style={styles.fabText}>Publicar</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  myListingsBanner: {
+    backgroundColor: Colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  myListingsBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  myListingsBannerText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
   filterSection: {
     backgroundColor: Colors.surface, paddingVertical: 12, paddingHorizontal: 16,
     borderBottomWidth: 1, borderBottomColor: Colors.borderLight,
@@ -104,8 +142,28 @@ const styles = StyleSheet.create({
   filterChipTextActive: { color: Colors.textOnPrimary },
   resultCount: { paddingHorizontal: 16, paddingVertical: 10 },
   resultCountText: { fontSize: 13, color: Colors.textMuted, fontWeight: '500' },
-  listContent: { paddingHorizontal: 16, paddingBottom: 20 },
+  listContent: { paddingHorizontal: 16, paddingBottom: 100 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
   emptyText: { fontSize: 15, color: Colors.textMuted, textAlign: 'center' },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    backgroundColor: Colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 32,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fabText: { fontSize: 15, fontWeight: '700', color: Colors.textOnPrimary },
 });

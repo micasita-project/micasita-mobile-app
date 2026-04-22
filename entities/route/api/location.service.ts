@@ -10,10 +10,10 @@ import type { Coordinate, RouteSegment, MultiModeRoutes, TransportMode } from '@
 import { TRANSPORT_MODE_SPEEDS } from '@/shared/types';
 import { ENV } from '@/shared/config/env';
 
-const OSRM_BASE_URLS: Record<TransportMode, string> = {
-  driving: ENV.OSRM_DRIVING_URL,
-  cycling: ENV.OSRM_CYCLING_URL,
-  walking: ENV.OSRM_WALKING_URL,
+const BROUTER_PROFILES: Record<TransportMode, string> = {
+  driving: 'car-eco',
+  cycling: 'trekking',
+  walking: 'foot',
 };
 
 /**
@@ -51,8 +51,8 @@ export async function fetchModeRoute(
   mode: TransportMode
 ): Promise<RouteSegment> {
   try {
-    const baseUrl = OSRM_BASE_URLS[mode];
-    const url = `${baseUrl}/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?overview=full&geometries=geojson&steps=false`;
+    const profile = BROUTER_PROFILES[mode];
+    const url = `https://brouter.de/brouter?lonlats=${origin.longitude},${origin.latitude}|${destination.longitude},${destination.latitude}&profile=${profile}&alternativeidx=0&format=geojson`;
 
     const response = await Promise.race([
       fetch(url),
@@ -61,23 +61,26 @@ export async function fetchModeRoute(
     
     const data = await response.json();
 
-    if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
-      console.warn(`OSRM ${mode} returned no routes, falling back to straight line`);
+    if (!data.features || data.features.length === 0) {
+      console.warn(`BRouter ${mode} returned no routes, falling back to straight line`);
       return generateFallbackRoute(origin, destination, mode);
     }
 
-    const route = data.routes[0];
-    const geometry = route.geometry;
+    const feature = data.features[0];
+    const geometry = feature.geometry;
 
     const waypoints: Coordinate[] = geometry.coordinates.map(
-      ([lon, lat]: [number, number]) => ({
+      ([lon, lat]: number[]) => ({
         latitude: lat,
         longitude: lon,
       })
     );
 
-    const distanceKm = Math.round((route.distance / 1000) * 100) / 100;
-    const timeMinutes = Math.round(route.duration / 60);
+    const distanceMeters = parseInt(feature.properties['track-length'] || "0", 10);
+    const timeSeconds = parseInt(feature.properties['total-time'] || "0", 10);
+
+    const distanceKm = Math.round((distanceMeters / 1000) * 100) / 100;
+    const timeMinutes = Math.round(timeSeconds / 60);
 
     return {
       origin,
@@ -87,7 +90,7 @@ export async function fetchModeRoute(
       timeMinutes,
     };
   } catch (error) {
-    console.warn(`OSRM fetch failed for ${mode}, falling back to straight line:`, error);
+    console.warn(`BRouter fetch failed for ${mode}, falling back to straight line:`, error);
     return generateFallbackRoute(origin, destination, mode);
   }
 }
@@ -120,7 +123,7 @@ export async function fetchMultiModeRoutes(
 }
 
 /**
- * Fallback route generation when OSRM is unavailable.
+ * Fallback route generation when BRouter is unavailable.
  */
 function generateFallbackRoute(
   origin: Coordinate,

@@ -58,6 +58,24 @@ function RootNavigator() {
           headerTitleStyle: { fontWeight: '700' },
         }}
       />
+      <Stack.Screen
+        name="publish-housing"
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="my-listings"
+        options={{
+          presentation: 'modal',
+          headerShown: true,
+          headerTitle: 'Mis publicaciones',
+          headerStyle: { backgroundColor: Colors.background },
+          headerTintColor: Colors.primary,
+          headerTitleStyle: { fontWeight: '700' },
+        }}
+      />
     </Stack>
   );
 }

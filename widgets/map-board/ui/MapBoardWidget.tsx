@@ -69,8 +69,9 @@ export function MapBoardWidget() {
     const { latitude: lat1, longitude: lon1 } = user.workplace.coordinates;
     
     for (const h of housing) {
-      const { latitude: lat2, longitude: lon2 } = h.coordinates;
-      // Simple euclidian distance for local markers
+      // Use flat latitude/longitude from new schema
+      const lat2 = h.latitude;
+      const lon2 = h.longitude;
       const distance = Math.pow(lat2 - lat1, 2) + Math.pow(lon2 - lon1, 2);
       if (distance < minDistance) {
         minDistance = distance;
@@ -103,14 +104,15 @@ export function MapBoardWidget() {
    */
   const handleHousingSelect = useCallback((h: Housing) => {
     setSelectedHousing(h);
+    const housingCoord = { latitude: h.latitude, longitude: h.longitude };
     if (user?.workplace.coordinates && user?.currentHome.coordinates) {
       calculateRoutes(
-        h.coordinates,
+        housingCoord,
         user.currentHome.coordinates,
         user.workplace.coordinates
       );
       mapRef.current?.fitToCoordinates(
-        [h.coordinates, user.workplace.coordinates],
+        [housingCoord, user.workplace.coordinates],
         { edgePadding: { top: 100, right: 50, bottom: 450, left: 50 }, animated: true }
       );
     }

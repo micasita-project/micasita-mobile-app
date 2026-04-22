@@ -15,6 +15,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import type { Housing } from '@/shared/types';
 import { Colors } from '@/shared/config/colors';
+import { HousingImages } from '@/entities/housing/api/images';
+
+function getImageSource(imagePath?: string) {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return { uri: imagePath };
+  return HousingImages[imagePath];
+}
 
 interface HousingCardProps {
   housing: Housing;
@@ -29,8 +36,7 @@ export function HousingCard({
 }: HousingCardProps) {
   const isCompact = variant === 'compact';
 
-  const typeLabel = housing.type === 'apartment' ? 'Dpto.'
-    : housing.type === 'house' ? 'Casa' : 'Hab.';
+  const typeLabel = housing.property_type;
 
   if (isCompact) {
     return (
@@ -63,7 +69,7 @@ export function HousingCard({
             </View>
             <View style={styles.compactStatItem}>
               <Ionicons name="resize-outline" size={13} color={Colors.textSecondary} />
-              <Text style={styles.compactStatText}>{housing.area}m²</Text>
+              <Text style={styles.compactStatText}>{housing.total_area_sqm}m²</Text>
             </View>
           </View>
 
@@ -72,7 +78,7 @@ export function HousingCard({
 
         {/* Right: Image */}
         <Image
-          source={{ uri: housing.image }}
+          source={getImageSource(housing.images[0])}
           style={styles.compactImage}
           resizeMode="cover"
         />
@@ -88,7 +94,7 @@ export function HousingCard({
       activeOpacity={0.8}
     >
       <Image
-        source={{ uri: housing.image }}
+        source={getImageSource(housing.images[0])}
         style={styles.image}
         resizeMode="cover"
       />
@@ -116,7 +122,7 @@ export function HousingCard({
           </View>
           <View style={styles.featureItem}>
             <Ionicons name="resize-outline" size={14} color={Colors.textSecondary} />
-            <Text style={styles.featureText}>{housing.area} m²</Text>
+            <Text style={styles.featureText}>{housing.total_area_sqm} m²</Text>
           </View>
         </View>
 

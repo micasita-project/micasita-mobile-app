@@ -14,6 +14,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/shared/config/colors';
 import type { HousingDraft } from '@/shared/types';
@@ -68,7 +69,7 @@ export function Step1Location({ data, onChange }: Step1LocationProps) {
       </TouchableOpacity>
 
       {showDistricts && (
-        <View style={styles.districtList}>
+        <ScrollView style={styles.districtList} nestedScrollEnabled={true}>
           {LIMA_DISTRICTS.map((d) => (
             <TouchableOpacity
               key={d}
@@ -86,35 +87,64 @@ export function Step1Location({ data, onChange }: Step1LocationProps) {
               )}
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       )}
 
-      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Coordenadas (opcional)</Text>
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Ubicación en el Mapa</Text>
       <Text style={styles.hint}>
-        Puedes dejar las coordenadas por defecto o ingresar las exactas de tu vivienda.
+        Mantén presionado y arrastra el pin rojo, o toca el mapa para ubicar la vivienda.
       </Text>
+      
+      <View style={styles.mapContainer}>
+        <MapView
+          provider={PROVIDER_DEFAULT}
+          style={styles.map}
+          initialRegion={{
+            latitude: data.latitude || -12.0464,
+            longitude: data.longitude || -77.0428,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }}
+          onPress={(e) => {
+            const { latitude, longitude } = e.nativeEvent.coordinate;
+            onChange({ latitude, longitude });
+          }}
+        >
+          <Marker
+            coordinate={{
+              latitude: data.latitude || -12.0464,
+              longitude: data.longitude || -77.0428,
+            }}
+            draggable
+            onDragEnd={(e) => {
+              const { latitude, longitude } = e.nativeEvent.coordinate;
+              onChange({ latitude, longitude });
+            }}
+          />
+        </MapView>
+      </View>
+
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Coordenadas</Text>
       <View style={styles.coordRow}>
-        <View style={[styles.inputWrapper, { flex: 1 }]}>
+        <View style={[styles.inputWrapper, { flex: 1, backgroundColor: Colors.background }]}>
           <Text style={styles.coordLabel}>Latitud</Text>
           <TextInput
-            style={[styles.input, styles.coordInput]}
+            style={[styles.input, styles.coordInput, { color: Colors.textMuted }]}
             placeholder="-12.0464"
             placeholderTextColor={Colors.textMuted}
             value={data.latitude.toString()}
-            onChangeText={(v) => onChange({ latitude: parseFloat(v) || 0 })}
-            keyboardType="numeric"
+            editable={false}
           />
         </View>
         <View style={{ width: 12 }} />
-        <View style={[styles.inputWrapper, { flex: 1 }]}>
+        <View style={[styles.inputWrapper, { flex: 1, backgroundColor: Colors.background }]}>
           <Text style={styles.coordLabel}>Longitud</Text>
           <TextInput
-            style={[styles.input, styles.coordInput]}
+            style={[styles.input, styles.coordInput, { color: Colors.textMuted }]}
             placeholder="-77.0428"
             placeholderTextColor={Colors.textMuted}
             value={data.longitude.toString()}
-            onChangeText={(v) => onChange({ longitude: parseFloat(v) || 0 })}
-            keyboardType="numeric"
+            editable={false}
           />
         </View>
       </View>
@@ -193,4 +223,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   infoText: { flex: 1, fontSize: 12, color: Colors.textSecondary, lineHeight: 18 },
+  mapContainer: {
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginTop: 8,
+  },
+  map: {
+    flex: 1,
+  },
 });

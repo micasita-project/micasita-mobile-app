@@ -10,11 +10,6 @@ import type { Coordinate, RouteSegment, MultiModeRoutes, TransportMode } from '@
 import { TRANSPORT_MODE_SPEEDS } from '@/shared/types';
 import { ENV } from '@/shared/config/env';
 
-const BROUTER_PROFILES: Record<TransportMode, string> = {
-  driving: 'car-eco',
-  cycling: 'trekking',
-  walking: 'foot',
-};
 
 /**
  * Haversine formula: straight-line distance between two coordinates (km).
@@ -51,8 +46,11 @@ export async function fetchModeRoute(
   mode: TransportMode
 ): Promise<RouteSegment> {
   try {
-    const profile = BROUTER_PROFILES[mode];
-    const url = `https://brouter.de/brouter?lonlats=${origin.longitude},${origin.latitude}|${destination.longitude},${destination.latitude}&profile=${profile}&alternativeidx=0&format=geojson`;
+    let baseUrl = ENV.OSRM_DRIVING_URL;
+    if (mode === 'cycling') baseUrl = ENV.OSRM_CYCLING_URL;
+    if (mode === 'walking') baseUrl = ENV.OSRM_WALKING_URL;
+
+    const url = `${baseUrl}/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&overview=full`;
 
     const response = await Promise.race([
       fetch(url),
@@ -61,13 +59,13 @@ export async function fetchModeRoute(
     
     const data = await response.json();
 
-    if (!data.features || data.features.length === 0) {
-      console.warn(`BRouter ${mode} returned no routes, falling back to straight line`);
+    if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+      console.warn(`OSRM ${mode} returned no routes, falling back to straight line`);
       return generateFallbackRoute(origin, destination, mode);
     }
 
-    const feature = data.features[0];
-    const geometry = feature.geometry;
+    const route = data.routes[0];
+    const geometry = route.geometry;
 
     const waypoints: Coordinate[] = geometry.coordinates.map(
       ([lon, lat]: number[]) => ({
@@ -76,8 +74,8 @@ export async function fetchModeRoute(
       })
     );
 
-    const distanceMeters = parseInt(feature.properties['track-length'] || "0", 10);
-    const timeSeconds = parseInt(feature.properties['total-time'] || "0", 10);
+    const distanceMeters = route.distance || 0;
+    const timeSeconds = route.duration || 0;
 
     const distanceKm = Math.round((distanceMeters / 1000) * 100) / 100;
     const timeMinutes = Math.round(timeSeconds / 60);
@@ -90,7 +88,7 @@ export async function fetchModeRoute(
       timeMinutes,
     };
   } catch (error) {
-    console.warn(`BRouter fetch failed for ${mode}, falling back to straight line:`, error);
+    console.warn(`OSRM fetch failed for ${mode}, falling back to straight line:`, error);
     return generateFallbackRoute(origin, destination, mode);
   }
 }
@@ -123,7 +121,7 @@ export async function fetchMultiModeRoutes(
 }
 
 /**
- * Fallback route generation when BRouter is unavailable.
+ * Fallback route generation when external routing is unavailable.
  */
 function generateFallbackRoute(
   origin: Coordinate,

@@ -1,7 +1,7 @@
 /**
  * @layer app (pages)
  * @description Root Layout.
- * Guards: login → onboarding (if no workplaces) → main app.
+ * Guards: guests land on tabs; authenticated users check workplaces → onboarding or tabs.
  */
 
 import { useEffect, useState } from 'react';
@@ -11,6 +11,7 @@ import 'react-native-reanimated';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider, useAuth } from '@/features/auth';
+import { GuestProvider } from '@/features/guest';
 import { queryClient } from '@/shared/api';
 import { Colors } from '@/shared/config/colors';
 import { apiClient } from '@/shared/api';
@@ -20,7 +21,6 @@ function useProtectedRoute() {
   const segments = useSegments();
   const router = useRouter();
   const [hasNavigated, setHasNavigated] = useState(false);
-  const [checkingWorkplaces, setCheckingWorkplaces] = useState(false);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -34,11 +34,11 @@ function useProtectedRoute() {
     const inLoginPage = segments[0] === 'login';
     const inOnboarding = segments[0] === 'onboarding';
 
-    if (!isAuthenticated && !inLoginPage) {
-      router.replace('/login');
+    if (!isAuthenticated && inOnboarding) {
+      // Guests can't access onboarding
+      router.replace('/(tabs)');
     } else if (isAuthenticated && inLoginPage) {
-      // Check if user has workplaces before sending to main app
-      setCheckingWorkplaces(true);
+      // Authenticated user in login → check workplaces
       apiClient
         .get('/workplaces/')
         .then((response) => {
@@ -50,13 +50,10 @@ function useProtectedRoute() {
           }
         })
         .catch(() => {
-          // If the request fails, send to tabs anyway
           router.replace('/(tabs)');
-        })
-        .finally(() => setCheckingWorkplaces(false));
-    } else if (isAuthenticated && inOnboarding) {
-      // Allow staying in onboarding
+        });
     }
+    // Guests on tabs or login → allow freely
   }, [isAuthenticated, isInitialized, hasNavigated, segments, router]);
 }
 
@@ -66,7 +63,7 @@ function RootNavigator() {
   return (
     <Stack
       screenOptions={{ headerShown: false }}
-      initialRouteName="login"
+      initialRouteName="(tabs)"
     >
       <Stack.Screen name="login" />
       <Stack.Screen name="onboarding" />
@@ -108,8 +105,10 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RootNavigator />
-        <StatusBar style="dark" />
+        <GuestProvider>
+          <RootNavigator />
+          <StatusBar style="light" />
+        </GuestProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

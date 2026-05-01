@@ -10,20 +10,33 @@ import {
   generateRecommendations,
   getLatestRecommendations,
 } from '../api/recommendation.api';
-import type { GuestRecommendRequest } from '../api/recommendation.api';
+import type { GuestRecommendRequest, GenerateOptions } from '../api/recommendation.api';
 
 export const recommendKeys = {
-  guest: ['recommendations', 'guest'] as const,
+  guest: (data: GuestRecommendRequest | null) =>
+    ['recommendations', 'guest', data?.work_lat, data?.work_lon, data?.budget, data?.preferred_transportation] as const,
   latest: (id: number) => ['recommendations', 'latest', id] as const,
 };
 
 /**
- * Hook para obtener recomendaciones como invitado.
- * Se usa como Mutation porque el usuario envía datos manualmente.
+ * Hook para obtener recomendaciones como invitado (manual/mutation).
  */
 export function useGuestRecommendations() {
   return useMutation({
     mutationFn: (data: GuestRecommendRequest) => getGuestRecommendations(data),
+  });
+}
+
+/**
+ * Hook para obtener recomendaciones de invitado automáticamente (query).
+ * Se dispara solo cuando se pasan datos válidos.
+ */
+export function useGuestRecommendationsQuery(data: GuestRecommendRequest | null) {
+  return useQuery({
+    queryKey: recommendKeys.guest(data),
+    queryFn: () => getGuestRecommendations(data!),
+    enabled: data !== null,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -46,9 +59,9 @@ export function useLatestRecommendations(workplaceId: number | null) {
 export function useGenerateRecommendations() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (workplaceId: number) => generateRecommendations(workplaceId),
-    onSuccess: (_data, workplaceId) => {
-      // Invalidar el cache de latest para que se refresque
+    mutationFn: ({ workplaceId, options }: { workplaceId: number; options?: GenerateOptions }) =>
+      generateRecommendations(workplaceId, options),
+    onSuccess: (_data, { workplaceId }) => {
       qc.invalidateQueries({ queryKey: recommendKeys.latest(workplaceId) });
     },
   });

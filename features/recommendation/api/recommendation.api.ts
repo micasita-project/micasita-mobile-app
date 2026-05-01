@@ -2,24 +2,34 @@
  * @layer features/recommendation/api
  * @description Servicio de recomendaciones IA conectado al backend (XGBoost).
  * Soporta generate (ejecuta IA), latest (lee cache), e invitados.
+ *
+ * Timeout extendido a 60s: XGBoost puede tardar más de los 15s por defecto.
  */
 
 import { apiClient } from '@/shared/api';
 import type { Housing } from '@/shared/types';
 
-// ── Types ───────────────────────────────────────────────────────
+const RECOMMEND_TIMEOUT = 60_000;
+
+// ── Types ────────────────────────────────────────────────────────
 
 export interface GuestRecommendRequest {
   work_lat: number;
   work_lon: number;
   budget: number;
   preferred_transportation: string;
+  max_distance_km?: number;
+  limit?: number;
+  home_lat?: number;
+  home_lon?: number;
 }
 
 export interface RecommendationItem {
   property: Housing;
   match_score: number;
   predicted_time_min: number;
+  /** Minutos ahorrados vs viaje actual. null si el usuario no tiene casa registrada. */
+  time_saved_mins: number | null;
 }
 
 /** Respuesta cruda del backend (property tiene id numérico) */
@@ -47,12 +57,14 @@ interface RawRecommendationItem {
   };
   match_score: number;
   predicted_time_min: number;
+  time_saved_mins: number | null;
 }
 
 function toRecommendationItem(raw: RawRecommendationItem): RecommendationItem {
   return {
     match_score: raw.match_score,
     predicted_time_min: raw.predicted_time_min,
+    time_saved_mins: raw.time_saved_mins ?? null,
     property: {
       id: String(raw.property.id),
       title: raw.property.title,
@@ -77,61 +89,85 @@ function toRecommendationItem(raw: RawRecommendationItem): RecommendationItem {
   };
 }
 
-// ── API Calls ───────────────────────────────────────────────────
+// ── API Calls ────────────────────────────────────────────────────
 
-/**
- * Obtiene recomendaciones para un usuario invitado (sin cuenta).
- */
 export async function getGuestRecommendations(
   data: GuestRecommendRequest
 ): Promise<RecommendationItem[]> {
-  const response = await apiClient.post<RawRecommendationItem[]>('/recommend/guest', data);
-  return response.data.map(toRecommendationItem);
-}
-
-/**
- * Ejecuta XGBoost y GUARDA el resultado en el historial de la DB.
- * Usar con moderación: cada llamada corre el modelo de IA.
- */
-export async function generateRecommendations(
-  workplaceId: number
-): Promise<RecommendationItem[]> {
-  const response = await apiClient.post<RawRecommendationItem[]>(
-    `/recommend/workplaces/${workplaceId}/generate`
-  );
-  return response.data.map(toRecommendationItem);
-}
-
-/**
- * Lee la ÚLTIMA recomendación cacheada SIN ejecutar IA.
- * Instantáneo — lee de PostgreSQL.
- * Retorna null si no hay recomendaciones guardadas.
- */
-export async function getLatestRecommendations(
-  workplaceId: number
-): Promise<RecommendationItem[] | null> {
+  console.log('[Recommend] POST /recommend/guest →', data);
   try {
-    const response = await apiClient.get<RawRecommendationItem[]>(
-      `/recommend/workplaces/${workplaceId}/latest`
+    const response = await apiClient.post<RawRecommendationItem[]>(
+      '/recommend/guest',
+      data,
+      { timeout: RECOMMEND_TIMEOUT }
     );
+    console.log('[Recommend] /recommend/guest ← OK', response.data.length, 'resultados');
     return response.data.map(toRecommendationItem);
   } catch (error: any) {
-    if (error?.response?.status === 404) {
-      return null; // No hay recomendaciones guardadas aún
-    }
+    console.error('[Recommend] /recommend/guest ← ERROR', error?.response?.status, error?.message);
     throw error;
   }
 }
 
-/**
- * LEGACY: Obtiene recomendaciones directas sin cachear.
- * @deprecated Usar generateRecommendations en su lugar.
- */
+export interface GenerateOptions {
+  max_distance_km?: number;
+  limit?: number;
+}
+
+export async function generateRecommendations(
+  workplaceId: number,
+  options?: GenerateOptions
+): Promise<RecommendationItem[]> {
+  console.log(`[Recommend] POST /recommend/workplaces/${workplaceId}/generate →`, options ?? {});
+  try {
+    const response = await apiClient.post<RawRecommendationItem[]>(
+      `/recommend/workplaces/${workplaceId}/generate`,
+      undefined,
+      {
+        timeout: RECOMMEND_TIMEOUT,
+        params: options,
+      }
+    );
+    console.log(`[Recommend] /recommend/workplaces/${workplaceId}/generate ← OK`, response.data.length, 'resultados');
+    return response.data.map(toRecommendationItem);
+  } catch (error: any) {
+    console.error(`[Recommend] /recommend/workplaces/${workplaceId}/generate ← ERROR`, error?.response?.status, error?.message);
+    throw error;
+  }
+}
+
+export async function getLatestRecommendations(
+  workplaceId: number
+): Promise<RecommendationItem[] | null> {
+  console.log(`[Recommend] GET /recommend/workplaces/${workplaceId}/latest`);
+  try {
+    const response = await apiClient.get<RawRecommendationItem[]>(
+      `/recommend/workplaces/${workplaceId}/latest`
+    );
+    console.log(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← OK`, response.data.length, 'resultados');
+    return response.data.map(toRecommendationItem);
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      console.log(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← 404 (sin cache)`);
+      return null;
+    }
+    console.error(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← ERROR`, error?.response?.status, error?.message);
+    throw error;
+  }
+}
+
 export async function getWorkplaceRecommendations(
   workplaceId: number
 ): Promise<RecommendationItem[]> {
-  const response = await apiClient.get<RawRecommendationItem[]>(
-    `/recommend/workplaces/${workplaceId}`
-  );
-  return response.data.map(toRecommendationItem);
+  console.log(`[Recommend] GET /recommend/workplaces/${workplaceId}`);
+  try {
+    const response = await apiClient.get<RawRecommendationItem[]>(
+      `/recommend/workplaces/${workplaceId}`
+    );
+    console.log(`[Recommend] /recommend/workplaces/${workplaceId} ← OK`, response.data.length, 'resultados');
+    return response.data.map(toRecommendationItem);
+  } catch (error: any) {
+    console.error(`[Recommend] /recommend/workplaces/${workplaceId} ← ERROR`, error?.response?.status, error?.message);
+    throw error;
+  }
 }

@@ -1,14 +1,8 @@
 /**
  * @layer app (pages)
  * @description Pantalla de Recomendaciones IA.
- * Muestra recomendaciones cacheadas del workplace seleccionado.
- * Botón sutil de "actualizar" para re-ejecutar XGBoost.
- *
- * FSD Composition:
- * - entities/workplace → useWorkplaces
- * - features/recommendation → useLatestRecommendations, useGenerateRecommendations, useGuestRecommendations
- * - entities/housing → HousingCard
- * - features/auth → useAuth
+ * - Autenticados: workplace → lee latest cacheado (API) → genera bajo demanda.
+ * - Invitados: lee latest de AsyncStorage → genera/actualiza bajo demanda.
  */
 
 import React, { useState, useCallback } from 'react';
@@ -17,16 +11,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth';
+import { useGuest, GuestSetupModal } from '@/features/guest';
 import { HousingCard } from '@/entities/housing';
 import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
 import {
@@ -38,55 +30,54 @@ import { Colors } from '@/shared/config/colors';
 import type { Housing } from '@/shared/types';
 import type { RecommendationItem } from '@/features/recommendation/api/recommendation.api';
 
-type TransportOption = 'Auto' | 'Bicicleta' | 'Caminando';
-const TRANSPORT_OPTIONS: TransportOption[] = ['Auto', 'Bicicleta', 'Caminando'];
-const TRANSPORT_ICONS: Record<TransportOption, string> = {
-  Auto: 'car-outline',
-  Bicicleta: 'bicycle-outline',
-  Caminando: 'walk-outline',
-};
-
 export default function RecommendScreen() {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
 
-  // Logged user: workplace selection
-  const { data: workplaces = [], isLoading: loadingWorkplaces } = useWorkplaces(isAuthenticated);
-  const [selectedWorkplaceId, setSelectedWorkplaceId] = useState<number | null>(null);
-  
-  // Read cached recommendations (no IA)
-  const {
-    data: cachedResults,
-    isLoading: loadingCached,
-  } = useLatestRecommendations(selectedWorkplaceId);
+  // ── Guest ───────────────────────────────────────────────────────
+  const { guestHome, guestWorkplace, guestRecommendations, saveGuestRecommendations } = useGuest();
+  const [showSetup, setShowSetup] = useState(false);
 
-  // Generate new recommendations (runs IA)
-  const generateRecs = useGenerateRecommendations();
-
-  // Guest: manual input
-  const [guestLat, setGuestLat] = useState('');
-  const [guestLon, setGuestLon] = useState('');
-  const [guestBudget, setGuestBudget] = useState('');
-  const [guestTransport, setGuestTransport] = useState<TransportOption>('Auto');
+  // Mutation (manual trigger only — preserves the "generate once, read many" pattern)
   const guestMutation = useGuestRecommendations();
 
-  const handleGuestSubmit = useCallback(() => {
-    const lat = parseFloat(guestLat);
-    const lon = parseFloat(guestLon);
-    const budget = parseFloat(guestBudget);
-    if (isNaN(lat) || isNaN(lon) || isNaN(budget)) return;
+  const handleGuestGenerate = useCallback(async () => {
+    if (!guestWorkplace) { setShowSetup(true); return; }
+    const hasExisting = guestRecommendations && guestRecommendations.length > 0;
+    const run = async () => {
+      const items = await guestMutation.mutateAsync({
+        work_lat: guestWorkplace.lat,
+        work_lon: guestWorkplace.lon,
+        budget: guestWorkplace.budget,
+        preferred_transportation: guestWorkplace.transport,
+        max_distance_km: guestWorkplace.maxDistanceKm,
+        limit: guestWorkplace.limit,
+        home_lat: guestHome?.lat,
+        home_lon: guestHome?.lon,
+      });
+      await saveGuestRecommendations(items);
+    };
 
-    guestMutation.mutate({
-      work_lat: lat,
-      work_lon: lon,
-      budget,
-      preferred_transportation: guestTransport,
-    });
-  }, [guestLat, guestLon, guestBudget, guestTransport, guestMutation]);
+    if (hasExisting) {
+      Alert.alert(
+        'Actualizar recomendaciones',
+        'Esto ejecutará nuevamente el motor de IA. ¿Continuar?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Actualizar', onPress: run },
+        ]
+      );
+    } else {
+      run();
+    }
+  }, [guestWorkplace, guestRecommendations, guestMutation, saveGuestRecommendations]);
 
-  const handleHousingPress = useCallback((housing: Housing) => {
-    router.push({ pathname: '/housing-detail', params: { id: housing.id } });
-  }, [router]);
+  // ── Authenticated ───────────────────────────────────────────────
+  const { data: workplaces = [], isLoading: loadingWorkplaces } = useWorkplaces(isAuthenticated);
+  const [selectedWorkplaceId, setSelectedWorkplaceId] = useState<number | null>(null);
+
+  const { data: cachedResults, isLoading: loadingCached } = useLatestRecommendations(selectedWorkplaceId);
+  const generateRecs = useGenerateRecommendations();
 
   const handleRefresh = useCallback(() => {
     if (!selectedWorkplaceId) return;
@@ -95,29 +86,27 @@ export default function RecommendScreen() {
       'Esto ejecutará nuevamente el motor de IA. ¿Continuar?',
       [
         { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Actualizar',
-          onPress: () => generateRecs.mutate(selectedWorkplaceId),
-        },
+        { text: 'Actualizar', onPress: () => generateRecs.mutate({ workplaceId: selectedWorkplaceId }) },
       ]
     );
   }, [selectedWorkplaceId, generateRecs]);
 
-  // Determine which results to show
+  const handleHousingPress = useCallback((housing: Housing) => {
+    router.push({ pathname: '/housing-detail', params: { id: housing.id, data: JSON.stringify(housing) } });
+  }, [router]);
+
   const results: RecommendationItem[] = isAuthenticated
     ? (cachedResults ?? [])
-    : (guestMutation.data ?? []);
+    : (guestRecommendations ?? []);
   const isLoadingResults = isAuthenticated
     ? (loadingCached || generateRecs.isPending)
     : guestMutation.isPending;
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      <GuestSetupModal visible={showSetup} onClose={() => setShowSetup(false)} />
+
+      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.headerCard}>
           <View style={styles.headerIcon}>
@@ -129,7 +118,7 @@ export default function RecommendScreen() {
           </Text>
         </View>
 
-        {/* ── Logged User: Select Workplace ──────────────────── */}
+        {/* ── Authenticated: Select Workplace ─────────────────── */}
         {isAuthenticated ? (
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
@@ -149,13 +138,8 @@ export default function RecommendScreen() {
                 {workplaces.map((wp) => (
                   <TouchableOpacity
                     key={wp.id}
-                    style={[
-                      styles.workplaceChip,
-                      selectedWorkplaceId === wp.id && styles.workplaceChipActive,
-                    ]}
-                    onPress={() => setSelectedWorkplaceId(
-                      selectedWorkplaceId === wp.id ? null : wp.id
-                    )}
+                    style={[styles.workplaceChip, selectedWorkplaceId === wp.id && styles.workplaceChipActive]}
+                    onPress={() => setSelectedWorkplaceId(selectedWorkplaceId === wp.id ? null : wp.id)}
                     activeOpacity={0.7}
                   >
                     <Ionicons
@@ -164,21 +148,10 @@ export default function RecommendScreen() {
                       color={selectedWorkplaceId === wp.id ? Colors.textOnPrimary : Colors.primary}
                     />
                     <View style={styles.workplaceChipText}>
-                      <Text
-                        style={[
-                          styles.workplaceAlias,
-                          selectedWorkplaceId === wp.id && styles.workplaceAliasActive,
-                        ]}
-                        numberOfLines={1}
-                      >
+                      <Text style={[styles.workplaceAlias, selectedWorkplaceId === wp.id && styles.workplaceAliasActive]} numberOfLines={1}>
                         {wp.alias}
                       </Text>
-                      <Text
-                        style={[
-                          styles.workplaceMeta,
-                          selectedWorkplaceId === wp.id && styles.workplaceMetaActive,
-                        ]}
-                      >
+                      <Text style={[styles.workplaceMeta, selectedWorkplaceId === wp.id && styles.workplaceMetaActive]}>
                         S/{wp.budget} · {wp.preferred_transportation}
                       </Text>
                     </View>
@@ -191,111 +164,84 @@ export default function RecommendScreen() {
             )}
           </View>
         ) : (
-          /* ── Guest: Manual Input ───────────────────────────── */
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="search" size={20} color={Colors.primary} />
-                <Text style={styles.sectionTitle}>Ingresa tus datos</Text>
-              </View>
-
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Latitud trabajo</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={guestLat}
-                    onChangeText={setGuestLat}
-                    placeholder="-12.0975"
-                    placeholderTextColor={Colors.textMuted}
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Longitud trabajo</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={guestLon}
-                    onChangeText={setGuestLon}
-                    placeholder="-77.0365"
-                    placeholderTextColor={Colors.textMuted}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-
-              <Text style={styles.inputLabel}>Presupuesto mensual (S/)</Text>
-              <TextInput
-                style={styles.input}
-                value={guestBudget}
-                onChangeText={setGuestBudget}
-                placeholder="1500"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="numeric"
-              />
-
-              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Transporte preferido</Text>
-              <View style={styles.transportRow}>
-                {TRANSPORT_OPTIONS.map((opt) => (
-                  <TouchableOpacity
-                    key={opt}
-                    style={[
-                      styles.transportChip,
-                      guestTransport === opt && styles.transportChipActive,
-                    ]}
-                    onPress={() => setGuestTransport(opt)}
-                  >
-                    <Ionicons
-                      name={TRANSPORT_ICONS[opt] as any}
-                      size={18}
-                      color={guestTransport === opt ? Colors.textOnPrimary : Colors.primary}
-                    />
-                    <Text
-                      style={[
-                        styles.transportText,
-                        guestTransport === opt && styles.transportTextActive,
-                      ]}
-                    >
-                      {opt}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  guestMutation.isPending && styles.submitButtonDisabled,
-                ]}
-                onPress={handleGuestSubmit}
-                disabled={guestMutation.isPending}
-                activeOpacity={0.8}
-              >
-                {guestMutation.isPending ? (
-                  <ActivityIndicator color={Colors.textOnPrimary} />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles" size={18} color={Colors.textOnPrimary} />
-                    <Text style={styles.submitButtonText}>Recomendar con IA</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+          /* ── Guest: stored workplace + generate/update control ── */
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="briefcase" size={20} color={Colors.primary} />
+              <Text style={styles.sectionTitle}>Tu búsqueda</Text>
             </View>
-          </KeyboardAvoidingView>
-        )}
 
-        {/* ── Loading ────────────────────────────────────────── */}
-        {isLoadingResults && (
-          <View style={styles.loadingResults}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>
-              {generateRecs.isPending ? 'XGBoost analizando viviendas...' : 'Cargando recomendaciones...'}
-            </Text>
+            {guestWorkplace ? (
+              <>
+                <View style={styles.guestInfo}>
+                  <View style={styles.guestInfoRow}>
+                    <Ionicons name="location" size={16} color={Colors.primary} />
+                    <Text style={styles.guestInfoText} numberOfLines={2}>
+                      {guestWorkplace.address.split(',').slice(0, 2).join(',')}
+                    </Text>
+                  </View>
+                  <View style={styles.guestInfoRow}>
+                    <Ionicons name="cash-outline" size={16} color={Colors.primary} />
+                    <Text style={styles.guestInfoText}>S/ {guestWorkplace.budget} mensual</Text>
+                  </View>
+                  <View style={styles.guestInfoRow}>
+                    <Ionicons name="bus-outline" size={16} color={Colors.primary} />
+                    <Text style={styles.guestInfoText}>{guestWorkplace.transport}</Text>
+                  </View>
+                  <TouchableOpacity style={styles.editBtn} onPress={() => setShowSetup(true)}>
+                    <Ionicons name="pencil-outline" size={14} color={Colors.primary} />
+                    <Text style={styles.editBtnText}>Cambiar datos</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Generate / Update button */}
+                <TouchableOpacity
+                  style={[styles.generateGuestBtn, guestMutation.isPending && styles.btnDisabled]}
+                  onPress={handleGuestGenerate}
+                  disabled={guestMutation.isPending}
+                  activeOpacity={0.85}
+                >
+                  {guestMutation.isPending ? (
+                    <ActivityIndicator color={Colors.textOnPrimary} />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name={guestRecommendations ? 'refresh' : 'sparkles'}
+                        size={18}
+                        color={Colors.textOnPrimary}
+                      />
+                      <Text style={styles.generateGuestBtnText}>
+                        {guestRecommendations ? 'Actualizar resultados' : 'Generar recomendaciones'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.emptyWorkplaces}>
+                <Ionicons name="search-outline" size={32} color={Colors.textMuted} />
+                <Text style={styles.emptyText}>
+                  Configura tu trabajo y presupuesto para obtener recomendaciones.
+                </Text>
+                <TouchableOpacity style={styles.setupBtn} onPress={() => setShowSetup(true)}>
+                  <Ionicons name="sparkles" size={16} color={Colors.textOnPrimary} />
+                  <Text style={styles.setupBtnText}>Configurar búsqueda</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
 
-        {/* ── Results ──────────────────────────────────────────── */}
-        {results.length > 0 && (
+        {/* ── Loading ─────────────────────────────────────────── */}
+        {isLoadingResults && (
+          <View style={styles.loadingResults}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>XGBoost analizando viviendas...</Text>
+          </View>
+        )}
+
+        {/* ── Results ─────────────────────────────────────────── */}
+        {!isLoadingResults && results.length > 0 && (
           <View style={styles.resultsSection}>
             <View style={styles.resultsHeader}>
               <Ionicons name="trophy" size={20} color={Colors.warning} />
@@ -304,7 +250,6 @@ export default function RecommendScreen() {
               </Text>
             </View>
 
-            {/* Subtle refresh button */}
             {isAuthenticated && selectedWorkplaceId && (
               <TouchableOpacity
                 style={styles.refreshButton}
@@ -319,54 +264,57 @@ export default function RecommendScreen() {
 
             {results.map((item, index) => (
               <View key={item.property.id} style={styles.resultCard}>
-                {/* Rank badge */}
                 <View style={styles.rankBadge}>
                   <Text style={styles.rankText}>#{index + 1}</Text>
                 </View>
-
-                {/* Score bar */}
                 <View style={styles.scoreRow}>
                   <View style={styles.scoreBarBackground}>
                     <View
                       style={[
                         styles.scoreBarFill,
                         { width: `${Math.min(item.match_score, 100)}%` },
-                        item.match_score >= 70
-                          ? styles.scoreHigh
-                          : item.match_score >= 40
-                          ? styles.scoreMedium
-                          : styles.scoreLow,
+                        item.match_score >= 70 ? styles.scoreHigh : item.match_score >= 40 ? styles.scoreMedium : styles.scoreLow,
                       ]}
                     />
                   </View>
                   <Text style={styles.scoreValue}>{item.match_score}%</Text>
                 </View>
-
-                {/* Time chip */}
                 <View style={styles.timeChip}>
                   <Ionicons name="time-outline" size={14} color={Colors.primary} />
                   <Text style={styles.timeText}>~{item.predicted_time_min} min al trabajo</Text>
                 </View>
-
-                {/* Housing card */}
+                {item.time_saved_mins !== null && item.time_saved_mins !== 0 && (
+                  <View style={[styles.timeSavedChip, item.time_saved_mins > 0 ? styles.timeSavedPos : styles.timeSavedNeg]}>
+                    <Ionicons
+                      name={item.time_saved_mins > 0 ? 'trending-down' : 'trending-up'}
+                      size={14}
+                      color={item.time_saved_mins > 0 ? Colors.success : Colors.error}
+                    />
+                    <Text style={[styles.timeSavedText, item.time_saved_mins > 0 ? styles.timeSavedTextPos : styles.timeSavedTextNeg]}>
+                      {item.time_saved_mins > 0
+                        ? `Ahorras ${item.time_saved_mins} min vs viaje actual`
+                        : `${Math.abs(item.time_saved_mins)} min más que tu viaje actual`}
+                    </Text>
+                  </View>
+                )}
                 <HousingCard housing={item.property} onPress={handleHousingPress} />
               </View>
             ))}
           </View>
         )}
 
-        {/* Empty state */}
-        {!isLoadingResults && results.length === 0 && selectedWorkplaceId !== null && !loadingCached && (
+        {/* Empty state for authenticated */}
+        {isAuthenticated && !isLoadingResults && results.length === 0 && selectedWorkplaceId !== null && !loadingCached && (
           <View style={styles.emptyResults}>
             <Ionicons name="search-outline" size={48} color={Colors.textMuted} />
             <Text style={styles.emptyResultsText}>Sin recomendaciones guardadas</Text>
             <TouchableOpacity
-              style={styles.generateButton}
-              onPress={() => selectedWorkplaceId && generateRecs.mutate(selectedWorkplaceId)}
+              style={styles.setupBtn}
+              onPress={() => selectedWorkplaceId && generateRecs.mutate({ workplaceId: selectedWorkplaceId })}
               disabled={generateRecs.isPending}
             >
               <Ionicons name="sparkles" size={16} color={Colors.textOnPrimary} />
-              <Text style={styles.generateButtonText}>Generar recomendaciones</Text>
+              <Text style={styles.setupBtnText}>Generar recomendaciones</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -380,7 +328,6 @@ const styles = StyleSheet.create({
   scrollArea: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
 
-  // Header
   headerCard: {
     backgroundColor: Colors.primary, borderRadius: 20, padding: 24,
     alignItems: 'center', marginBottom: 16,
@@ -395,7 +342,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: '800', color: Colors.textOnPrimary, marginBottom: 6 },
   headerSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 20 },
 
-  // Section cards
   sectionCard: {
     backgroundColor: Colors.surface, borderRadius: 16, padding: 18, marginBottom: 16,
     shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 },
@@ -404,13 +350,11 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
 
-  // Workplace chips
   workplaceList: { gap: 10 },
   workplaceChip: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingVertical: 14, paddingHorizontal: 16, borderRadius: 14,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1.5, borderColor: Colors.border,
+    backgroundColor: Colors.surfaceElevated, borderWidth: 1.5, borderColor: Colors.border,
   },
   workplaceChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   workplaceChipText: { flex: 1 },
@@ -418,41 +362,37 @@ const styles = StyleSheet.create({
   workplaceAliasActive: { color: Colors.textOnPrimary },
   workplaceMeta: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
   workplaceMetaActive: { color: 'rgba(255,255,255,0.7)' },
-  emptyWorkplaces: { alignItems: 'center', paddingVertical: 24, gap: 8 },
-  emptyText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center' },
+  emptyWorkplaces: { alignItems: 'center', paddingVertical: 20, gap: 10 },
+  emptyText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
 
-  // Guest form
-  inputRow: { flexDirection: 'row', gap: 12 },
-  inputGroup: { flex: 1 },
-  inputLabel: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary, marginBottom: 6 },
-  input: {
-    backgroundColor: Colors.surfaceElevated, borderRadius: 12,
-    paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, color: Colors.textPrimary,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 12,
+  guestInfo: { gap: 10, marginBottom: 14 },
+  guestInfoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  guestInfoText: { flex: 1, fontSize: 14, color: Colors.textPrimary, lineHeight: 20 },
+  editBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+    paddingVertical: 8, paddingHorizontal: 14,
+    backgroundColor: Colors.primary + '15', borderRadius: 10,
   },
-  transportRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  transportChip: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 12, borderRadius: 12,
-    backgroundColor: Colors.surfaceElevated, borderWidth: 1.5, borderColor: Colors.border,
-  },
-  transportChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  transportText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
-  transportTextActive: { color: Colors.textOnPrimary },
-  submitButton: {
-    backgroundColor: Colors.primary, borderRadius: 14, paddingVertical: 16,
+  editBtnText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+  generateGuestBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: Colors.primary, borderRadius: 12,
+    paddingVertical: 14, marginTop: 4,
     shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
-  submitButtonDisabled: { opacity: 0.6 },
-  submitButtonText: { fontSize: 16, fontWeight: '700', color: Colors.textOnPrimary },
+  generateGuestBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textOnPrimary },
+  btnDisabled: { opacity: 0.6 },
+  setupBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: Colors.primary, borderRadius: 12,
+    paddingVertical: 12, paddingHorizontal: 20, marginTop: 4,
+  },
+  setupBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textOnPrimary },
 
-  // Loading
   loadingResults: { alignItems: 'center', paddingVertical: 40, gap: 12 },
   loadingText: { fontSize: 14, color: Colors.textSecondary },
 
-  // Results
   resultsSection: { marginTop: 8 },
   resultsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   resultsTitle: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary },
@@ -488,14 +428,16 @@ const styles = StyleSheet.create({
     paddingVertical: 5, paddingHorizontal: 10, borderRadius: 20, marginBottom: 10,
   },
   timeText: { fontSize: 12, fontWeight: '600', color: Colors.primary },
-
-  // Empty results
+  timeSavedChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    alignSelf: 'flex-start', paddingVertical: 5, paddingHorizontal: 10,
+    borderRadius: 20, marginBottom: 10,
+  },
+  timeSavedPos: { backgroundColor: Colors.success + '18' },
+  timeSavedNeg: { backgroundColor: Colors.error + '18' },
+  timeSavedText: { fontSize: 12, fontWeight: '600' },
+  timeSavedTextPos: { color: Colors.success },
+  timeSavedTextNeg: { color: Colors.error },
   emptyResults: { alignItems: 'center', paddingVertical: 40, gap: 12 },
   emptyResultsText: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  generateButton: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8,
-    backgroundColor: Colors.primary, borderRadius: 12,
-    paddingVertical: 12, paddingHorizontal: 20,
-  },
-  generateButtonText: { fontSize: 14, fontWeight: '700', color: Colors.textOnPrimary },
 });

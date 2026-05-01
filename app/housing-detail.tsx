@@ -24,6 +24,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth';
 import { getHousingById } from '@/entities/housing';
+import type { Housing } from '@/shared/types';
 import {
   calculateHaversineDistance,
   formatDistance,
@@ -43,12 +44,17 @@ import { Colors } from '@/shared/config/colors';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HousingDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, data } = useLocalSearchParams<{ id: string; data?: string }>();
   const { user } = useAuth();
   const router = useRouter();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const housing = getHousingById(id);
+  const housing = useMemo(() => {
+    if (data) {
+      try { return JSON.parse(data) as Housing; } catch {}
+    }
+    return getHousingById(id);
+  }, [id, data]);
 
   const routeInfo = useMemo(() => {
     // TODO: Integrar Workplace del backend para calcular distancias

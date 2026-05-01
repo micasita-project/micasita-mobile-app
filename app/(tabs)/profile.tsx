@@ -7,6 +7,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Region } from 'react-native-maps';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/features/auth';
 import { Colors } from '@/shared/config/colors';
 import { Button } from '@/shared/ui/Button';
@@ -25,6 +26,7 @@ const LIMA_REGION: Region = {
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const { data: workplaces = [] } = useWorkplaces(!!user);
   const createWorkplace = useCreateWorkplace();
   const deleteWorkplace = useDeleteWorkplace();
@@ -48,9 +50,45 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <View style={styles.emptyContainer}>
-        <Ionicons name="person-circle-outline" size={64} color={Colors.textMuted} />
-        <Text style={styles.emptyText}>No hay sesión activa</Text>
+      <View style={styles.guestContainer}>
+        <View style={styles.guestCard}>
+          <View style={styles.guestIconBg}>
+            <Ionicons name="person-outline" size={40} color={Colors.primary} />
+          </View>
+          <Text style={styles.guestTitle}>¡Bienvenido a MiCasita!</Text>
+          <Text style={styles.guestSubtitle}>
+            Crea una cuenta o inicia sesión para guardar tus lugares de trabajo, ver tu historial y acceder a recomendaciones personalizadas.
+          </Text>
+          <TouchableOpacity
+            style={styles.loginBtn}
+            onPress={() => router.push('/login')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="log-in-outline" size={20} color={Colors.textOnPrimary} />
+            <Text style={styles.loginBtnText}>Iniciar sesión</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.registerBtn}
+            onPress={() => router.push({ pathname: '/login', params: { tab: 'register' } })}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="person-add-outline" size={20} color={Colors.primary} />
+            <Text style={styles.registerBtnText}>Crear cuenta</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.guestBenefits}>
+          {[
+            { icon: 'bookmark-outline', text: 'Guarda tus lugares de trabajo' },
+            { icon: 'analytics-outline', text: 'Historial de recomendaciones IA' },
+            { icon: 'home-outline', text: 'Configura tu vivienda actual' },
+          ].map((item) => (
+            <View key={item.icon} style={styles.benefitRow}>
+              <Ionicons name={item.icon as any} size={20} color={Colors.primary} />
+              <Text style={styles.benefitText}>{item.text}</Text>
+            </View>
+          ))}
+        </View>
       </View>
     );
   }
@@ -314,8 +352,43 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scrollContent: { padding: 16, paddingBottom: 40 },
-  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background, gap: 12 },
-  emptyText: { fontSize: 16, color: Colors.textMuted },
+
+  // Guest screen
+  guestContainer: { flex: 1, backgroundColor: Colors.background, padding: 20, justifyContent: 'center' },
+  guestCard: {
+    backgroundColor: Colors.surface, borderRadius: 24, padding: 28,
+    alignItems: 'center', marginBottom: 20,
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1, shadowRadius: 16, elevation: 4,
+  },
+  guestIconBg: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: Colors.primary + '15',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  guestTitle: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary, marginBottom: 10, textAlign: 'center' },
+  guestSubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  loginBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: Colors.primary, borderRadius: 14, paddingVertical: 15,
+    width: '100%', marginBottom: 12,
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+  },
+  loginBtnText: { fontSize: 16, fontWeight: '700', color: Colors.textOnPrimary },
+  registerBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: Colors.primary + '12', borderRadius: 14, paddingVertical: 15,
+    width: '100%', borderWidth: 1.5, borderColor: Colors.primary,
+  },
+  registerBtnText: { fontSize: 16, fontWeight: '700', color: Colors.primary },
+  guestBenefits: {
+    backgroundColor: Colors.surface, borderRadius: 16, padding: 20, gap: 14,
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1, shadowRadius: 8, elevation: 2,
+  },
+  benefitRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  benefitText: { fontSize: 14, color: Colors.textPrimary, fontWeight: '500' },
   profileCard: { backgroundColor: Colors.primary, borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 16 },
   avatarContainer: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255, 255, 255, 0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   userName: { fontSize: 22, fontWeight: '800', color: Colors.textOnPrimary },

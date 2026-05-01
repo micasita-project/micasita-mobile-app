@@ -8,6 +8,12 @@ import React, { createContext, useContext, useState, useCallback, useEffect, typ
 import { loginUser, logoutUser, registerUser, getMe, updateHome } from '../api/auth.service';
 import type { AuthUser, UserHomeUpdate } from '../api/auth.service';
 import { getAuthToken } from '@/shared/api';
+import { createWorkplace } from '@/entities/workplace/api/workplace.api';
+
+export interface GuestDataForTransfer {
+  home?: { lat: number; lon: number; address: string };
+  workplace?: { lat: number; lon: number; budget: number; transport: string; address: string };
+}
 
 interface AuthState {
   user: AuthUser | null;
@@ -18,7 +24,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, guestData?: GuestDataForTransfer) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setHome: (data: UserHomeUpdate) => Promise<boolean>;
   refreshUser: () => Promise<void>;
@@ -81,13 +87,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  const register = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const register = useCallback(async (email: string, password: string, guestData?: GuestDataForTransfer): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
       await registerUser({ email, password });
-      // Registro exitoso → login automático
-      const response = await loginUser(email, password);
-      const userProfile = await getMe();
+      await loginUser(email, password);
+      let userProfile = await getMe();
+
+      // Transfer guest data BEFORE setUser so the routing guard sees the workplace already created
+      if (guestData?.home) {
+        try {
+          userProfile = await updateHome({
+            home_lat: guestData.home.lat,
+            home_lon: guestData.home.lon,
+            home_address: guestData.home.address,
+          });
+        } catch {}
+      }
+      if (guestData?.workplace) {
+        try {
+          await createWorkplace({
+            alias: guestData.workplace.address.split(',')[0].trim() || 'Mi Trabajo',
+            work_lat: guestData.workplace.lat,
+            work_lon: guestData.workplace.lon,
+            budget: guestData.workplace.budget,
+            preferred_transportation: guestData.workplace.transport,
+          });
+        } catch {}
+      }
+
       setUser({ ...userProfile });
       setIsLoading(false);
       return { success: true };

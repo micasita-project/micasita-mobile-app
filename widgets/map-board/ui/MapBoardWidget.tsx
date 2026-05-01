@@ -1,7 +1,7 @@
 /**
  * @layer widgets/map-board/ui
- * @description Map board widget that orchestrates housing markers, 
- * routing lines, priority selections, and animations.
+ * @description Map board widget. Supports both authenticated users and guests.
+ * Guests see a setup modal on first visit; data is persisted in AsyncStorage.
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
@@ -13,12 +13,13 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import MapView, { Marker, UrlTile, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { Marker, UrlTile, PROVIDER_DEFAULT, Circle } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 // Features
 import { useAuth } from '@/features/auth';
+import { useGuest, GuestSetupModal } from '@/features/guest';
 import { useRouteCalculation, RouteInfoPanel, TransportModeSelector } from '@/features/route-calculation';
 import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
 import { useLatestRecommendations } from '@/features/recommendation/model/useRecommendations';
@@ -38,17 +39,36 @@ export function MapBoardWidget() {
   const router = useRouter();
   const mapRef = useRef<MapView>(null);
 
+  const isGuest = !user;
+
+  // ── Guest data ─────────────────────────────────────────────────
+  const { guestHome, guestWorkplace, guestRecommendations, isInitialized: guestInitialized } = useGuest();
+  const [showSetup, setShowSetup] = useState(false);
+
+  // Show setup modal once guest data is loaded and incomplete
+  useEffect(() => {
+    if (!isGuest || !guestInitialized) return;
+    if (!guestHome || !guestWorkplace) {
+      setShowSetup(true);
+    }
+  }, [isGuest, guestInitialized, guestHome, guestWorkplace]);
+
+  // ── Authenticated: workplaces + latest recommendations ─────────
   const { data: workplaces = [] } = useWorkplaces(!!user);
   const activeWorkplace = workplaces[0] || null;
 
   const {
-    data: recommendations = [],
-    isLoading: isLoadingRecommendations,
-  } = useLatestRecommendations(activeWorkplace?.id ?? null);
+    data: authRecommendations = [],
+    isLoading: isLoadingAuth,
+  } = useLatestRecommendations(!isGuest ? (activeWorkplace?.id ?? null) : null);
 
+  // ── Guest: read stored recommendations (set from recommend tab) ─
+  const recommendations = isGuest ? (guestRecommendations ?? []) : (authRecommendations ?? []);
+  const isLoadingRecommendations = isGuest ? false : isLoadingAuth;
+
+  // ── Housing selection + routing ────────────────────────────────
   const [selectedHousing, setSelectedHousing] = useState<Housing | null>(null);
 
-  // Features
   const {
     newHomeRoutes,
     selectedMode,
@@ -60,19 +80,22 @@ export function MapBoardWidget() {
     clearRoute,
   } = useRouteCalculation();
 
-  /**
-   * On housing selection: show the card and calculate routes.
-   */
   const handleHousingSelect = useCallback((h: Housing) => {
     setSelectedHousing(h);
-    if (activeWorkplace && user?.home_lat && user?.home_lon) {
+
+    const workLat = isGuest ? guestWorkplace?.lat : activeWorkplace?.work_lat;
+    const workLon = isGuest ? guestWorkplace?.lon : activeWorkplace?.work_lon;
+    const homeLat = isGuest ? guestHome?.lat : user?.home_lat;
+    const homeLon = isGuest ? guestHome?.lon : user?.home_lon;
+
+    if (workLat && workLon && homeLat && homeLon) {
       calculateRoutes(
         { latitude: h.latitude, longitude: h.longitude },
-        { latitude: user.home_lat, longitude: user.home_lon },
-        { latitude: activeWorkplace.work_lat, longitude: activeWorkplace.work_lon }
+        { latitude: homeLat, longitude: homeLon },
+        { latitude: workLat, longitude: workLon }
       );
     }
-  }, [activeWorkplace, user, calculateRoutes]);
+  }, [isGuest, guestWorkplace, guestHome, activeWorkplace, user, calculateRoutes]);
 
   const handleCloseDetail = useCallback(() => {
     setSelectedHousing(null);
@@ -81,14 +104,21 @@ export function MapBoardWidget() {
 
   const handleViewDetail = useCallback(() => {
     if (selectedHousing) {
-      router.push({ pathname: '/housing-detail', params: { id: selectedHousing.id } });
+      router.push({ pathname: '/housing-detail', params: { id: selectedHousing.id, data: JSON.stringify(selectedHousing) } });
     }
   }, [selectedHousing, router]);
 
-  const initialRegion = LIMA_REGION;
+  const workplaceLabel = isGuest
+    ? guestWorkplace?.address.split(',')[0] ?? 'Tu trabajo'
+    : activeWorkplace?.alias ?? '';
+
+  const showWorkplaceOverlay = isGuest ? !!guestWorkplace : !!activeWorkplace;
 
   return (
     <View style={styles.container}>
+      {/* Guest setup modal */}
+      <GuestSetupModal visible={showSetup} onClose={() => setShowSetup(false)} />
+
       {isLoadingRecommendations && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={Colors.primary} />
@@ -100,7 +130,7 @@ export function MapBoardWidget() {
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_DEFAULT}
-        initialRegion={initialRegion}
+        initialRegion={LIMA_REGION}
         mapType="none"
         showsUserLocation={false}
         showsMyLocationButton={false}
@@ -109,8 +139,8 @@ export function MapBoardWidget() {
       >
         <UrlTile urlTemplate={OSM_TILE_URL} maximumZ={19} tileSize={256} />
 
-        {/* Current Home Marker */}
-        {user?.home_lat && user?.home_lon && (
+        {/* Home marker — authenticated */}
+        {!isGuest && user?.home_lat && user?.home_lon && (
           <Marker
             coordinate={{ latitude: user.home_lat, longitude: user.home_lon }}
             title="Mi Casa Actual"
@@ -121,8 +151,20 @@ export function MapBoardWidget() {
           </Marker>
         )}
 
-        {/* Workplace Marker */}
-        {activeWorkplace?.work_lat && activeWorkplace?.work_lon && (
+        {/* Home marker — guest */}
+        {isGuest && guestHome && (
+          <Marker
+            coordinate={{ latitude: guestHome.lat, longitude: guestHome.lon }}
+            title="Mi Casa Actual"
+          >
+            <View style={styles.homeMarker}>
+              <Ionicons name="home" size={20} color={Colors.textOnPrimary} />
+            </View>
+          </Marker>
+        )}
+
+        {/* Workplace marker — authenticated */}
+        {!isGuest && activeWorkplace?.work_lat && activeWorkplace?.work_lon && (
           <Marker
             coordinate={{ latitude: activeWorkplace.work_lat, longitude: activeWorkplace.work_lon }}
             title={activeWorkplace.alias}
@@ -133,7 +175,30 @@ export function MapBoardWidget() {
           </Marker>
         )}
 
-        {/* Housing markers */}
+        {/* Workplace marker — guest */}
+        {isGuest && guestWorkplace && (
+          <Marker
+            coordinate={{ latitude: guestWorkplace.lat, longitude: guestWorkplace.lon }}
+            title="Mi Trabajo"
+          >
+            <View style={styles.workMarker}>
+              <Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} />
+            </View>
+          </Marker>
+        )}
+
+        {/* Radius circle — guest */}
+        {isGuest && guestWorkplace && (
+          <Circle
+            center={{ latitude: guestWorkplace.lat, longitude: guestWorkplace.lon }}
+            radius={(guestWorkplace.maxDistanceKm ?? 10) * 1000}
+            strokeColor={Colors.primary + '70'}
+            fillColor={Colors.primary + '12'}
+            strokeWidth={2}
+          />
+        )}
+
+        {/* Housing recommendation markers */}
         {recommendations.map((rec) => (
           <HousingMarker
             key={rec.property.id}
@@ -152,14 +217,27 @@ export function MapBoardWidget() {
         )}
       </MapView>
 
-      {/* Floating Workplace Info */}
-      {activeWorkplace && (
+      {/* Floating workplace chip */}
+      {showWorkplaceOverlay && (
         <View style={styles.workplaceOverlay}>
           <Ionicons name="location" size={16} color={Colors.primary} />
           <Text style={styles.workplaceText} numberOfLines={1}>
-            Viendo cerca a: <Text style={{ fontWeight: '700' }}>{activeWorkplace.alias}</Text>
+            Viendo cerca a: <Text style={{ fontWeight: '700' }}>{workplaceLabel}</Text>
           </Text>
+          {isGuest && (
+            <TouchableOpacity onPress={() => setShowSetup(true)} hitSlop={8}>
+              <Ionicons name="pencil-outline" size={16} color={Colors.primary} />
+            </TouchableOpacity>
+          )}
         </View>
+      )}
+
+      {/* Guest CTA when no data yet */}
+      {isGuest && guestInitialized && !guestWorkplace && !showSetup && (
+        <TouchableOpacity style={styles.guestCta} onPress={() => setShowSetup(true)} activeOpacity={0.85}>
+          <Ionicons name="sparkles" size={18} color={Colors.textOnPrimary} />
+          <Text style={styles.guestCtaText}>Configura tu búsqueda</Text>
+        </TouchableOpacity>
       )}
 
       {/* Bottom detail panel */}
@@ -169,7 +247,7 @@ export function MapBoardWidget() {
 
           {isCalculating ? (
             <View style={{ alignItems: 'center', paddingVertical: 10 }}>
-               <ActivityIndicator size="small" color={Colors.primary} />
+              <ActivityIndicator size="small" color={Colors.primary} />
             </View>
           ) : newHomeRoutes ? (
             <>
@@ -180,12 +258,12 @@ export function MapBoardWidget() {
                 onModeChange={setSelectedMode}
               />
               {savings && (
-                <RouteInfoPanel savings={savings} workplaceName={activeWorkplace?.alias ?? 'Trabajo'} />
+                <RouteInfoPanel savings={savings} workplaceName={workplaceLabel} />
               )}
             </>
           ) : null}
 
-          <HousingCard housing={selectedHousing} variant="compact" onPress={() => handleViewDetail()} />
+          <HousingCard housing={selectedHousing} variant="compact" onPress={handleViewDetail} />
 
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.detailButton} onPress={handleViewDetail}>
@@ -215,7 +293,7 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontWeight: '600', color: Colors.primary },
   workplaceOverlay: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
+    top: Platform.OS === 'ios' ? 20 : 40,
     left: 20,
     right: 20,
     backgroundColor: Colors.surface,
@@ -232,6 +310,24 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   workplaceText: { flex: 1, fontSize: 13, color: Colors.textPrimary },
+  guestCta: {
+    position: 'absolute',
+    bottom: 40,
+    alignSelf: 'center',
+    backgroundColor: Colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  guestCtaText: { fontSize: 15, fontWeight: '700', color: Colors.textOnPrimary },
   workMarker: {
     backgroundColor: Colors.markerWork, borderRadius: 22,
     width: 38, height: 38, alignItems: 'center', justifyContent: 'center',

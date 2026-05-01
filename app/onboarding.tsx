@@ -159,7 +159,7 @@ export default function OnboardingScreen() {
       });
 
       // 3. Generar primera recomendación con IA
-      await generateRecs.mutateAsync(workplace.id);
+      await generateRecs.mutateAsync({ workplaceId: workplace.id });
 
       // 4. Ir a la app principal
       router.replace('/(tabs)');

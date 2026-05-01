@@ -1,7 +1,7 @@
 /**
  * @layer app (pages)
  * @description Login screen — layout component that composes the LoginForm feature.
- * Strictly adheres to FSD: pages should be thin and compose widgets/features.
+ * Shows a back button when navigated to from within the app (e.g. from Profile).
  */
 
 import React from 'react';
@@ -12,22 +12,44 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LoginForm } from '@/features/auth';
 import { Colors } from '@/shared/config/colors';
 
 export default function LoginScreen() {
+  const router = useRouter();
+  const canGoBack = router.canGoBack();
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
+
+      {/* Back button — only shown when navigated here from another screen */}
+      {canGoBack && (
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          hitSlop={16}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          <Text style={styles.backText}>Volver</Text>
+        </TouchableOpacity>
+      )}
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            canGoBack && styles.scrollContentWithBack,
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
@@ -41,9 +63,7 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          {/* Feature: Login Form */}
           <LoginForm />
-          
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -53,9 +73,30 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.primary },
   flex: { flex: 1 },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    left: 20,
+    zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  backText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
   scrollContent: {
-    flexGrow: 1, justifyContent: 'center',
-    paddingHorizontal: 32, paddingVertical: 60,
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 60,
+  },
+  scrollContentWithBack: {
+    paddingTop: Platform.OS === 'ios' ? 110 : 90,
   },
   header: { alignItems: 'center', marginBottom: 48 },
   logoCircle: {

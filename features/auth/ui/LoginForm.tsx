@@ -17,12 +17,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth/model/AuthContext';
+import { useGuest } from '@/features/guest';
 import { Colors } from '@/shared/config/colors';
 
 type AuthMode = 'login' | 'register';
 
 export function LoginForm() {
   const { login, register, isLoading } = useAuth();
+  const { guestHome, guestWorkplace, clearGuestData } = useGuest();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,13 +46,26 @@ export function LoginForm() {
         Alert.alert('Error', 'Las contraseñas no coinciden.');
         return;
       }
-      const result = await register(email.trim(), password);
-      if (!result.success) {
+      const result = await register(email.trim(), password, {
+        home: guestHome ? { lat: guestHome.lat, lon: guestHome.lon, address: guestHome.address } : undefined,
+        workplace: guestWorkplace ? {
+          lat: guestWorkplace.lat,
+          lon: guestWorkplace.lon,
+          budget: guestWorkplace.budget,
+          transport: guestWorkplace.transport,
+          address: guestWorkplace.address,
+        } : undefined,
+      });
+      if (result.success) {
+        await clearGuestData();
+      } else {
         Alert.alert('Error al registrar', result.error ?? 'Intenta con otro email.');
       }
     } else {
       const success = await login(email.trim(), password);
-      if (!success) {
+      if (success) {
+        await clearGuestData();
+      } else {
         Alert.alert('Error', 'Email o contraseña incorrectos.');
       }
     }

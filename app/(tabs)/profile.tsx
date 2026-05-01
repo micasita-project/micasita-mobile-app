@@ -1,24 +1,50 @@
 /**
  * @layer app (pages)
  * @description User profile page with current home, workplace info and mini-map.
- *
- * FSD Composition:
- * - features/auth → useAuth
- * - shared/ui → Button
- * - shared/config → Colors, OSM_TILE_URL
  */
 
+import React, { useState, useRef, useCallback } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, View, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import MapView, { Region } from 'react-native-maps';
 import { useAuth } from '@/features/auth';
 import { Colors } from '@/shared/config/colors';
-import { OSM_TILE_URL } from '@/shared/config/map';
 import { Button } from '@/shared/ui/Button';
-import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT, UrlTile } from 'react-native-maps';
+import { useWorkplaces, useCreateWorkplace, useDeleteWorkplace } from '@/entities/workplace/model/useWorkplaces';
+import { searchAddress, reverseAddress, type GeocodeSuggestion } from '@/shared/api/geocode.service';
+
+type TransportOption = 'Auto' | 'Bicicleta' | 'Caminando';
+const TRANSPORT_OPTIONS: TransportOption[] = ['Auto', 'Bicicleta', 'Caminando'];
+
+const LIMA_REGION: Region = {
+  latitude: -12.0464,
+  longitude: -77.0428,
+  latitudeDelta: 0.1,
+  longitudeDelta: 0.1,
+};
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const { data: workplaces = [] } = useWorkplaces(!!user);
+  const createWorkplace = useCreateWorkplace();
+  const deleteWorkplace = useDeleteWorkplace();
+
+  // Add Workplace Modal State
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [newBudget, setNewBudget] = useState('');
+  const [newTransport, setNewTransport] = useState<TransportOption>('Auto');
+
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<GeocodeSuggestion | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Map Picker State
+  const [isMapVisible, setIsMapVisible] = useState(false);
+  const [mapRegion, setMapRegion] = useState<Region>(LIMA_REGION);
+  const [isReversing, setIsReversing] = useState(false);
 
   if (!user) {
     return (
@@ -29,7 +55,87 @@ export default function ProfileScreen() {
     );
   }
 
-  const workRegion = { ...user.workplace.coordinates, latitudeDelta: 0.01, longitudeDelta: 0.01 };
+  // ── Search Handlers ────────────────────────────────────────────────────────
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    setSelectedAddress(null);
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    if (text.trim().length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    debounceTimer.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await searchAddress(text);
+        setSuggestions(results);
+      } catch (error) {
+        console.error('Geocode search error:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
+  }, []);
+
+  const handleSelectAddress = useCallback((suggestion: GeocodeSuggestion) => {
+    setSelectedAddress(suggestion);
+    setSearchQuery(suggestion.display_name.split(',')[0].trim()); // Set a shorter alias
+    setSuggestions([]);
+  }, []);
+
+  const handleConfirmMapLocation = async () => {
+    setIsReversing(true);
+    try {
+      const suggestion = await reverseAddress(mapRegion.latitude, mapRegion.longitude);
+      setIsMapVisible(false);
+      handleSelectAddress(suggestion);
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo obtener la dirección de esta ubicación.');
+    } finally {
+      setIsReversing(false);
+    }
+  };
+
+  const handleAddWorkplace = async () => {
+    if (!selectedAddress) {
+      Alert.alert('Dirección faltante', 'Por favor busca o selecciona una dirección en el mapa.');
+      return;
+    }
+
+    const budgetNum = parseFloat(newBudget);
+    if (isNaN(budgetNum) || budgetNum <= 0) {
+      Alert.alert('Datos inválidos', 'Por favor ingresa un presupuesto válido.');
+      return;
+    }
+
+    try {
+      await createWorkplace.mutateAsync({
+        alias: searchQuery.trim() || 'Mi Trabajo',
+        work_lat: selectedAddress.latitude,
+        work_lon: selectedAddress.longitude,
+        budget: budgetNum,
+        preferred_transportation: newTransport,
+      });
+      setIsModalVisible(false);
+      setSearchQuery('');
+      setSelectedAddress(null);
+      setNewBudget('');
+      setNewTransport('Auto');
+      Alert.alert('Éxito', 'Lugar de trabajo agregado');
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo agregar el lugar de trabajo');
+    }
+  };
+
+  const handleDeleteWorkplace = (id: number) => {
+    Alert.alert('Eliminar', '¿Estás seguro que deseas eliminar este lugar de trabajo?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', onPress: () => deleteWorkplace.mutate(id), style: 'destructive' }
+    ]);
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
@@ -38,98 +144,169 @@ export default function ProfileScreen() {
         <View style={styles.avatarContainer}>
           <Ionicons name="person" size={36} color={Colors.textOnPrimary} />
         </View>
-        <Text style={styles.userName}>{user.name} {user.lastName}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
+        <Text style={styles.userName}>{user.email}</Text>
       </View>
 
-      {/* Current Home */}
+      {/* Home Address */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
           <Ionicons name="home" size={20} color={Colors.primary} />
-          <Text style={styles.sectionTitle}>Casa Actual</Text>
+          <Text style={styles.sectionTitle}>Mi Casa</Text>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Dirección</Text>
-          <Text style={styles.infoValue}>{user.currentHome.address}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Distrito</Text>
-          <Text style={styles.infoValue}>{user.currentHome.district}</Text>
-        </View>
+        <Text style={styles.infoValue}>{user.home_address || 'No configurada'}</Text>
       </View>
 
-      {/* Workplace */}
+      {/* Workplaces */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
           <Ionicons name="briefcase" size={20} color={Colors.primary} />
-          <Text style={styles.sectionTitle}>Centro de Trabajo</Text>
+          <Text style={styles.sectionTitle}>Mis Lugares de Trabajo</Text>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Empresa</Text>
-          <Text style={styles.infoValue}>{user.workplace.name}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Dirección</Text>
-          <Text style={styles.infoValue}>{user.workplace.address}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Distrito</Text>
-          <Text style={styles.infoValue}>{user.workplace.district}</Text>
-        </View>
-      </View>
+        
+        {workplaces.map(wp => (
+          <View key={wp.id} style={styles.workplaceRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.wpAlias}>{wp.alias}</Text>
+              <Text style={styles.wpMeta}>S/{wp.budget} • {wp.preferred_transportation}</Text>
+            </View>
+            <TouchableOpacity onPress={() => handleDeleteWorkplace(wp.id)}>
+              <Ionicons name="trash-outline" size={20} color={Colors.error} />
+            </TouchableOpacity>
+          </View>
+        ))}
 
-      {/* Mini-map */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="location" size={20} color={Colors.primary} />
-          <Text style={styles.sectionTitle}>Ubicación del Trabajo</Text>
-        </View>
-        <View style={styles.miniMapContainer}>
-          <MapView
-            style={styles.miniMap}
-            provider={PROVIDER_DEFAULT}
-            region={workRegion}
-            mapType="none"
-            scrollEnabled={false}
-            zoomEnabled={false}
-            rotateEnabled={false}
-            pitchEnabled={false}
-          >
-            <UrlTile urlTemplate={OSM_TILE_URL} maximumZ={19} tileSize={256} />
-            <Marker coordinate={user.workplace.coordinates}>
-              <View style={styles.workMarker}>
-                <Ionicons name="briefcase" size={16} color={Colors.textOnPrimary} />
-              </View>
-            </Marker>
-          </MapView>
-        </View>
-      </View>
-
-      {/* Project info */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="school" size={20} color={Colors.primary} />
-          <Text style={styles.sectionTitle}>Información del Proyecto</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Proyecto</Text>
-          <Text style={styles.infoValue}>MiCasita — Recomendador</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Módulo</Text>
-          <Text style={styles.infoValue}>Optimización de Rutas</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Ciclo</Text>
-          <Text style={styles.infoValue}>9° Ciclo — Ingeniería</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Versión</Text>
-          <Text style={styles.infoValueMono}>v1.0.0 (Prototipo)</Text>
-        </View>
+        <TouchableOpacity style={styles.addButton} onPress={() => setIsModalVisible(true)}>
+          <Ionicons name="add-circle-outline" size={18} color={Colors.primary} />
+          <Text style={styles.addButtonText}>Añadir Workplace</Text>
+        </TouchableOpacity>
       </View>
 
       <Button title="Cerrar Sesión" onPress={logout} variant="outline" style={styles.logoutButton} />
+
+      {/* Add Workplace Modal */}
+      <Modal visible={isModalVisible} animationType="slide" transparent={true}>
+        {isMapVisible ? (
+          <View style={{ flex: 1, backgroundColor: Colors.background }}>
+            <MapView
+              style={{ flex: 1 }}
+              initialRegion={LIMA_REGION}
+              onRegionChangeComplete={setMapRegion}
+            />
+            <View style={styles.mapCenterMarker} pointerEvents="none">
+              <Ionicons name="location" size={40} color={Colors.primary} style={{ marginTop: -20 }} />
+            </View>
+
+            <View style={styles.mapBottomCard}>
+              <Text style={styles.mapInstruction}>
+                Mueve el mapa para ubicar tu lugar de trabajo.
+              </Text>
+              <View style={styles.mapActions}>
+                <TouchableOpacity style={styles.mapCancelBtn} onPress={() => setIsMapVisible(false)}>
+                  <Text style={styles.mapCancelText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.mapConfirmBtn}
+                  onPress={handleConfirmMapLocation}
+                  disabled={isReversing}
+                >
+                  {isReversing ? <ActivityIndicator color="#fff" /> : <Text style={styles.mapConfirmText}>Confirmar</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => {
+              setIsModalVisible(false);
+              setSuggestions([]);
+            }}
+          >
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={{ width: '100%' }}
+            >
+              <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Nuevo Lugar de Trabajo</Text>
+
+                {/* Autocomplete Input with Map Button */}
+                <View style={styles.searchContainer}>
+                  <Ionicons name="search" size={18} color={Colors.textMuted} style={{ marginLeft: 14 }} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Dirección o nombre..."
+                    placeholderTextColor={Colors.textMuted}
+                    value={searchQuery}
+                    onChangeText={handleSearchChange}
+                  />
+                  {isSearching && <ActivityIndicator size="small" color={Colors.primary} style={{ marginRight: 10 }} />}
+                  <TouchableOpacity style={styles.mapIconBtn} onPress={() => setIsMapVisible(true)}>
+                    <Ionicons name="map-outline" size={20} color={Colors.primary} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Selected Address Indicator */}
+                {selectedAddress && (
+                  <View style={styles.selectedBadge}>
+                    <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                    <Text style={styles.selectedBadgeText} numberOfLines={1}>
+                      Ubicación seleccionada
+                    </Text>
+                  </View>
+                )}
+
+                {/* Suggestions List */}
+                {suggestions.length > 0 && !selectedAddress && (
+                  <View style={styles.suggestionsContainer}>
+                    {suggestions.slice(0, 3).map((item, index) => (
+                      <TouchableOpacity
+                        key={`${item.latitude}-${item.longitude}-${index}`}
+                        style={styles.suggestionItem}
+                        onPress={() => handleSelectAddress(item)}
+                      >
+                        <Ionicons name="location-outline" size={16} color={Colors.primary} />
+                        <Text style={styles.suggestionText} numberOfLines={1}>{item.display_name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="Presupuesto Mensual"
+                  placeholderTextColor={Colors.textMuted}
+                  value={newBudget}
+                  onChangeText={setNewBudget}
+                  keyboardType="numeric"
+                />
+
+                <View style={styles.transportRow}>
+                  {TRANSPORT_OPTIONS.map((opt) => (
+                    <TouchableOpacity
+                      key={opt}
+                      style={[styles.transportChip, newTransport === opt && styles.transportChipActive]}
+                      onPress={() => setNewTransport(opt)}
+                    >
+                      <Text style={[styles.transportText, newTransport === opt && styles.transportTextActive]}>{opt}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity style={styles.modalCancel} onPress={() => setIsModalVisible(false)}>
+                    <Text style={styles.modalCancelText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.modalConfirm} onPress={handleAddWorkplace} disabled={createWorkplace.isPending}>
+                    {createWorkplace.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalConfirmText}>Añadir</Text>}
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            </KeyboardAvoidingView>
+          </TouchableOpacity>
+        )}
+      </Modal>
+
     </ScrollView>
   );
 }
@@ -137,48 +314,55 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scrollContent: { padding: 16, paddingBottom: 40 },
-  emptyContainer: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.background, gap: 12,
-  },
+  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background, gap: 12 },
   emptyText: { fontSize: 16, color: Colors.textMuted },
-  profileCard: {
-    backgroundColor: Colors.primary, borderRadius: 20, padding: 24,
-    alignItems: 'center', marginBottom: 16,
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
-  },
-  avatarContainer: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-  },
+  profileCard: { backgroundColor: Colors.primary, borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 16 },
+  avatarContainer: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255, 255, 255, 0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   userName: { fontSize: 22, fontWeight: '800', color: Colors.textOnPrimary },
-  userEmail: { fontSize: 14, color: 'rgba(255, 255, 255, 0.7)', marginTop: 2 },
-  sectionCard: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 18, marginBottom: 16,
-    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1, shadowRadius: 8, elevation: 2,
-  },
+  sectionCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, marginBottom: 16 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  infoRow: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'flex-start', paddingVertical: 8,
-    borderBottomWidth: 1, borderBottomColor: Colors.borderLight,
-  },
-  infoLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600', flex: 1 },
-  infoValue: { fontSize: 13, color: Colors.textPrimary, fontWeight: '500', flex: 2, textAlign: 'right' },
-  infoValueMono: {
-    fontSize: 12, color: Colors.primary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', flex: 2, textAlign: 'right',
-  },
-  miniMapContainer: { borderRadius: 12, overflow: 'hidden', height: 180 },
-  miniMap: { ...StyleSheet.absoluteFillObject },
-  workMarker: {
-    backgroundColor: Colors.markerWork, borderRadius: 20,
-    width: 34, height: 34, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#fff',
-  },
+  infoValue: { fontSize: 14, color: Colors.textPrimary, fontWeight: '500' },
+  workplaceRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  wpAlias: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  wpMeta: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, padding: 12, backgroundColor: Colors.primary + '15', borderRadius: 12 },
+  addButtonText: { color: Colors.primary, fontWeight: '700', fontSize: 14 },
   logoutButton: { marginTop: 8 },
+  
+  // Create Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+  modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 20 },
+  fieldInput: { backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, padding: 14, fontSize: 15, marginBottom: 16 },
+  transportRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
+  transportChip: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border },
+  transportChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  transportText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+  transportTextActive: { color: Colors.textOnPrimary },
+  modalActions: { flexDirection: 'row', gap: 12 },
+  modalCancel: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border },
+  modalCancelText: { color: Colors.textSecondary, fontWeight: '700', fontSize: 15 },
+  modalConfirm: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.primary },
+  modalConfirmText: { color: Colors.textOnPrimary, fontWeight: '700', fontSize: 15 },
+
+  // Search Input inside Modal
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, marginBottom: 16 },
+  searchInput: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, fontSize: 15, color: Colors.textPrimary },
+  mapIconBtn: { padding: 12, borderLeftWidth: 1, borderLeftColor: Colors.border },
+  suggestionsContainer: { backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, marginBottom: 16, marginTop: -10, overflow: 'hidden' },
+  suggestionItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  suggestionText: { flex: 1, fontSize: 13, color: Colors.textPrimary },
+  selectedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.success + '15', padding: 8, borderRadius: 8, marginBottom: 16, marginTop: -10, alignSelf: 'flex-start' },
+  selectedBadgeText: { fontSize: 12, color: Colors.success, fontWeight: '600' },
+
+  // Map Picker Modal
+  mapCenterMarker: { position: 'absolute', top: '50%', left: '50%', marginLeft: -20, marginTop: -20 },
+  mapBottomCard: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: Colors.surface, padding: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
+  mapInstruction: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary, textAlign: 'center', marginBottom: 20 },
+  mapActions: { flexDirection: 'row', gap: 12 },
+  mapCancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border },
+  mapCancelText: { color: Colors.textSecondary, fontWeight: '700', fontSize: 15 },
+  mapConfirmBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.primary },
+  mapConfirmText: { color: Colors.textOnPrimary, fontWeight: '700', fontSize: 15 },
 });

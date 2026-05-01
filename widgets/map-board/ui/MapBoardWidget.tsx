@@ -12,7 +12,6 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
-  Animated,
 } from 'react-native';
 import MapView, { Marker, UrlTile, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,9 +20,11 @@ import { useRouter } from 'expo-router';
 // Features
 import { useAuth } from '@/features/auth';
 import { useRouteCalculation, RouteInfoPanel, TransportModeSelector } from '@/features/route-calculation';
+import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
+import { useLatestRecommendations } from '@/features/recommendation/model/useRecommendations';
 
 // Entities
-import { getAllHousing, HousingMarker, HousingCard } from '@/entities/housing';
+import { HousingMarker, HousingCard } from '@/entities/housing';
 import { RoutePolyline } from '@/entities/route';
 
 // Shared
@@ -37,49 +38,15 @@ export function MapBoardWidget() {
   const router = useRouter();
   const mapRef = useRef<MapView>(null);
 
-  const housing = getAllHousing();
+  const { data: workplaces = [] } = useWorkplaces(!!user);
+  const activeWorkplace = workplaces[0] || null;
+
+  const {
+    data: recommendations = [],
+    isLoading: isLoadingRecommendations,
+  } = useLatestRecommendations(activeWorkplace?.id ?? null);
+
   const [selectedHousing, setSelectedHousing] = useState<Housing | null>(null);
-
-  // Recommending animation state
-  const [priorityMode, setPriorityMode] = useState<TransportMode | null>(null);
-  const [isRecommending, setIsRecommending] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (isRecommending) {
-      fadeAnim.setValue(1);
-      const timer = setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }).start(() => setIsRecommending(false));
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [isRecommending, fadeAnim]);
-
-  // Find the housing closest to the active workplace (straight-line distance)
-  const closestHousingId = React.useMemo(() => {
-    if (!user?.workplace.coordinates || housing.length === 0) return null;
-    
-    let minDistance = Infinity;
-    let closestId: string | null = null;
-    
-    const { latitude: lat1, longitude: lon1 } = user.workplace.coordinates;
-    
-    for (const h of housing) {
-      // Use flat latitude/longitude from new schema
-      const lat2 = h.latitude;
-      const lon2 = h.longitude;
-      const distance = Math.pow(lat2 - lat1, 2) + Math.pow(lon2 - lon1, 2);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestId = h.id;
-      }
-    }
-    return closestId;
-  }, [user?.workplace.coordinates, housing]);
 
   // Features
   const {
@@ -93,30 +60,19 @@ export function MapBoardWidget() {
     clearRoute,
   } = useRouteCalculation();
 
-  const handlePrioritySelect = useCallback((mode: TransportMode) => {
-    setPriorityMode(mode);
-    setSelectedMode(mode);
-    setIsRecommending(true);
-  }, [setSelectedMode]);
-
   /**
-   * On housing selection: auto-calculate route and show savings.
+   * On housing selection: show the card and calculate routes.
    */
   const handleHousingSelect = useCallback((h: Housing) => {
     setSelectedHousing(h);
-    const housingCoord = { latitude: h.latitude, longitude: h.longitude };
-    if (user?.workplace.coordinates && user?.currentHome.coordinates) {
+    if (activeWorkplace && user?.home_lat && user?.home_lon) {
       calculateRoutes(
-        housingCoord,
-        user.currentHome.coordinates,
-        user.workplace.coordinates
-      );
-      mapRef.current?.fitToCoordinates(
-        [housingCoord, user.workplace.coordinates],
-        { edgePadding: { top: 100, right: 50, bottom: 450, left: 50 }, animated: true }
+        { latitude: h.latitude, longitude: h.longitude },
+        { latitude: user.home_lat, longitude: user.home_lon },
+        { latitude: activeWorkplace.work_lat, longitude: activeWorkplace.work_lon }
       );
     }
-  }, [user, calculateRoutes]);
+  }, [activeWorkplace, user, calculateRoutes]);
 
   const handleCloseDetail = useCallback(() => {
     setSelectedHousing(null);
@@ -129,13 +85,17 @@ export function MapBoardWidget() {
     }
   }, [selectedHousing, router]);
 
-  // Center map around workplace area
-  const initialRegion = user?.workplace.coordinates
-    ? { ...user.workplace.coordinates, latitudeDelta: 0.08, longitudeDelta: 0.08 }
-    : LIMA_REGION;
+  const initialRegion = LIMA_REGION;
 
   return (
     <View style={styles.container}>
+      {isLoadingRecommendations && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Cargando recomendaciones...</Text>
+        </View>
+      )}
+
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -149,43 +109,58 @@ export function MapBoardWidget() {
       >
         <UrlTile urlTemplate={OSM_TILE_URL} maximumZ={19} tileSize={256} />
 
+        {/* Current Home Marker */}
+        {user?.home_lat && user?.home_lon && (
+          <Marker
+            coordinate={{ latitude: user.home_lat, longitude: user.home_lon }}
+            title="Mi Casa Actual"
+          >
+            <View style={styles.homeMarker}>
+              <Ionicons name="home" size={20} color={Colors.textOnPrimary} />
+            </View>
+          </Marker>
+        )}
+
+        {/* Workplace Marker */}
+        {activeWorkplace?.work_lat && activeWorkplace?.work_lon && (
+          <Marker
+            coordinate={{ latitude: activeWorkplace.work_lat, longitude: activeWorkplace.work_lon }}
+            title={activeWorkplace.alias}
+          >
+            <View style={styles.workMarker}>
+              <Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} />
+            </View>
+          </Marker>
+        )}
+
         {/* Housing markers */}
-        {housing.map((h) => (
+        {recommendations.map((rec) => (
           <HousingMarker
-            key={h.id}
-            housing={h}
+            key={rec.property.id}
+            housing={rec.property}
             onPress={handleHousingSelect}
-            isSelected={selectedHousing?.id === h.id}
-            priorityRecommendedMode={h.id === closestHousingId ? (priorityMode || undefined) : undefined}
+            isSelected={selectedHousing?.id === rec.property.id}
           />
         ))}
 
-        {/* Workplace marker */}
-        {user?.workplace.coordinates && (
-          <Marker coordinate={user.workplace.coordinates} title={user.workplace.name}>
-            <View style={styles.workMarker}>
-              <Ionicons name="briefcase" size={18} color={Colors.textOnPrimary} />
-            </View>
-          </Marker>
-        )}
-
-        {/* Current home marker */}
-        {user?.currentHome.coordinates && (
-          <Marker coordinate={user.currentHome.coordinates} title="Tu casa actual">
-            <View style={styles.homeMarker}>
-              <Ionicons name="home" size={18} color={Colors.textOnPrimary} />
-            </View>
-          </Marker>
-        )}
-
         {/* Route polyline */}
-        {newHomeRoutes && (
+        {newHomeRoutes && selectedMode && (
           <RoutePolyline
             coordinates={newHomeRoutes[selectedMode].waypoints}
             color={TRANSPORT_MODE_COLORS[selectedMode]}
           />
         )}
       </MapView>
+
+      {/* Floating Workplace Info */}
+      {activeWorkplace && (
+        <View style={styles.workplaceOverlay}>
+          <Ionicons name="location" size={16} color={Colors.primary} />
+          <Text style={styles.workplaceText} numberOfLines={1}>
+            Viendo cerca a: <Text style={{ fontWeight: '700' }}>{activeWorkplace.alias}</Text>
+          </Text>
+        </View>
+      )}
 
       {/* Bottom detail panel */}
       {selectedHousing && (
@@ -203,10 +178,9 @@ export function MapBoardWidget() {
                 selectedMode={selectedMode}
                 optimalMode={optimalMode}
                 onModeChange={setSelectedMode}
-                priorityMode={priorityMode || undefined}
               />
               {savings && (
-                <RouteInfoPanel savings={savings} workplaceName={user?.workplace.district} />
+                <RouteInfoPanel savings={savings} workplaceName={activeWorkplace?.alias ?? 'Trabajo'} />
               )}
             </>
           ) : null}
@@ -224,65 +198,6 @@ export function MapBoardWidget() {
           </View>
         </View>
       )}
-
-      {/* Priority Selection Modal */}
-      {!priorityMode && (
-        <View style={styles.priorityOverlay}>
-          <View style={styles.priorityCard}>
-            <Text style={styles.priorityTitle}>¿Cómo prefieres movilizarte?</Text>
-            <Text style={styles.prioritySubtitle}>
-              Usaremos esta prioridad para recomendarte la mejor vivienda.
-            </Text>
-            
-            <View style={styles.priorityOptions}>
-              <TouchableOpacity
-                style={[styles.priorityButton, { borderColor: TRANSPORT_MODE_COLORS.driving }]}
-                onPress={() => handlePrioritySelect('driving')}
-              >
-                <Ionicons name="car-outline" size={24} color={TRANSPORT_MODE_COLORS.driving} />
-                <Text style={[styles.priorityButtonText, { color: TRANSPORT_MODE_COLORS.driving }]}>Auto</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.priorityButton, { borderColor: TRANSPORT_MODE_COLORS.cycling }]}
-                onPress={() => handlePrioritySelect('cycling')}
-              >
-                <Ionicons name="bicycle-outline" size={24} color={TRANSPORT_MODE_COLORS.cycling} />
-                <Text style={[styles.priorityButtonText, { color: TRANSPORT_MODE_COLORS.cycling }]}>Bici</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.priorityButton, { borderColor: TRANSPORT_MODE_COLORS.walking }]}
-                onPress={() => handlePrioritySelect('walking')}
-              >
-                <Ionicons name="walk-outline" size={24} color={TRANSPORT_MODE_COLORS.walking} />
-                <Text style={[styles.priorityButtonText, { color: TRANSPORT_MODE_COLORS.walking }]}>A pie</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Recommending Overlay */}
-      {isRecommending && priorityMode && (
-        <Animated.View style={[styles.recommendingOverlay, { opacity: fadeAnim }]}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.recommendingText}>Analizando tu perfil...</Text>
-          <Text style={styles.recommendingSubText}>
-            Encontrando las mejores viviendas cerca a tu trabajo
-          </Text>
-        </Animated.View>
-      )}
-
-      {/* Config Button to re-filter */}
-      {priorityMode && !isRecommending && (
-        <TouchableOpacity
-          style={styles.configButton}
-          onPress={() => setPriorityMode(null)}
-        >
-          <Ionicons name="options-outline" size={24} color={Colors.primary} />
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -290,6 +205,33 @@ export function MapBoardWidget() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { ...StyleSheet.absoluteFillObject },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    zIndex: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: { marginTop: 12, fontWeight: '600', color: Colors.primary },
+  workplaceOverlay: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    left: 20,
+    right: 20,
+    backgroundColor: Colors.surface,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: Colors.shadowDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  workplaceText: { flex: 1, fontSize: 13, color: Colors.textPrimary },
   workMarker: {
     backgroundColor: Colors.markerWork, borderRadius: 22,
     width: 38, height: 38, alignItems: 'center', justifyContent: 'center',
@@ -327,94 +269,5 @@ const styles = StyleSheet.create({
     borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: Colors.border,
-  },
-  recommendingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,
-  },
-  recommendingText: {
-    marginTop: 20,
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  recommendingSubText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: 30,
-  },
-  priorityOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  priorityCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 24,
-    width: '85%',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  priorityTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  prioritySubtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  priorityOptions: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-    justifyContent: 'space-between',
-  },
-  priorityButton: {
-    flex: 1,
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: Colors.surfaceElevated,
-  },
-  priorityButtonText: {
-    marginTop: 6,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  configButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    right: 20,
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.shadowDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 8,
-    zIndex: 900,
   },
 });

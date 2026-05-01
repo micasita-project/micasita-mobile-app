@@ -1,22 +1,26 @@
 /**
  * @layer app (pages)
  * @description Root Layout.
- * Uses useEffect + router.replace with mount guard for auth navigation.
+ * Guards: login → onboarding (if no workplaces) → main app.
  */
 
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider, useAuth } from '@/features/auth';
+import { queryClient } from '@/shared/api';
 import { Colors } from '@/shared/config/colors';
+import { apiClient } from '@/shared/api';
 
 function useProtectedRoute() {
   const { isAuthenticated, isInitialized } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const [hasNavigated, setHasNavigated] = useState(false);
+  const [checkingWorkplaces, setCheckingWorkplaces] = useState(false);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -28,11 +32,30 @@ function useProtectedRoute() {
     }
 
     const inLoginPage = segments[0] === 'login';
+    const inOnboarding = segments[0] === 'onboarding';
 
     if (!isAuthenticated && !inLoginPage) {
       router.replace('/login');
     } else if (isAuthenticated && inLoginPage) {
-      router.replace('/(tabs)');
+      // Check if user has workplaces before sending to main app
+      setCheckingWorkplaces(true);
+      apiClient
+        .get('/workplaces/')
+        .then((response) => {
+          const workplaces = response.data;
+          if (!workplaces || workplaces.length === 0) {
+            router.replace('/onboarding');
+          } else {
+            router.replace('/(tabs)');
+          }
+        })
+        .catch(() => {
+          // If the request fails, send to tabs anyway
+          router.replace('/(tabs)');
+        })
+        .finally(() => setCheckingWorkplaces(false));
+    } else if (isAuthenticated && inOnboarding) {
+      // Allow staying in onboarding
     }
   }, [isAuthenticated, isInitialized, hasNavigated, segments, router]);
 }
@@ -46,6 +69,7 @@ function RootNavigator() {
       initialRouteName="login"
     >
       <Stack.Screen name="login" />
+      <Stack.Screen name="onboarding" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen
         name="housing-detail"
@@ -82,9 +106,11 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-      <StatusBar style="dark" />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <RootNavigator />
+        <StatusBar style="dark" />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

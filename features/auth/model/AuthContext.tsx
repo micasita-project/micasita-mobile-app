@@ -1,15 +1,30 @@
 /**
  * @layer features/auth/model
  * @description Contexto de Autenticación con React Context API.
- * Provee estado global de sesión a toda la aplicación.
+ * Conectado al backend real (FastAPI + JWT).
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { AuthContextType, User } from '@/shared/types';
-import { authenticateUser } from '../api/auth.service';
+import { loginUser, logoutUser, registerUser, getMe, updateHome } from '../api/auth.service';
+import type { AuthUser, UserHomeUpdate } from '../api/auth.service';
+import { getAuthToken } from '@/shared/api';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthState {
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isInitialized: boolean;
+}
+
+interface AuthContextValue extends AuthState {
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  setHome: (data: UserHomeUpdate) => Promise<boolean>;
+  refreshUser: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -20,62 +35,99 @@ interface AuthProviderProps {
  * el estado de autenticación a todos los componentes hijos.
  */
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Al montar, verificar si hay un token guardado (sesión persistida)
   useEffect(() => {
-    const loadUser = async () => {
+    const restoreSession = async () => {
       try {
-        const storedUser = await AsyncStorage.getItem('@micasita_user');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        const token = await getAuthToken();
+        if (token) {
+          const userProfile = await getMe();
+          setUser({ ...userProfile });
         }
       } catch (error) {
-        console.error('Failed to load user session', error);
+        console.error('Failed to restore session', error);
       } finally {
         setIsInitialized(true);
       }
     };
-    loadUser();
+    restoreSession();
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const userProfile = await getMe();
+      setUser({ ...userProfile });
+    } catch (error) {
+      console.error('Failed to refresh user', error);
+    }
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    // Simular latencia de red
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const authenticatedUser = authenticateUser(email, password);
-    if (authenticatedUser) {
-      setUser(authenticatedUser);
-      try {
-        await AsyncStorage.setItem('@micasita_user', JSON.stringify(authenticatedUser));
-      } catch (e) {
-        console.error('Failed to save user', e);
-      }
+    try {
+      const response = await loginUser(email, password);
+      const userProfile = await getMe();
+      setUser({ ...userProfile });
       setIsLoading(false);
       return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      setIsLoading(false);
+      return false;
     }
-    setIsLoading(false);
-    return false;
+  }, []);
+
+  const register = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    setIsLoading(true);
+    try {
+      await registerUser({ email, password });
+      // Registro exitoso → login automático
+      const response = await loginUser(email, password);
+      const userProfile = await getMe();
+      setUser({ ...userProfile });
+      setIsLoading(false);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Register failed:', error);
+      setIsLoading(false);
+      const message = error?.response?.data?.detail ?? 'Error al registrar';
+      return { success: false, error: message };
+    }
   }, []);
 
   const logout = useCallback(async () => {
     setUser(null);
+    await logoutUser();
+  }, []);
+
+  const setHome = useCallback(async (data: UserHomeUpdate): Promise<boolean> => {
+    setIsLoading(true);
     try {
-      await AsyncStorage.removeItem('@micasita_user');
-    } catch (e) {
-      console.error('Failed to remove user', e);
+      const updatedUser = await updateHome(data);
+      setUser({ ...updatedUser });
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Failed to update home:', error);
+      setIsLoading(false);
+      return false;
     }
   }, []);
 
-  const value: AuthContextType = {
+  const value: AuthContextValue = {
     user,
     isAuthenticated: user !== null,
     isLoading,
     isInitialized,
     login,
+    register,
     logout,
+    setHome,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -85,10 +137,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
  * Hook para acceder al contexto de autenticación.
  * @throws Error si se usa fuera del AuthProvider
  */
-export function useAuth(): AuthContextType {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
   return context;
 }
+

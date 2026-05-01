@@ -16,17 +16,22 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { HousingCard, getAllHousing, getAvailableDistricts } from '@/entities/housing';
+import { HousingCard } from '@/entities/housing';
+import { useProperties } from '@/entities/housing/model/useProperties';
 import { Colors } from '@/shared/config/colors';
 import type { Housing } from '@/shared/types';
 
 export default function HousingScreen() {
   const router = useRouter();
-  const allHousing = getAllHousing();
-  const districts = getAvailableDistricts();
+  const { data: allHousing = [], isLoading } = useProperties();
+  const districts = useMemo(() => {
+    const set = new Set(allHousing.map((h) => h.district));
+    return Array.from(set).sort();
+  }, [allHousing]);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
 
   const filteredHousing = useMemo(() => {

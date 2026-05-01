@@ -51,34 +51,10 @@ export default function HousingDetailScreen() {
   const housing = getHousingById(id);
 
   const routeInfo = useMemo(() => {
-    if (!housing || !user?.workplace.coordinates || !user?.currentHome.coordinates) return null;
-
-    const housingCoord = { latitude: housing.latitude, longitude: housing.longitude };
-
-    // New home → work
-    const newDistanceKm = calculateHaversineDistance(housingCoord, user.workplace.coordinates);
-    const newTimeMinutes = estimateTravelTime(newDistanceKm);
-
-    // Current home → work
-    const currentDistanceKm = calculateHaversineDistance(user.currentHome.coordinates, user.workplace.coordinates);
-    const currentTimeMinutes = estimateTravelTime(currentDistanceKm);
-
-    const savedMinutes = currentTimeMinutes - newTimeMinutes;
-    const savedKm = currentDistanceKm - newDistanceKm;
-    const savingsPercentage = Math.round((savedMinutes / currentTimeMinutes) * 100);
-
-    return {
-      newDistanceKm: Math.round(newDistanceKm * 100) / 100,
-      newTimeMinutes,
-      currentTimeMinutes,
-      savedMinutes,
-      savedKm: Math.round(savedKm * 100) / 100,
-      savingsPercentage,
-      formattedNewDistance: formatDistance(newDistanceKm),
-      formattedNewTime: formatTravelTime(newTimeMinutes),
-      formattedCurrentTime: formatTravelTime(currentTimeMinutes),
-    };
-  }, [housing, user]);
+    // TODO: Integrar Workplace del backend para calcular distancias
+    if (!housing) return null;
+    return null;
+  }, [housing]);
 
   if (!housing) {
     return (
@@ -227,41 +203,7 @@ export default function HousingDetailScreen() {
         </View>
       )}
 
-      {/* ── Route savings comparison ─────────────────────── */}
-      {routeInfo && (
-        <View style={styles.routeCard}>
-          <Text style={styles.sectionTitle}>Distancia al Trabajo</Text>
-          <View style={styles.routeDetails}>
-            <View style={styles.routeDetailItem}>
-              <Ionicons name="navigate-outline" size={18} color={Colors.primary} />
-              <Text style={styles.routeDetailLabel}>Desde esta casa</Text>
-              <Text style={styles.routeDetailValue}>{routeInfo.formattedNewDistance} · {routeInfo.formattedNewTime}</Text>
-            </View>
-            <View style={styles.routeDetailItem}>
-              <Ionicons name="home-outline" size={18} color={Colors.textMuted} />
-              <Text style={styles.routeDetailLabel}>Desde tu casa actual</Text>
-              <Text style={[styles.routeDetailValue, { color: Colors.textMuted }]}>{routeInfo.formattedCurrentTime}</Text>
-            </View>
-            <View style={styles.routeDetailItem}>
-              <Ionicons name="briefcase-outline" size={18} color={Colors.textSecondary} />
-              <Text style={styles.routeDetailLabel}>Destino</Text>
-              <Text style={styles.routeDetailValue}>{user?.workplace.district}</Text>
-            </View>
-          </View>
-
-          <View style={[styles.savingsBadge, routeInfo.savedMinutes > 0 ? styles.savingPositive : styles.savingNegative]}>
-            <Ionicons
-              name={routeInfo.savedMinutes > 0 ? 'trending-down' : 'trending-up'}
-              size={18}
-              color={routeInfo.savedMinutes > 0 ? '#27ae60' : '#e67e22'}
-            />
-            <Text style={[styles.savingsText, routeInfo.savedMinutes > 0 ? styles.savingsTextPos : styles.savingsTextNeg]}>
-              {Math.abs(routeInfo.savedMinutes)} min {routeInfo.savedMinutes > 0 ? 'menos' : 'más'} vs tu casa actual
-              {routeInfo.savedMinutes > 0 ? ` (${routeInfo.savingsPercentage}% ahorro)` : ''}
-            </Text>
-          </View>
-        </View>
-      )}
+      {/* Route savings — se habilitará con la integración de Workplaces */}
 
       <Button title="Ver en el Mapa" onPress={handleViewOnMap} size="large" style={styles.mapButton} />
     </ScrollView>

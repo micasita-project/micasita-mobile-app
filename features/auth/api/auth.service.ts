@@ -1,32 +1,92 @@
 /**
  * @layer features/auth/api
- * @description Servicio de autenticación mock.
- * Valida credenciales contra datos de la entidad User.
+ * @description Servicio de autenticación conectado al backend real (FastAPI).
+ * Maneja registro, login y persistencia del token JWT.
  */
 
-import type { User } from '@/shared/types';
-import { getAllUsers } from '@/entities/user';
-import { ENV } from '@/shared/config/env';
+import { apiClient, saveAuthToken, removeAuthToken } from '@/shared/api';
+
+// ── Types ───────────────────────────────────────────────────────
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  id: number;
+  email: string;
+  role: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface UserHomeUpdate {
+  home_lat: number;
+  home_lon: number;
+  home_address: string;
+}
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  role: string;
+  home_lat: number | null;
+  home_lon: number | null;
+  home_address: string | null;
+}
+
+// ── API Calls ───────────────────────────────────────────────────
 
 /**
- * Autentica un usuario con email y contraseña.
- * @returns Usuario autenticado o null si credenciales inválidas
+ * Registra un nuevo usuario en el backend.
  */
-export function authenticateUser(
-  email: string,
-  password: string
-): User | null {
-  const users = getAllUsers();
-  const envEmail = ENV.DEMO_EMAIL;
-  const envPassword = ENV.DEMO_PASSWORD;
+export async function registerUser(data: RegisterRequest): Promise<RegisterResponse> {
+  const response = await apiClient.post<RegisterResponse>('/auth/register', data);
+  return response.data;
+}
 
-  // Override to always let the env credentials log in as the first user (the demo profile)
-  if (email.toLowerCase() === envEmail.toLowerCase() && password === envPassword) {
-    if (users.length > 0) return users[0];
-  }
+/**
+ * Inicia sesión y persiste el JWT en AsyncStorage.
+ * IMPORTANTE: El backend usa OAuth2 form-data, no JSON.
+ */
+export async function loginUser(email: string, password: string): Promise<LoginResponse> {
+  const formData = new URLSearchParams();
+  formData.append('username', email);
+  formData.append('password', password);
 
-  const user = users.find(
-    (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-  );
-  return user ?? null;
+  const response = await apiClient.post<LoginResponse>('/auth/login', formData.toString(), {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+
+  // Guardamos el token automáticamente para que el interceptor lo inyecte
+  await saveAuthToken(response.data.access_token);
+
+  return response.data;
+}
+
+/**
+ * Cierra sesión eliminando el token persistido.
+ */
+export async function logoutUser(): Promise<void> {
+  await removeAuthToken();
+}
+
+/**
+ * Obtiene el perfil del usuario logueado.
+ */
+export async function getMe(): Promise<AuthUser> {
+  const response = await apiClient.get<AuthUser>('/auth/me');
+  return response.data;
+}
+
+/**
+ * Actualiza la ubicación de la casa del usuario.
+ */
+export async function updateHome(data: UserHomeUpdate): Promise<AuthUser> {
+  const response = await apiClient.put<AuthUser>('/auth/me/home', data);
+  return response.data;
 }

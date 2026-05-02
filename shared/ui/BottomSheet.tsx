@@ -20,6 +20,7 @@ import React, {
 import {
   Animated,
   Dimensions,
+  KeyboardAvoidingView,
   Modal,
   PanResponder,
   Platform,
@@ -160,23 +161,29 @@ export function BottomSheet({ visible, onClose, children, maxHeightRatio = 0.92 
       </Animated.View>
 
       {/* ── Sheet (independent slide) ── */}
-      <Animated.View
-        style={[
-          styles.sheet,
-          {
-            maxHeight: maxSheetHeight,
-            paddingBottom: insets.bottom,
-            transform: [{ translateY: sheetTranslateY }],
-          },
-        ]}
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        pointerEvents="box-none"
       >
-        {/* Drag handle — the only area that triggers the pan responder */}
-        <View {...panResponder.panHandlers} style={styles.handleArea}>
-          <View style={styles.handle} />
-        </View>
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              maxHeight: maxSheetHeight,
+              paddingBottom: insets.bottom,
+              transform: [{ translateY: sheetTranslateY }],
+            },
+          ]}
+        >
+          {/* Drag handle — the only area that triggers the pan responder */}
+          <View {...panResponder.panHandlers} style={styles.handleArea}>
+            <View style={styles.handle} />
+          </View>
 
-        {children}
-      </Animated.View>
+          {children}
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -186,11 +193,11 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
+  keyboardContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: Colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

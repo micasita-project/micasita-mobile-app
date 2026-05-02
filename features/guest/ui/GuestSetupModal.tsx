@@ -18,6 +18,7 @@ import {
   Alert,
   Modal,
   Animated,
+  PanResponder,
   LayoutChangeEvent,
 } from 'react-native';
 import MapView, { Region } from 'react-native-maps';
@@ -52,45 +53,39 @@ interface Props {
 }
 
 // ── Radius Slider ─────────────────────────────────────────────────
-function RadiusSlider({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  const [trackWidth, setTrackWidth] = useState(0);
+function RadiusSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const thumbAnim = useRef(new Animated.Value(0)).current;
+  const trackWidthRef = useRef(0);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
   const ratio = (value - KM_MIN) / (KM_MAX - KM_MIN);
-
   useEffect(() => {
-    if (trackWidth > 0) thumbAnim.setValue(ratio * trackWidth);
-  }, [ratio, trackWidth]);
+    if (trackWidthRef.current > 0) thumbAnim.setValue(ratio * trackWidthRef.current);
+  }, [ratio, thumbAnim]);
 
-  const handleTrackPress = useCallback(
-    (e: any) => {
-      if (trackWidth <= 0) return;
-      const x = Math.max(0, Math.min(e.nativeEvent.locationX, trackWidth));
-      const newRatio = x / trackWidth;
-      const newVal = Math.round(KM_MIN + newRatio * (KM_MAX - KM_MIN));
-      thumbAnim.setValue(x);
-      onChange(newVal);
-    },
-    [trackWidth, onChange, thumbAnim]
-  );
+  const applyX = useCallback((x: number) => {
+    const w = trackWidthRef.current;
+    if (w <= 0) return;
+    const clamped = Math.max(0, Math.min(x, w));
+    thumbAnim.setValue(clamped);
+    onChangeRef.current(Math.round(KM_MIN + (clamped / w) * (KM_MAX - KM_MIN)));
+  }, [thumbAnim]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => applyX(e.nativeEvent.locationX),
+      onPanResponderMove: (e) => applyX(e.nativeEvent.locationX),
+    })
+  ).current;
 
   const handleLayout = (e: LayoutChangeEvent) => {
     const w = e.nativeEvent.layout.width;
-    setTrackWidth(w);
+    trackWidthRef.current = w;
     thumbAnim.setValue(ratio * w);
   };
-
-  const thumbX = thumbAnim.interpolate({
-    inputRange: [0, Math.max(trackWidth, 1)],
-    outputRange: [0, Math.max(trackWidth, 1)],
-    extrapolate: 'clamp',
-  });
 
   return (
     <View style={sliderStyles.container}>
@@ -98,21 +93,16 @@ function RadiusSlider({
         <Text style={sliderStyles.label}>Radio de búsqueda</Text>
         <Text style={sliderStyles.value}>{value} km</Text>
       </View>
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={handleTrackPress}
+      <View
+        {...panResponder.panHandlers}
         style={sliderStyles.trackWrapper}
         onLayout={handleLayout}
       >
         <View style={sliderStyles.track}>
-          <Animated.View
-            style={[sliderStyles.fill, { width: thumbAnim }]}
-          />
-          <Animated.View
-            style={[sliderStyles.thumb, { transform: [{ translateX: thumbX }] }]}
-          />
+          <Animated.View style={[sliderStyles.fill, { width: thumbAnim }]} />
+          <Animated.View style={[sliderStyles.thumb, { transform: [{ translateX: thumbAnim }] }]} />
         </View>
-      </TouchableOpacity>
+      </View>
       <View style={sliderStyles.rangeRow}>
         <Text style={sliderStyles.rangeLabel}>{KM_MIN} km</Text>
         <Text style={sliderStyles.rangeLabel}>{KM_MAX} km</Text>

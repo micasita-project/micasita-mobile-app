@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth/model/AuthContext';
@@ -53,13 +52,16 @@ export function LoginForm() {
         password,
         {
           home: guestHome ? { lat: guestHome.lat, lon: guestHome.lon, address: guestHome.address } : undefined,
-          workplace: guestWorkplace ? {
-            lat: guestWorkplace.lat,
-            lon: guestWorkplace.lon,
-            budget: guestWorkplace.budget,
-            transport: guestWorkplace.transport,
-            address: guestWorkplace.address,
-          } : undefined,
+              workplace: guestWorkplace
+                ? {
+                    lat: guestWorkplace.lat,
+                    lon: guestWorkplace.lon,
+                    budget: guestWorkplace.budget,
+                    transport: guestWorkplace.transport,
+                    address: guestWorkplace.address,
+                    maxDistanceKm: guestWorkplace.maxDistanceKm,
+                  }
+                : undefined,
         },
         name.trim() || undefined,
         lastName.trim() || undefined,

@@ -13,7 +13,7 @@ import { createPreference } from '@/entities/recommendation-preferences';
 
 export interface GuestDataForTransfer {
   home?: { lat: number; lon: number; address: string };
-  workplace?: { lat: number; lon: number; budget: number; transport: string; address: string };
+  workplace?: { lat: number; lon: number; budget: number; transport: string; address: string; maxDistanceKm?: number };
 }
 
 interface AuthState {
@@ -116,6 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             workplace_id: wp.id,
             budget: guestData.workplace.budget,
             preferred_transportation: guestData.workplace.transport,
+            max_distance_km: guestData.workplace.maxDistanceKm,
           });
         } catch {}
       }

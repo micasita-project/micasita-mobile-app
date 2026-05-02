@@ -6,12 +6,14 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
+  Animated,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Platform,
   ActivityIndicator,
+  PanResponder,
 } from 'react-native';
 import MapView, { Marker, UrlTile, PROVIDER_DEFAULT, Circle } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,6 +40,32 @@ export function MapBoardWidget() {
   const { user } = useAuth();
   const router = useRouter();
   const mapRef = useRef<MapView>(null);
+
+  // ── Detail panel slide animation ───────────────────────────────
+  const panelTranslateY = useRef(new Animated.Value(500)).current;
+  const closePanelRef = useRef<() => void>(() => {});
+
+  const panelPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, { dy }) => dy > 4,
+      onPanResponderMove: (_, { dy }) => {
+        if (dy > 0) panelTranslateY.setValue(dy);
+      },
+      onPanResponderRelease: (_, { dy, vy }) => {
+        if (dy > 80 || vy > 1.2) {
+          closePanelRef.current();
+        } else {
+          Animated.spring(panelTranslateY, {
+            toValue: 0,
+            damping: 30,
+            stiffness: 300,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   const isGuest = !user;
 
@@ -98,9 +126,32 @@ export function MapBoardWidget() {
   }, [isGuest, guestWorkplace, guestHome, activeWorkplace, user, calculateRoutes]);
 
   const handleCloseDetail = useCallback(() => {
-    setSelectedHousing(null);
-    clearRoute();
-  }, [clearRoute]);
+    Animated.timing(panelTranslateY, {
+      toValue: 500,
+      duration: 260,
+      useNativeDriver: true,
+    }).start(() => {
+      setSelectedHousing(null);
+      clearRoute();
+    });
+  }, [clearRoute, panelTranslateY]);
+
+  useEffect(() => {
+    closePanelRef.current = handleCloseDetail;
+  }, [handleCloseDetail]);
+
+  useEffect(() => {
+    if (selectedHousing) {
+      panelTranslateY.setValue(500);
+      Animated.spring(panelTranslateY, {
+        toValue: 0,
+        damping: 28,
+        stiffness: 220,
+        mass: 0.8,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [selectedHousing, panelTranslateY]);
 
   const handleViewDetail = useCallback(() => {
     if (selectedHousing) {
@@ -242,8 +293,10 @@ export function MapBoardWidget() {
 
       {/* Bottom detail panel */}
       {selectedHousing && (
-        <View style={styles.detailPanel}>
-          <View style={styles.dragHandle} />
+        <Animated.View style={[styles.detailPanel, { transform: [{ translateY: panelTranslateY }] }]}>
+          <View {...panelPanResponder.panHandlers} style={styles.dragHandleArea}>
+            <View style={styles.dragHandle} />
+          </View>
 
           {isCalculating ? (
             <View style={{ alignItems: 'center', paddingVertical: 10 }}>
@@ -274,7 +327,7 @@ export function MapBoardWidget() {
               <Ionicons name="close" size={18} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -349,9 +402,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15, shadowRadius: 12, elevation: 10,
   },
+  dragHandleArea: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 6,
+  },
   dragHandle: {
     width: 36, height: 4, backgroundColor: Colors.border,
-    borderRadius: 2, alignSelf: 'center', marginBottom: 8,
+    borderRadius: 2,
   },
   actionButtons: { flexDirection: 'row', gap: 8, marginTop: 8 },
   detailButton: {

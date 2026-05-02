@@ -29,6 +29,8 @@ export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async () => {
@@ -46,16 +48,22 @@ export function LoginForm() {
         Alert.alert('Error', 'Las contraseñas no coinciden.');
         return;
       }
-      const result = await register(email.trim(), password, {
-        home: guestHome ? { lat: guestHome.lat, lon: guestHome.lon, address: guestHome.address } : undefined,
-        workplace: guestWorkplace ? {
-          lat: guestWorkplace.lat,
-          lon: guestWorkplace.lon,
-          budget: guestWorkplace.budget,
-          transport: guestWorkplace.transport,
-          address: guestWorkplace.address,
-        } : undefined,
-      });
+      const result = await register(
+        email.trim(),
+        password,
+        {
+          home: guestHome ? { lat: guestHome.lat, lon: guestHome.lon, address: guestHome.address } : undefined,
+          workplace: guestWorkplace ? {
+            lat: guestWorkplace.lat,
+            lon: guestWorkplace.lon,
+            budget: guestWorkplace.budget,
+            transport: guestWorkplace.transport,
+            address: guestWorkplace.address,
+          } : undefined,
+        },
+        name.trim() || undefined,
+        lastName.trim() || undefined,
+      );
       if (result.success) {
         await clearGuestData();
       } else {
@@ -74,11 +82,42 @@ export function LoginForm() {
   const toggleMode = () => {
     setMode((prev) => (prev === 'login' ? 'register' : 'login'));
     setConfirmPassword('');
+    setName('');
+    setLastName('');
   };
 
   return (
     <>
       <View style={styles.form}>
+        {/* Nombre y apellido (solo registro) */}
+        {mode === 'register' && (
+          <View style={styles.nameRow}>
+            <View style={[styles.inputContainer, { flex: 1 }]}>
+              <Ionicons name="person-outline" size={20} color="rgba(255,255,255,0.5)" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Nombre"
+                placeholderTextColor="rgba(255,255,255,0.4)"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+                autoComplete="given-name"
+              />
+            </View>
+            <View style={[styles.inputContainer, { flex: 1 }]}>
+              <TextInput
+                style={[styles.input, { paddingLeft: 16 }]}
+                placeholder="Apellido"
+                placeholderTextColor="rgba(255,255,255,0.4)"
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+                autoComplete="family-name"
+              />
+            </View>
+          </View>
+        )}
+
         {/* Email */}
         <View style={styles.inputContainer}>
           <Ionicons name="mail-outline" size={20} color="rgba(255,255,255,0.5)" style={styles.inputIcon} />
@@ -171,6 +210,7 @@ export function LoginForm() {
 
 const styles = StyleSheet.create({
   form: { gap: 14, marginBottom: 24 },
+  nameRow: { flexDirection: 'row', gap: 10 },
   inputContainer: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.12)',

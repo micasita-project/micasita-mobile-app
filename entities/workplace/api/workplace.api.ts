@@ -3,26 +3,22 @@
  * @description Servicio de lugares de trabajo conectado al backend real (FastAPI).
  */
 
-import { apiClient } from '@/shared/api';
+import { apiClient } from "@/shared/api";
 
 // ── Types ───────────────────────────────────────────────────────
 
 export interface Workplace {
   id: number;
   user_id: number;
-  alias: string;
+  work_address: string;
   work_lat: number;
   work_lon: number;
-  budget: number;
-  preferred_transportation: string;
 }
 
 export interface CreateWorkplaceRequest {
-  alias: string;
+  work_address: string;
   work_lat: number;
   work_lon: number;
-  budget: number;
-  preferred_transportation: string;
 }
 
 // ── API Calls ───────────────────────────────────────────────────
@@ -32,7 +28,7 @@ export interface CreateWorkplaceRequest {
  * Protegido.
  */
 export async function fetchWorkplaces(): Promise<Workplace[]> {
-  const response = await apiClient.get<Workplace[]>('/workplaces/');
+  const response = await apiClient.get<Workplace[]>("/workplaces/");
   return response.data;
 }
 
@@ -40,8 +36,10 @@ export async function fetchWorkplaces(): Promise<Workplace[]> {
  * Crea un nuevo lugar de trabajo para el motor IA.
  * Protegido.
  */
-export async function createWorkplace(data: CreateWorkplaceRequest): Promise<Workplace> {
-  const response = await apiClient.post<Workplace>('/workplaces/', data);
+export async function createWorkplace(
+  data: CreateWorkplaceRequest,
+): Promise<Workplace> {
+  const response = await apiClient.post<Workplace>("/workplaces/", data);
   return response.data;
 }
 
@@ -51,4 +49,22 @@ export async function createWorkplace(data: CreateWorkplaceRequest): Promise<Wor
  */
 export async function deleteWorkplace(workplaceId: number): Promise<void> {
   await apiClient.delete(`/workplaces/${workplaceId}`);
+}
+
+export interface UpdateWorkplaceRequest {
+  work_address?: string;
+  work_lat?: number;
+  work_lon?: number;
+}
+
+/**
+ * Actualiza un lugar de trabajo (solo datos geográficos).
+ * PATCH /workplaces/{id}
+ */
+export async function updateWorkplace(
+  id: number,
+  data: UpdateWorkplaceRequest,
+): Promise<Workplace> {
+  const response = await apiClient.patch<Workplace>(`/workplaces/${id}`, data);
+  return response.data;
 }

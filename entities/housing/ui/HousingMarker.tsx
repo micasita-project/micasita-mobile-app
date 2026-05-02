@@ -52,7 +52,7 @@ export function HousingMarker({
             shadowRadius: 8
           }
         ]}>
-          <Text style={styles.markerIcon}>🏠</Text>
+          <Ionicons name="home-outline" size={14} color={isSelected ? Colors.textOnPrimary : Colors.primary} />
           <Text style={[styles.markerPrice, isSelected && styles.priceSelected]}>
             S/{housing.price}
           </Text>
@@ -78,7 +78,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25, shadowRadius: 4, elevation: 5,
   },
   bubbleSelected: { backgroundColor: Colors.primary, borderColor: Colors.primaryDark },
-  markerIcon: { fontSize: 14 },
   markerPrice: { fontSize: 12, fontWeight: '700', color: Colors.primary },
   priceSelected: { color: Colors.textOnPrimary },
   markerArrow: {

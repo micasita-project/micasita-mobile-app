@@ -12,6 +12,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider, useAuth } from '@/features/auth';
 import { GuestProvider } from '@/features/guest';
+import { SelectedWorkplaceProvider } from '@/shared/model/SelectedWorkplaceContext';
 import { queryClient } from '@/shared/api';
 import { Colors } from '@/shared/config/colors';
 import { apiClient } from '@/shared/api';
@@ -106,8 +107,10 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <GuestProvider>
-          <RootNavigator />
-          <StatusBar style="light" />
+          <SelectedWorkplaceProvider>
+            <RootNavigator />
+            <StatusBar style="light" />
+          </SelectedWorkplaceProvider>
         </GuestProvider>
       </AuthProvider>
     </QueryClientProvider>

@@ -8,8 +8,9 @@ import {
   fetchWorkplaces,
   createWorkplace,
   deleteWorkplace,
+  updateWorkplace,
 } from '../api/workplace.api';
-import type { CreateWorkplaceRequest } from '../api/workplace.api';
+import type { CreateWorkplaceRequest, UpdateWorkplaceRequest } from '../api/workplace.api';
 
 export const workplaceKeys = {
   all: ['workplaces'] as const,
@@ -47,6 +48,19 @@ export function useDeleteWorkplace() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (workplaceId: number) => deleteWorkplace(workplaceId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: workplaceKeys.all });
+    },
+  });
+}
+
+/**
+ * Hook para actualizar un lugar de trabajo.
+ */
+export function useUpdateWorkplace() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateWorkplaceRequest }) => updateWorkplace(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workplaceKeys.all });
     },

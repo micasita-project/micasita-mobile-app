@@ -12,7 +12,8 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: Colors.primary },
+        headerStyle: { backgroundColor: Colors.primary, elevation: 0, shadowOpacity: 0 },
+        headerShadowVisible: false,
         headerTintColor: Colors.textOnPrimary,
         headerTitleStyle: { fontWeight: '700', fontSize: 18 },
         tabBarStyle: {
@@ -36,7 +37,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Mapa',
-          headerTitle: 'Mapa',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="map-outline" size={size} color={color} />
           ),

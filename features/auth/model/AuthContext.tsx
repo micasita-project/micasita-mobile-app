@@ -9,6 +9,7 @@ import { loginUser, logoutUser, registerUser, getMe, updateHome } from '../api/a
 import type { AuthUser, UserHomeUpdate } from '../api/auth.service';
 import { getAuthToken } from '@/shared/api';
 import { createWorkplace } from '@/entities/workplace/api/workplace.api';
+import { createPreference } from '@/entities/recommendation-preferences';
 
 export interface GuestDataForTransfer {
   home?: { lat: number; lon: number; address: string };
@@ -24,7 +25,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, guestData?: GuestDataForTransfer) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, guestData?: GuestDataForTransfer, name?: string, lastName?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setHome: (data: UserHomeUpdate) => Promise<boolean>;
   refreshUser: () => Promise<void>;
@@ -87,10 +88,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  const register = useCallback(async (email: string, password: string, guestData?: GuestDataForTransfer): Promise<{ success: boolean; error?: string }> => {
+  const register = useCallback(async (email: string, password: string, guestData?: GuestDataForTransfer, name?: string, lastName?: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      await registerUser({ email, password });
+      await registerUser({ email, password, name, last_name: lastName });
       await loginUser(email, password);
       let userProfile = await getMe();
 
@@ -106,10 +107,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       if (guestData?.workplace) {
         try {
-          await createWorkplace({
-            alias: guestData.workplace.address.split(',')[0].trim() || 'Mi Trabajo',
+          const wp = await createWorkplace({
+            work_address: guestData.workplace.address.split(',')[0].trim() || 'Mi Trabajo',
             work_lat: guestData.workplace.lat,
             work_lon: guestData.workplace.lon,
+          });
+          await createPreference({
+            workplace_id: wp.id,
             budget: guestData.workplace.budget,
             preferred_transportation: guestData.workplace.transport,
           });

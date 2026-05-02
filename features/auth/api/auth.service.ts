@@ -11,6 +11,8 @@ import { apiClient, saveAuthToken, removeAuthToken } from '@/shared/api';
 export interface RegisterRequest {
   email: string;
   password: string;
+  name?: string;
+  last_name?: string;
 }
 
 export interface RegisterResponse {
@@ -34,6 +36,8 @@ export interface AuthUser {
   id: number;
   email: string;
   role: string;
+  name?: string | null;
+  last_name?: string | null;
   home_lat: number | null;
   home_lon: number | null;
   home_address: string | null;
@@ -88,5 +92,19 @@ export async function getMe(): Promise<AuthUser> {
  */
 export async function updateHome(data: UserHomeUpdate): Promise<AuthUser> {
   const response = await apiClient.put<AuthUser>('/auth/me/home', data);
+  return response.data;
+}
+
+export interface UpdateProfileRequest {
+  name?: string;
+  last_name?: string;
+}
+
+/**
+ * Actualiza nombre y apellido del usuario.
+ * Requiere PATCH /auth/me en el backend.
+ */
+export async function updateProfile(data: UpdateProfileRequest): Promise<AuthUser> {
+  const response = await apiClient.patch<AuthUser>('/auth/me', data);
   return response.data;
 }

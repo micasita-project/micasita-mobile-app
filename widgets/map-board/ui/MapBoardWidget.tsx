@@ -14,31 +14,43 @@ import {
   Platform,
   ActivityIndicator,
   PanResponder,
+  Image,
 } from 'react-native';
 import MapView, { Marker, UrlTile, PROVIDER_DEFAULT, Circle } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Features
 import { useAuth } from '@/features/auth';
 import { useGuest, GuestSetupModal } from '@/features/guest';
-import { useRouteCalculation, RouteInfoPanel, TransportModeSelector } from '@/features/route-calculation';
+import { useRouteCalculation } from '@/features/route-calculation';
 import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
+import { usePreferences } from '@/entities/recommendation-preferences';
 import { useLatestRecommendations } from '@/features/recommendation/model/useRecommendations';
 
 // Entities
-import { HousingMarker, HousingCard } from '@/entities/housing';
+import { HousingMarker } from '@/entities/housing';
+import { HousingImages } from '@/entities/housing/api/images';
 import { RoutePolyline } from '@/entities/route';
 
 // Shared
 import { LIMA_REGION, OSM_TILE_URL } from '@/shared/config/map';
 import { Colors } from '@/shared/config/colors';
+import { useSelectedWorkplace } from '@/shared/model/SelectedWorkplaceContext';
 import { TRANSPORT_MODE_COLORS } from '@/shared/types';
 import type { Housing, TransportMode } from '@/shared/types';
 
+const TRANSPORT_MODES: { id: TransportMode; label: string; icon: 'car' | 'bicycle' | 'walk' }[] = [
+  { id: 'driving', label: 'Auto', icon: 'car' },
+  { id: 'cycling', label: 'Bici', icon: 'bicycle' },
+  { id: 'walking', label: 'A pie', icon: 'walk' },
+];
+
 export function MapBoardWidget() {
-  const { user } = useAuth();
+  const { user, isInitialized } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
 
   // ── Detail panel slide animation ───────────────────────────────
@@ -73,17 +85,22 @@ export function MapBoardWidget() {
   const { guestHome, guestWorkplace, guestRecommendations, isInitialized: guestInitialized } = useGuest();
   const [showSetup, setShowSetup] = useState(false);
 
-  // Show setup modal once guest data is loaded and incomplete
+  // Show setup modal once guest data is loaded and incomplete.
+  // Wait for auth to initialize so we don't trigger for users whose session is still restoring.
   useEffect(() => {
-    if (!isGuest || !guestInitialized) return;
+    if (!isInitialized || !isGuest || !guestInitialized) return;
     if (!guestHome || !guestWorkplace) {
       setShowSetup(true);
     }
-  }, [isGuest, guestInitialized, guestHome, guestWorkplace]);
+  }, [isInitialized, isGuest, guestInitialized, guestHome, guestWorkplace]);
 
   // ── Authenticated: workplaces + latest recommendations ─────────
   const { data: workplaces = [] } = useWorkplaces(!!user);
-  const activeWorkplace = workplaces[0] || null;
+  const { selectedWorkplaceId } = useSelectedWorkplace();
+  const activeWorkplace = workplaces.find(wp => wp.id === selectedWorkplaceId) || workplaces[0] || null;
+
+  const { data: preferences = [] } = usePreferences(activeWorkplace?.id ?? null);
+  const activePreference = preferences[0];
 
   const {
     data: authRecommendations = [],
@@ -100,12 +117,10 @@ export function MapBoardWidget() {
   const {
     newHomeRoutes,
     selectedMode,
-    optimalMode,
-    savings,
-    isCalculating,
     setSelectedMode,
     calculateRoutes,
     clearRoute,
+    savings,
   } = useRouteCalculation();
 
   const handleHousingSelect = useCallback((h: Housing) => {
@@ -161,181 +176,255 @@ export function MapBoardWidget() {
 
   const workplaceLabel = isGuest
     ? guestWorkplace?.address.split(',')[0] ?? 'Tu trabajo'
-    : activeWorkplace?.alias ?? '';
+    : activeWorkplace?.work_address ?? '';
 
   const showWorkplaceOverlay = isGuest ? !!guestWorkplace : !!activeWorkplace;
 
+  const handleEditWorkplace = useCallback(() => {
+    if (isGuest) setShowSetup(true);
+    else router.push('/(tabs)/profile');
+  }, [isGuest, router]);
+
   return (
     <View style={styles.container}>
-      {/* Guest setup modal */}
-      <GuestSetupModal visible={showSetup} onClose={() => setShowSetup(false)} />
-
-      {isLoadingRecommendations && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Cargando recomendaciones...</Text>
-        </View>
-      )}
-
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        initialRegion={LIMA_REGION}
-        mapType="none"
-        showsUserLocation={false}
-        showsMyLocationButton={false}
-        showsCompass={false}
-        toolbarEnabled={false}
-      >
-        <UrlTile urlTemplate={OSM_TILE_URL} maximumZ={19} tileSize={256} />
-
-        {/* Home marker — authenticated */}
-        {!isGuest && user?.home_lat && user?.home_lon && (
-          <Marker
-            coordinate={{ latitude: user.home_lat, longitude: user.home_lon }}
-            title="Mi Casa Actual"
-          >
-            <View style={styles.homeMarker}>
-              <Ionicons name="home" size={20} color={Colors.textOnPrimary} />
-            </View>
-          </Marker>
-        )}
-
-        {/* Home marker — guest */}
-        {isGuest && guestHome && (
-          <Marker
-            coordinate={{ latitude: guestHome.lat, longitude: guestHome.lon }}
-            title="Mi Casa Actual"
-          >
-            <View style={styles.homeMarker}>
-              <Ionicons name="home" size={20} color={Colors.textOnPrimary} />
-            </View>
-          </Marker>
-        )}
-
-        {/* Workplace marker — authenticated */}
-        {!isGuest && activeWorkplace?.work_lat && activeWorkplace?.work_lon && (
-          <Marker
-            coordinate={{ latitude: activeWorkplace.work_lat, longitude: activeWorkplace.work_lon }}
-            title={activeWorkplace.alias}
-          >
-            <View style={styles.workMarker}>
-              <Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} />
-            </View>
-          </Marker>
-        )}
-
-        {/* Workplace marker — guest */}
-        {isGuest && guestWorkplace && (
-          <Marker
-            coordinate={{ latitude: guestWorkplace.lat, longitude: guestWorkplace.lon }}
-            title="Mi Trabajo"
-          >
-            <View style={styles.workMarker}>
-              <Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} />
-            </View>
-          </Marker>
-        )}
-
-        {/* Radius circle — guest */}
-        {isGuest && guestWorkplace && (
-          <Circle
-            center={{ latitude: guestWorkplace.lat, longitude: guestWorkplace.lon }}
-            radius={(guestWorkplace.maxDistanceKm ?? 10) * 1000}
-            strokeColor={Colors.primary + '70'}
-            fillColor={Colors.primary + '12'}
-            strokeWidth={2}
-          />
-        )}
-
-        {/* Housing recommendation markers */}
-        {recommendations.map((rec) => (
-          <HousingMarker
-            key={rec.property.id}
-            housing={rec.property}
-            onPress={handleHousingSelect}
-            isSelected={selectedHousing?.id === rec.property.id}
-          />
-        ))}
-
-        {/* Route polyline */}
-        {newHomeRoutes && selectedMode && (
-          <RoutePolyline
-            coordinates={newHomeRoutes[selectedMode].waypoints}
-            color={TRANSPORT_MODE_COLORS[selectedMode]}
-          />
-        )}
-      </MapView>
-
-      {/* Floating workplace chip */}
-      {showWorkplaceOverlay && (
-        <View style={styles.workplaceOverlay}>
-          <Ionicons name="location" size={16} color={Colors.primary} />
-          <Text style={styles.workplaceText} numberOfLines={1}>
-            Viendo cerca a: <Text style={{ fontWeight: '700' }}>{workplaceLabel}</Text>
+      <GuestSetupModal visible={showSetup && isGuest} onClose={() => setShowSetup(false)} />
+      {/* ── Purple Header ──────────────────────────────────── */}
+      <View style={[styles.mapHeader, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.mapHeaderTitle}>Mapa</Text>
+        <TouchableOpacity style={styles.searchBar} onPress={handleEditWorkplace} activeOpacity={0.85}>
+          <Ionicons name="search" size={16} color="rgba(255,255,255,0.85)" />
+          <Text style={styles.searchBarText} numberOfLines={1}>
+            {showWorkplaceOverlay ? workplaceLabel : 'Configura tu búsqueda'}
           </Text>
-          {isGuest && (
-            <TouchableOpacity onPress={() => setShowSetup(true)} hitSlop={8}>
-              <Ionicons name="pencil-outline" size={16} color={Colors.primary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Guest CTA when no data yet */}
-      {isGuest && guestInitialized && !guestWorkplace && !showSetup && (
-        <TouchableOpacity style={styles.guestCta} onPress={() => setShowSetup(true)} activeOpacity={0.85}>
-          <Ionicons name="sparkles" size={18} color={Colors.textOnPrimary} />
-          <Text style={styles.guestCtaText}>Configura tu búsqueda</Text>
+          <Ionicons name="pencil-outline" size={14} color="rgba(255,255,255,0.85)" />
         </TouchableOpacity>
-      )}
 
-      {/* Bottom detail panel */}
-      {selectedHousing && (
-        <Animated.View style={[styles.detailPanel, { transform: [{ translateY: panelTranslateY }] }]}>
-          <View {...panelPanResponder.panHandlers} style={styles.dragHandleArea}>
-            <View style={styles.dragHandle} />
+        <View style={styles.transportChipsRow}>
+          {TRANSPORT_MODES.map((mode) => {
+            const isActive = (selectedMode ?? 'cycling') === mode.id;
+            const timeMin = newHomeRoutes ? Math.round(newHomeRoutes[mode.id].timeMinutes) : null;
+            return (
+              <TouchableOpacity
+                key={mode.id}
+                style={[styles.transportChip, isActive && styles.transportChipActive]}
+                onPress={() => setSelectedMode(mode.id)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={mode.icon}
+                  size={14}
+                  color={isActive ? TRANSPORT_MODE_COLORS[mode.id] : '#fff'}
+                />
+                <Text style={[styles.transportChipLabel, isActive && { color: TRANSPORT_MODE_COLORS[mode.id] }]}>
+                  {mode.label}
+                </Text>
+                {isActive && timeMin !== null && (
+                  <Text style={[styles.transportChipTime, { color: TRANSPORT_MODE_COLORS[mode.id] }]}>
+                    · {timeMin}min
+                  </Text>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* ── Map Area ───────────────────────────────────────── */}
+      <View style={styles.mapContainer}>
+        {isLoadingRecommendations && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>Cargando recomendaciones...</Text>
           </View>
+        )}
 
-          {isCalculating ? (
-            <View style={{ alignItems: 'center', paddingVertical: 10 }}>
-              <ActivityIndicator size="small" color={Colors.primary} />
-            </View>
-          ) : newHomeRoutes ? (
-            <>
-              <TransportModeSelector
-                routes={newHomeRoutes}
-                selectedMode={selectedMode}
-                optimalMode={optimalMode}
-                onModeChange={setSelectedMode}
-              />
-              {savings && (
-                <RouteInfoPanel savings={savings} workplaceName={workplaceLabel} />
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          provider={PROVIDER_DEFAULT}
+          initialRegion={LIMA_REGION}
+          mapType="none"
+          showsUserLocation={false}
+          showsMyLocationButton={false}
+          showsCompass={false}
+          toolbarEnabled={false}
+        >
+          <UrlTile urlTemplate={OSM_TILE_URL} maximumZ={19} tileSize={256} />
+
+          {!isGuest && user?.home_lat && user?.home_lon && (
+            <Marker coordinate={{ latitude: user.home_lat, longitude: user.home_lon }} title="Mi Casa Actual">
+              <View style={styles.homeMarker}><Ionicons name="home" size={20} color={Colors.textOnPrimary} /></View>
+            </Marker>
+          )}
+          {isGuest && guestHome && (
+            <Marker coordinate={{ latitude: guestHome.lat, longitude: guestHome.lon }} title="Mi Casa Actual">
+              <View style={styles.homeMarker}><Ionicons name="home" size={20} color={Colors.textOnPrimary} /></View>
+            </Marker>
+          )}
+          {!isGuest && activeWorkplace?.work_lat && activeWorkplace?.work_lon && (
+            <Marker coordinate={{ latitude: activeWorkplace.work_lat, longitude: activeWorkplace.work_lon }} title={activeWorkplace.work_address}>
+              <View style={styles.workMarker}><Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} /></View>
+            </Marker>
+          )}
+          {isGuest && guestWorkplace && (
+            <Marker coordinate={{ latitude: guestWorkplace.lat, longitude: guestWorkplace.lon }} title="Mi Trabajo">
+              <View style={styles.workMarker}><Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} /></View>
+            </Marker>
+          )}
+          {isGuest && guestWorkplace && (
+            <Circle
+              center={{ latitude: guestWorkplace.lat, longitude: guestWorkplace.lon }}
+              radius={(guestWorkplace.maxDistanceKm ?? 10) * 1000}
+              strokeColor={Colors.primary + '70'}
+              fillColor={Colors.primary + '12'}
+              strokeWidth={2}
+            />
+          )}
+          {!isGuest && activeWorkplace?.work_lat && activeWorkplace?.work_lon && (
+            <Circle
+              center={{ latitude: activeWorkplace.work_lat, longitude: activeWorkplace.work_lon }}
+              radius={(activePreference?.max_distance_km ?? 10) * 1000}
+              strokeColor={Colors.primary + '70'}
+              fillColor={Colors.primary + '12'}
+              strokeWidth={2}
+            />
+          )}
+          {recommendations.map((rec) => (
+            <HousingMarker
+              key={rec.property.id}
+              housing={rec.property}
+              onPress={handleHousingSelect}
+              isSelected={selectedHousing?.id === rec.property.id}
+            />
+          ))}
+          {newHomeRoutes && selectedMode && (
+            <RoutePolyline
+              coordinates={newHomeRoutes[selectedMode].waypoints}
+              color={TRANSPORT_MODE_COLORS[selectedMode]}
+            />
+          )}
+        </MapView>
+
+      {/* Floating detail card */}
+      {selectedHousing && (() => {
+        const selectedRoute = newHomeRoutes?.[selectedMode];
+        const timeMinutes = selectedRoute?.timeMinutes;
+        const modeIcon = TRANSPORT_MODES.find(m => m.id === selectedMode)?.icon;
+        
+        return (
+          <Animated.View 
+            {...panelPanResponder.panHandlers}
+            style={[styles.floatingCardContainer, { transform: [{ translateY: panelTranslateY }] }]}
+          >
+            <TouchableOpacity activeOpacity={0.9} onPress={handleViewDetail} style={styles.floatingCard}>
+              {selectedHousing.images && selectedHousing.images.length > 0 ? (
+                <Image
+                  source={HousingImages[selectedHousing.images[0]]}
+                  style={styles.cardImage}
+                />
+              ) : (
+                <View style={[styles.cardImage, { alignItems: 'center', justifyContent: 'center' }]}>
+                  <Ionicons name="home-outline" size={24} color={Colors.textMuted} />
+                </View>
               )}
-            </>
-          ) : null}
-
-          <HousingCard housing={selectedHousing} variant="compact" onPress={handleViewDetail} />
-
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.detailButton} onPress={handleViewDetail}>
-              <Ionicons name="eye-outline" size={18} color={Colors.textOnPrimary} style={{ marginRight: 6 }} />
-              <Text style={styles.detailButtonText}>Ver Detalle</Text>
+              <View style={styles.cardRight}>
+                <Text style={styles.cardPrice}>
+                  S/ {selectedHousing.price.toLocaleString('es-PE')} <Text style={styles.cardPriceUnit}>/mes</Text>
+                </Text>
+                <Text style={styles.cardSpecs} numberOfLines={1}>
+                  {selectedHousing.district} · {selectedHousing.bedrooms} hab · {selectedHousing.total_area_sqm} m²
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={styles.cardTimePill}>
+                    <Ionicons 
+                      name={modeIcon === 'car' ? 'car-outline' : modeIcon === 'bicycle' ? 'bicycle-outline' : 'walk-outline'} 
+                      size={13} 
+                      color="#10B981" 
+                    />
+                    <Text style={styles.cardTimeText}>{timeMinutes ?? '--'} min</Text>
+                    <Text style={styles.cardTimeSuffix}> al trabajo</Text>
+                  </View>
+                  {savings && savings.savedMinutes > 0 && (
+                    <View style={styles.cardSavingsPill}>
+                      <Ionicons name="flash" size={12} color="#f59e0b" />
+                      <Text style={styles.cardSavingsText}>-{savings.savedMinutes} min</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.closeButton} onPress={handleCloseDetail}>
-              <Ionicons name="close" size={18} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      )}
+          </Animated.View>
+        );
+      })()}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  // ── Header ──────────────────────────────────────────────
+  mapHeader: {
+    backgroundColor: Colors.primary,
+    paddingBottom: 14,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  mapHeaderTitle: { fontSize: 17, fontWeight: '700', color: '#fff', textAlign: 'center' },
+  searchBar: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  searchBarText: { flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.85)' },
+  transportChipsRow: { flexDirection: 'row', gap: 8 },
+  transportChip: {
+    flex: 1,
+    paddingVertical: 7,
+    paddingHorizontal: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  transportChipActive: { backgroundColor: '#fff', borderColor: 'transparent' },
+  transportChipLabel: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  transportChipTime: { fontSize: 11, fontWeight: '500' },
+  // ── Map container ────────────────────────────────────────
+  mapContainer: { flex: 1 },
   map: { ...StyleSheet.absoluteFillObject },
+  // ── FABs ─────────────────────────────────────────────────
+  fabFilters: {
+    position: 'absolute', top: 16, right: 16,
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: Colors.surface,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 12, elevation: 4,
+  },
+  fabFiltersBadge: {
+    position: 'absolute', top: 6, right: 6,
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: Colors.error,
+  },
+  fabLocate: {
+    position: 'absolute', bottom: 32, right: 16,
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: Colors.surface,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 12, elevation: 4,
+  },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.7)',
@@ -393,35 +482,81 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3, shadowRadius: 4, elevation: 5,
   },
-  detailPanel: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 12, paddingBottom: Platform.OS === 'ios' ? 24 : 12,
-    shadowColor: Colors.shadowDark,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15, shadowRadius: 12, elevation: 10,
+  floatingCardContainer: {
+    position: 'absolute', bottom: 24, left: 16, right: 16,
+    zIndex: 100,
   },
-  dragHandleArea: {
+  floatingCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  dragHandle: {
-    width: 36, height: 4, backgroundColor: Colors.border,
-    borderRadius: 2,
+  cardImage: {
+    width: 76,
+    height: 76,
+    borderRadius: 14,
+    backgroundColor: '#bcaecc',
   },
-  actionButtons: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  detailButton: {
-    flex: 1, backgroundColor: Colors.primary,
-    borderRadius: 10, paddingVertical: 10, alignItems: 'center',
-    flexDirection: 'row', justifyContent: 'center',
+  cardRight: {
+    flex: 1,
+    marginLeft: 14,
+    justifyContent: 'center',
   },
-  detailButtonText: { color: Colors.textOnPrimary, fontWeight: '700', fontSize: 13 },
-  closeButton: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.border,
+  cardPrice: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1f2937',
+  },
+  cardPriceUnit: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  cardSpecs: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  cardTimePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ecfdf5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  cardTimeText: {
+    color: '#10B981',
+    fontWeight: '700',
+    fontSize: 13,
+    marginLeft: 4,
+  },
+  cardTimeSuffix: {
+    color: '#9ca3af',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  cardSavingsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  cardSavingsText: {
+    color: '#d97706',
+    fontWeight: '700',
+    fontSize: 12,
+    marginLeft: 2,
   },
 });

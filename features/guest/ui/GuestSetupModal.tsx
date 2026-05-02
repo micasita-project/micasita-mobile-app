@@ -17,10 +17,8 @@ import {
   ScrollView,
   Alert,
   Modal,
-  Animated,
-  PanResponder,
-  LayoutChangeEvent,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import MapView, { Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
@@ -54,55 +52,23 @@ interface Props {
 
 // ── Radius Slider ─────────────────────────────────────────────────
 function RadiusSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const thumbAnim = useRef(new Animated.Value(0)).current;
-  const trackWidthRef = useRef(0);
-  const onChangeRef = useRef(onChange);
-  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
-
-  const ratio = (value - KM_MIN) / (KM_MAX - KM_MIN);
-  useEffect(() => {
-    if (trackWidthRef.current > 0) thumbAnim.setValue(ratio * trackWidthRef.current);
-  }, [ratio, thumbAnim]);
-
-  const applyX = useCallback((x: number) => {
-    const w = trackWidthRef.current;
-    if (w <= 0) return;
-    const clamped = Math.max(0, Math.min(x, w));
-    thumbAnim.setValue(clamped);
-    onChangeRef.current(Math.round(KM_MIN + (clamped / w) * (KM_MAX - KM_MIN)));
-  }, [thumbAnim]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e) => applyX(e.nativeEvent.locationX),
-      onPanResponderMove: (e) => applyX(e.nativeEvent.locationX),
-    })
-  ).current;
-
-  const handleLayout = (e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
-    trackWidthRef.current = w;
-    thumbAnim.setValue(ratio * w);
-  };
-
   return (
     <View style={sliderStyles.container}>
       <View style={sliderStyles.labelRow}>
         <Text style={sliderStyles.label}>Radio de búsqueda</Text>
         <Text style={sliderStyles.value}>{value} km</Text>
       </View>
-      <View
-        {...panResponder.panHandlers}
-        style={sliderStyles.trackWrapper}
-        onLayout={handleLayout}
-      >
-        <View style={sliderStyles.track}>
-          <Animated.View style={[sliderStyles.fill, { width: thumbAnim }]} />
-          <Animated.View style={[sliderStyles.thumb, { transform: [{ translateX: thumbAnim }] }]} />
-        </View>
-      </View>
+      <Slider
+        style={sliderStyles.slider}
+        minimumValue={KM_MIN}
+        maximumValue={KM_MAX}
+        step={1}
+        value={value}
+        onValueChange={onChange}
+        minimumTrackTintColor={Colors.primary}
+        maximumTrackTintColor={Colors.border}
+        thumbTintColor={Colors.primary}
+      />
       <View style={sliderStyles.rangeRow}>
         <Text style={sliderStyles.rangeLabel}>{KM_MIN} km</Text>
         <Text style={sliderStyles.rangeLabel}>{KM_MAX} km</Text>
@@ -113,29 +79,11 @@ function RadiusSlider({ value, onChange }: { value: number; onChange: (v: number
 
 const sliderStyles = StyleSheet.create({
   container: { marginBottom: 20 },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   label: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
   value: { fontSize: 13, fontWeight: '800', color: Colors.primary },
-  trackWrapper: { paddingVertical: 10 },
-  track: {
-    height: 6, backgroundColor: Colors.surfaceElevated,
-    borderRadius: 3, position: 'relative',
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  fill: {
-    position: 'absolute', top: 0, left: 0, bottom: 0,
-    backgroundColor: Colors.primary, borderRadius: 3,
-  },
-  thumb: {
-    position: 'absolute', top: -9,
-    width: 24, height: 24, borderRadius: 12,
-    backgroundColor: Colors.primary,
-    marginLeft: -12,
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35, shadowRadius: 4, elevation: 4,
-    borderWidth: 3, borderColor: '#FFF',
-  },
-  rangeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  slider: { width: '100%', height: 40 },
+  rangeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 0 },
   rangeLabel: { fontSize: 11, color: Colors.textMuted },
 });
 

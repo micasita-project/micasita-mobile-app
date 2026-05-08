@@ -13,6 +13,9 @@ import type { Housing } from '@/shared/types';
 export interface PropertyResponse {
   id: number;
   publisher_id: number;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
   title: string;
   property_type: string;
   district: string;
@@ -95,11 +98,38 @@ export async function fetchAllProperties(skip = 0, limit = 100): Promise<Housing
 }
 
 /**
+ * Lista las propiedades del usuario logueado.
+ * Protegido: requiere autenticación.
+ */
+export async function fetchMyProperties(): Promise<PropertyResponse[]> {
+  const response = await apiClient.get<PropertyResponse[]>('/properties/mine');
+  return response.data;
+}
+
+/**
  * Crea una nueva propiedad en el backend.
  * Protegido: requiere usuario logueado.
  */
 export async function createProperty(data: CreatePropertyRequest): Promise<Housing> {
   const response = await apiClient.post<PropertyResponse>('/properties/', data);
+  return toHousing(response.data);
+}
+
+/**
+ * Obtiene una propiedad por su ID.
+ * Público: no requiere autenticación.
+ */
+export async function fetchPropertyById(id: number): Promise<Housing> {
+  const response = await apiClient.get<PropertyResponse>(`/properties/${id}`);
+  return toHousing(response.data);
+}
+
+/**
+ * Actualiza una propiedad existente.
+ * Protegido: requiere usuario logueado.
+ */
+export async function updateProperty(id: number, data: Partial<CreatePropertyRequest>): Promise<Housing> {
+  const response = await apiClient.patch<PropertyResponse>(`/properties/${id}`, data);
   return toHousing(response.data);
 }
 

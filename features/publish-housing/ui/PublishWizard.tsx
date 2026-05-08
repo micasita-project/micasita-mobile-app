@@ -53,12 +53,17 @@ function validateStep(step: number, draft: ReturnType<typeof usePublishForm>['dr
   }
 }
 
-export function PublishWizard() {
+export interface PublishWizardProps {
+  initialDraft?: ReturnType<typeof usePublishForm>['draft'];
+  propertyId?: string;
+}
+
+export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) {
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const { currentStep, draft, isSubmitting, error, updateDraft, nextStep, prevStep, submit, reset } =
-    usePublishForm();
+  const { currentStep, draft, isSubmitting, error, updateDraft, nextStep, prevStep, submit, update, reset } =
+    usePublishForm(initialDraft, propertyId);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const handleNext = () => {
@@ -80,11 +85,18 @@ export function PublishWizard() {
       Alert.alert('Datos incompletos', validationError);
       return;
     }
-    const success = await submit(String(user.id), user.email);
+    
+    let success = false;
+    if (propertyId) {
+      success = await update(propertyId);
+    } else {
+      success = await submit(String(user.id), user.email);
+    }
+
     if (success) {
       setShowSuccess(true);
     } else {
-      Alert.alert('Error al publicar', error ?? 'Intenta de nuevo más tarde.');
+      Alert.alert(propertyId ? 'Error al actualizar' : 'Error al publicar', error ?? 'Intenta de nuevo más tarde.');
     }
   };
 
@@ -159,7 +171,7 @@ export function PublishWizard() {
             </TouchableOpacity>
           )}
           <View>
-            <Text style={styles.headerTitle}>Publicar vivienda</Text>
+            <Text style={styles.headerTitle}>{propertyId ? 'Editar vivienda' : 'Publicar vivienda'}</Text>
             <Text style={styles.headerSubtitle}>Paso {currentStep} de 4</Text>
           </View>
         </View>
@@ -205,7 +217,7 @@ export function PublishWizard() {
             ) : (
               <>
                 <Ionicons name="cloud-upload-outline" size={20} color={Colors.textOnPrimary} />
-                <Text style={styles.nextBtnText}>Publicar anuncio</Text>
+                <Text style={styles.nextBtnText}>{propertyId ? 'Actualizar anuncio' : 'Publicar anuncio'}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -216,6 +228,7 @@ export function PublishWizard() {
         visible={showSuccess}
         onViewMyListings={handleViewMyListings}
         onClose={handleClose}
+        isEdit={!!propertyId}
       />
     </KeyboardAvoidingView>
   );

@@ -6,12 +6,9 @@
 
 // Model (lógica de negocio)
 export {
-  getAllHousing,
-  getHousingById,
-  getHousingByDistrict,
-  getAvailableDistricts,
-  getHousingByPriceRange,
-} from './api/housing.service';
+  fetchAllProperties,
+  fetchPropertyById,
+} from './api/housing.api';
 
 // UI (componentes de presentación)
 export { HousingCard } from './ui/HousingCard';

@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import type { HousingDraft } from '@/shared/types';
-import { submitHousingListing } from './publishHousing.service';
+import { submitHousingListing, updateHousingListing } from './publishHousing.service';
 
 const INITIAL_DRAFT: HousingDraft = {
   // Paso 1
@@ -43,12 +43,13 @@ interface UsePublishFormReturn {
   nextStep: () => void;
   prevStep: () => void;
   submit: (userId: string, userEmail: string) => Promise<boolean>;
+  update: (propertyId: string) => Promise<boolean>;
   reset: () => void;
 }
 
-export function usePublishForm(): UsePublishFormReturn {
+export function usePublishForm(initialDraft?: HousingDraft, propertyId?: string): UsePublishFormReturn {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
-  const [draft, setDraft] = useState<HousingDraft>(INITIAL_DRAFT);
+  const [draft, setDraft] = useState<HousingDraft>(initialDraft || INITIAL_DRAFT);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,11 +82,28 @@ export function usePublishForm(): UsePublishFormReturn {
     [draft]
   );
 
+  const update = useCallback(
+    async (id: string): Promise<boolean> => {
+      setIsSubmitting(true);
+      setError(null);
+      try {
+        await updateHousingListing(id, draft);
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error desconocido al actualizar');
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [draft]
+  );
+
   const reset = useCallback(() => {
     setDraft(INITIAL_DRAFT);
     setCurrentStep(1);
     setError(null);
   }, []);
 
-  return { currentStep, draft, isSubmitting, error, updateDraft, nextStep, prevStep, submit, reset };
+  return { currentStep, draft, isSubmitting, error, updateDraft, nextStep, prevStep, submit, update, reset };
 }

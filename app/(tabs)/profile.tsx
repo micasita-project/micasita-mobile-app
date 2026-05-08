@@ -653,7 +653,7 @@ export default function ProfileScreen() {
       <BottomSheet
         visible={!!editingWp}
         onClose={() => setEditingWp(null)}
-        maxHeightRatio={0.9}
+        maxHeightRatio={0.56}
       >
         <ScrollView
           style={{ paddingHorizontal: 24 }}

@@ -42,7 +42,7 @@ export default function HousingScreen() {
   }, [selectedDistrict, allHousing]);
 
   const handleHousingPress = useCallback((housing: Housing) => {
-    router.push({ pathname: '/housing-detail', params: { id: housing.id } });
+    router.push({ pathname: '/housing-detail', params: { id: housing.id, data: JSON.stringify(housing) } });
   }, [router]);
 
   const handlePublishPress = useCallback(() => {

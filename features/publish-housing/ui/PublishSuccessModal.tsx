@@ -20,12 +20,14 @@ interface PublishSuccessModalProps {
   visible: boolean;
   onViewMyListings: () => void;
   onClose: () => void;
+  isEdit?: boolean;
 }
 
 export function PublishSuccessModal({
   visible,
   onViewMyListings,
   onClose,
+  isEdit,
 }: PublishSuccessModalProps) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -36,9 +38,9 @@ export function PublishSuccessModal({
             <Ionicons name="checkmark-circle" size={64} color={Colors.success} />
           </View>
 
-          <Text style={styles.heading}>¡Publicado exitosamente!</Text>
+          <Text style={styles.heading}>{isEdit ? '¡Actualizado exitosamente!' : '¡Publicado exitosamente!'}</Text>
           <Text style={styles.body}>
-            Tu anuncio fue enviado y está en revisión.
+            {isEdit ? 'Tu anuncio fue actualizado y está en revisión.' : 'Tu anuncio fue enviado y está en revisión.'}
           </Text>
 
           {/* Status badge */}

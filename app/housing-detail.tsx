@@ -5,7 +5,6 @@
  * FSD Composition:
  * - features/auth → useAuth
  * - features/guest → useGuest
- * - entities/housing → getHousingById
  * - entities/workplace → useWorkplaces
  * - entities/route → calculateHaversineDistance, formatDistance, formatTravelTime, estimateTravelTime
  */
@@ -20,6 +19,7 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +27,7 @@ import { Colors } from '@/shared/config/colors';
 import { useAuth } from '@/features/auth';
 import { useGuest } from '@/features/guest';
 import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
-import { getHousingById } from '@/entities/housing';
+import { fetchPropertyById } from '@/entities/housing/api/housing.api';
 import { HousingImages } from '@/entities/housing/api/images';
 import type { Housing } from '@/shared/types';
 import {
@@ -62,12 +62,24 @@ export default function HousingDetailScreen() {
   const router = useRouter();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const housing = useMemo(() => {
+  const [housing, setHousing] = useState<Housing | null>(() => {
     if (data) {
       try { return JSON.parse(data) as Housing; } catch {}
     }
-    return getHousingById(id);
-  }, [id, data]);
+    return null;
+  });
+
+  const [isLoadingHousing, setIsLoadingHousing] = useState(!housing);
+
+  useEffect(() => {
+    if (!housing && id) {
+      setIsLoadingHousing(true);
+      fetchPropertyById(Number(id))
+        .then(setHousing)
+        .catch((err) => console.warn('Failed to fetch housing', err))
+        .finally(() => setIsLoadingHousing(false));
+    }
+  }, [id, housing]);
 
   const routeInfo = useMemo(() => {
     // TODO: Integrar Workplace del backend para calcular distancias
@@ -112,6 +124,15 @@ export default function HousingDetailScreen() {
       walking: Math.round((dist / 5) * 60),   // ~5 km/h walking
     };
   }, [housing, workLat, workLon, realTravelTimes]);
+
+  if (isLoadingHousing) {
+    return (
+      <View style={styles.errorContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.errorText}>Cargando vivienda...</Text>
+      </View>
+    );
+  }
 
   if (!housing) {
     return (

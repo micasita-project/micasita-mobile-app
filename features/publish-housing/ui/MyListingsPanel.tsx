@@ -16,6 +16,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/features/auth';
 import { getMyListings } from '../model/publishHousing.service';
 import { Colors } from '@/shared/config/colors';
@@ -27,7 +28,7 @@ const STATUS_CONFIG: Record<ListingStatus, { label: string; color: string; icon:
   rejected: { label: 'Rechazado', color: Colors.error, icon: 'close-circle-outline' },
 };
 
-function ListingCard({ listing }: { listing: PublishedHousing }) {
+function ListingCard({ listing, onEdit }: { listing: PublishedHousing; onEdit: (listing: PublishedHousing) => void }) {
   const status = STATUS_CONFIG[listing.status];
   const mainImage = listing.images[0];
   const typeLabel = listing.property_type;
@@ -97,6 +98,13 @@ function ListingCard({ listing }: { listing: PublishedHousing }) {
             </Text>
           </View>
         )}
+
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.editBtn} onPress={() => onEdit(listing)}>
+            <Ionicons name="pencil-outline" size={16} color={Colors.primary} />
+            <Text style={styles.editBtnText}>Editar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -104,10 +112,12 @@ function ListingCard({ listing }: { listing: PublishedHousing }) {
 
 export function MyListingsPanel() {
   const { user } = useAuth();
+  const router = useRouter();
   const [listings, setListings] = useState<PublishedHousing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<ListingStatus | 'all'>('all');
 
   const fetchListings = useCallback(async (refresh = false) => {
     if (!user) return;
@@ -116,7 +126,7 @@ export function MyListingsPanel() {
     setError(null);
 
     try {
-      const data = await getMyListings(user.id);
+      const data = await getMyListings(String(user.id));
       setListings(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar publicaciones');
@@ -129,6 +139,13 @@ export function MyListingsPanel() {
   useEffect(() => {
     fetchListings();
   }, [fetchListings]);
+
+  const handleEdit = useCallback((listing: PublishedHousing) => {
+    router.push({
+      pathname: '/edit-housing',
+      params: { data: JSON.stringify(listing) },
+    });
+  }, [router]);
 
   if (isLoading) {
     return (
@@ -151,11 +168,13 @@ export function MyListingsPanel() {
     );
   }
 
+  const filteredListings = listings.filter((l) => statusFilter === 'all' || l.status === statusFilter);
+
   return (
     <FlatList
-      data={listings}
+      data={filteredListings}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <ListingCard listing={item} />}
+      renderItem={({ item }) => <ListingCard listing={item} onEdit={handleEdit} />}
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -167,19 +186,34 @@ export function MyListingsPanel() {
       }
       ListHeaderComponent={
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Mis publicaciones</Text>
           <Text style={styles.headerCount}>
             {listings.length} propiedad{listings.length !== 1 ? 'es' : ''}
           </Text>
 
           {/* Status legend */}
           <View style={styles.legend}>
-            {Object.entries(STATUS_CONFIG).map(([key, { label, color, icon }]) => (
-              <View key={key} style={styles.legendItem}>
-                <Ionicons name={icon as any} size={14} color={color} />
-                <Text style={[styles.legendText, { color }]}>{label}</Text>
-              </View>
-            ))}
+            <TouchableOpacity
+              style={[styles.filterTab, statusFilter === 'all' && styles.filterTabActive]}
+              onPress={() => setStatusFilter('all')}
+            >
+              <Text style={[styles.filterTabText, statusFilter === 'all' && styles.filterTabTextActive]}>
+                Todas
+              </Text>
+            </TouchableOpacity>
+            {Object.entries(STATUS_CONFIG).map(([key, { label, color, icon }]) => {
+              const isActive = statusFilter === key;
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.filterTab, isActive && styles.filterTabActive]}
+                  onPress={() => setStatusFilter(key as ListingStatus)}
+                >
+                  <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       }
@@ -210,10 +244,22 @@ const styles = StyleSheet.create({
   retryText: { color: Colors.textOnPrimary, fontWeight: '700' },
   header: { marginBottom: 16 },
   headerTitle: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary },
-  headerCount: { fontSize: 13, color: Colors.textMuted, marginTop: 2, marginBottom: 12 },
-  legend: { flexDirection: 'row', gap: 16 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendText: { fontSize: 12, fontWeight: '600' },
+  headerCount: { fontSize: 13, color: Colors.textMuted, marginTop: 2, marginBottom: 16 },
+  legend: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  filterTab: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  filterTabActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  filterTabText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  filterTabTextActive: { color: Colors.textOnPrimary },
   card: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
@@ -273,6 +319,28 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   rejectedNoteText: { flex: 1, fontSize: 12, color: Colors.error, lineHeight: 18 },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: Colors.primaryLight + '20',
+  },
+  editBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
   emptyState: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
   emptySubtitle: { fontSize: 14, color: Colors.textMuted, textAlign: 'center' },

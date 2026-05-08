@@ -67,7 +67,9 @@ export function Step3Photos({ data, onChange }: Step3PhotosProps) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>Fotos de la propiedad</Text>
+      <Text style={styles.title}>
+        Fotos de la propiedad <Text style={styles.required}>*</Text>
+      </Text>
       <Text style={styles.subtitle}>
         Agrega hasta {MAX_PHOTOS} fotos. La primera será la foto principal del anuncio.
       </Text>
@@ -131,6 +133,7 @@ export function Step3Photos({ data, onChange }: Step3PhotosProps) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   title: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
+  required: { color: Colors.error },
   subtitle: { fontSize: 13, color: Colors.textSecondary, marginBottom: 20, lineHeight: 20 },
   uploadArea: {
     borderWidth: 2,

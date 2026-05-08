@@ -11,6 +11,7 @@ export interface GeocodeSuggestion {
   latitude: number;
   longitude: number;
   place_type: string;
+  district?: string | null;
 }
 
 /**

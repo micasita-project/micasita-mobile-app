@@ -83,7 +83,6 @@ function RootNavigator() {
       <Stack.Screen
         name="publish-housing"
         options={{
-          presentation: 'modal',
           headerShown: false,
         }}
       />

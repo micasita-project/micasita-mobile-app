@@ -19,8 +19,9 @@ import {
   Modal,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
-import MapView, { Region } from 'react-native-maps';
+import { type Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
+import { MapPickerModal } from '@/widgets/location-picker/MapPickerModal';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { searchAddress, reverseAddress, type GeocodeSuggestion } from '@/shared/api/geocode.service';
 import { Colors } from '@/shared/config/colors';
@@ -386,38 +387,16 @@ export function GuestSetupModal({ visible, onClose }: Props) {
           )}
         </ScrollView>
 
-        {/* ── Map picker — dentro del BottomSheet para que iOS lo presente correctamente ── */}
-        <Modal visible={!!mapTarget} animationType="slide" transparent={false} statusBarTranslucent>
-          <View style={{ flex: 1 }}>
-            <MapView
-              style={{ flex: 1 }}
-              initialRegion={LIMA_REGION}
-              onRegionChangeComplete={setMapRegion}
-            />
-            <View style={styles.mapPin} pointerEvents="none">
-              <Ionicons name="location" size={44} color={Colors.primary} style={{ marginTop: -22 }} />
-            </View>
-            <View style={styles.mapCard}>
-              <Text style={styles.mapInstruction}>
-                Mueve el mapa para ubicar tu {mapTarget === 'home' ? 'vivienda actual' : 'lugar de trabajo'}.
-              </Text>
-              <View style={styles.mapActions}>
-                <TouchableOpacity style={styles.mapCancelBtn} onPress={() => setMapTarget(null)}>
-                  <Text style={styles.mapCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.mapConfirmBtn}
-                  onPress={handleConfirmMap}
-                  disabled={isReversing}
-                >
-                  {isReversing
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.mapConfirmText}>Confirmar</Text>}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+        <MapPickerModal
+          visible={!!mapTarget}
+          onClose={() => setMapTarget(null)}
+          title={mapTarget === 'home' ? 'Tu vivienda actual' : 'Tu lugar de trabajo'}
+          instruction={`Mueve el mapa para ubicar tu ${mapTarget === 'home' ? 'vivienda actual' : 'lugar de trabajo'}`}
+          onConfirm={(s) => {
+            handleSelect(s, mapTarget!);
+            setMapTarget(null);
+          }}
+        />
     </BottomSheet>
   );
 }

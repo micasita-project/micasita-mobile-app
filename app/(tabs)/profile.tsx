@@ -25,7 +25,9 @@ import {
 import { Colors } from "@/shared/config/colors";
 import { BottomSheet } from "@/shared/ui/BottomSheet";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
+import { AddWorkplaceModal } from "@/widgets/workplace/ui/AddWorkplaceModal";
 import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -72,6 +74,7 @@ const EMPTY_ADDR: AddressState = {
 export default function ProfileScreen() {
   const { user, logout, refreshUser, setHome } = useAuth();
   const router = useRouter();
+  const params = useLocalSearchParams<{ action?: string }>();
   const { data: workplaces = [] } = useWorkplaces(!!user);
   const createWorkplace = useCreateWorkplace();
   const deleteWorkplace = useDeleteWorkplace();
@@ -81,14 +84,6 @@ export default function ProfileScreen() {
 
   // ── Add Workplace ────────────────────────────────────────────────
   const [isAddWpVisible, setIsAddWpVisible] = useState(false);
-  const [addAddr, setAddAddr] = useState<AddressState>(EMPTY_ADDR);
-  const [addBudget, setAddBudget] = useState("");
-  const [addTransport, setAddTransport] = useState<TransportOption>("Auto");
-  const [addMaxDistKm, setAddMaxDistKm] = useState(10);
-  const [addMapVisible, setAddMapVisible] = useState(false);
-  const [addMapRegion, setAddMapRegion] = useState<Region>(LIMA_REGION);
-  const [addMapReversing, setAddMapReversing] = useState(false);
-  const addTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Edit Workplace ───────────────────────────────────────────────
   const [editingWp, setEditingWp] = useState<Workplace | null>(null);
@@ -153,11 +148,6 @@ export default function ProfileScreen() {
     };
 
   // ── Derived handlers ─────────────────────────────────────────────
-  const handleAddSearch = useCallback(
-    makeSearchHandler(setAddAddr, addTimer),
-    [],
-  );
-  const handleAddSelect = useCallback(selectAddress(setAddAddr), []);
   const handleEditWpSearch = useCallback(
     makeSearchHandler(setEditWpAddr, editWpTimer),
     [],
@@ -171,10 +161,6 @@ export default function ProfileScreen() {
 
   const closeAddWp = useCallback(() => {
     setIsAddWpVisible(false);
-    setAddAddr(EMPTY_ADDR);
-    setAddBudget("");
-    setAddTransport("Auto");
-    setAddMaxDistKm(10);
   }, []);
 
   const openEditWp = useCallback(async (wp: Workplace) => {
@@ -303,34 +289,6 @@ export default function ProfileScreen() {
   }
 
   // ── Handlers that need `user` ────────────────────────────────────
-
-  const handleAddWorkplace = async () => {
-    if (!addAddr.selected) {
-      Alert.alert("Dirección faltante", "Busca o selecciona una dirección.");
-      return;
-    }
-    const budget = parseFloat(addBudget);
-    if (isNaN(budget) || budget <= 0) {
-      Alert.alert("Presupuesto inválido", "Ingresa un presupuesto válido.");
-      return;
-    }
-    try {
-      const wp = await createWorkplace.mutateAsync({
-        work_address: addAddr.query.trim() || "Mi Trabajo",
-        work_lat: addAddr.selected.latitude,
-        work_lon: addAddr.selected.longitude,
-      });
-      await createPreferenceMutation.mutateAsync({
-        workplace_id: wp.id,
-        budget,
-        preferred_transportation: addTransport,
-        max_distance_km: addMaxDistKm,
-      });
-      closeAddWp();
-    } catch {
-      Alert.alert("Error", "No se pudo agregar el lugar de trabajo");
-    }
-  };
 
   const handleSaveWorkplace = async () => {
     if (!editingWp) return;
@@ -686,158 +644,10 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* ══ Add Workplace ══════════════════════════════════════════ */}
-      <BottomSheet
+      <AddWorkplaceModal
         visible={isAddWpVisible}
         onClose={closeAddWp}
-        maxHeightRatio={0.88}
-      >
-        <ScrollView
-          style={{ paddingHorizontal: 24 }}
-          contentContainerStyle={{ paddingBottom: 32 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.sheetTitle}>Nuevo Lugar de Trabajo</Text>
-          {renderAddressField(addAddr, handleAddSearch, handleAddSelect, () =>
-            setAddMapVisible(true),
-          )}
-          <TextInput
-            style={[styles.fieldInput, { marginTop: 8 }]}
-            placeholder="Presupuesto Mensual (S/)"
-            placeholderTextColor={Colors.textMuted}
-            value={addBudget}
-            onChangeText={setAddBudget}
-            keyboardType="numeric"
-          />
-          <View style={styles.transportRow}>
-            {TRANSPORT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt}
-                style={[
-                  styles.transportChip,
-                  addTransport === opt && styles.transportChipActive,
-                ]}
-                onPress={() => setAddTransport(opt)}
-              >
-                <Ionicons
-                  name={TRANSPORT_ICONS[opt] as any}
-                  size={18}
-                  color={
-                    addTransport === opt ? Colors.textOnPrimary : Colors.primary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.transportText,
-                    addTransport === opt && styles.transportTextActive,
-                  ]}
-                >
-                  {opt}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {/* Radius slider */}
-          <View style={{ marginTop: 12, marginBottom: 8 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.textSecondary }}>Radio de búsqueda</Text>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: Colors.primary }}>{addMaxDistKm} km</Text>
-            </View>
-            <Slider
-              style={{ width: '100%', height: 40 }}
-              minimumValue={1}
-              maximumValue={30}
-              step={1}
-              value={addMaxDistKm}
-              onValueChange={setAddMaxDistKm}
-              minimumTrackTintColor={Colors.primary}
-              maximumTrackTintColor={Colors.border}
-              thumbTintColor={Colors.primary}
-            />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 11, color: Colors.textMuted }}>1 km</Text>
-              <Text style={{ fontSize: 11, color: Colors.textMuted }}>30 km</Text>
-            </View>
-          </View>
-          <View style={styles.sheetActions}>
-            <TouchableOpacity style={styles.sheetCancel} onPress={closeAddWp}>
-              <Text style={styles.sheetCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.sheetConfirm}
-              onPress={handleAddWorkplace}
-              disabled={createWorkplace.isPending}
-            >
-              {createWorkplace.isPending ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.sheetConfirmText}>Añadir</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-        {/* Map inside BottomSheet — iOS requires this to stack correctly */}
-        <Modal
-          visible={addMapVisible}
-          animationType="slide"
-          transparent={false}
-          statusBarTranslucent
-        >
-          <View style={{ flex: 1 }}>
-            <MapView
-              style={{ flex: 1 }}
-              initialRegion={LIMA_REGION}
-              onRegionChangeComplete={setAddMapRegion}
-            />
-            <View style={styles.mapPin} pointerEvents="none">
-              <Ionicons
-                name="location"
-                size={44}
-                color={Colors.primary}
-                style={{ marginTop: -22 }}
-              />
-            </View>
-            <View style={styles.mapBottomCard}>
-              <Text style={styles.mapInstruction}>
-                Mueve el mapa para ubicar tu lugar de trabajo.
-              </Text>
-              <View style={styles.mapActions}>
-                <TouchableOpacity
-                  style={styles.mapCancelBtn}
-                  onPress={() => setAddMapVisible(false)}
-                >
-                  <Text style={styles.mapCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.mapConfirmBtn}
-                  disabled={addMapReversing}
-                  onPress={async () => {
-                    setAddMapReversing(true);
-                    try {
-                      handleAddSelect(
-                        await reverseAddress(
-                          addMapRegion.latitude,
-                          addMapRegion.longitude,
-                        ),
-                      );
-                      setAddMapVisible(false);
-                    } catch {
-                      Alert.alert("Error", "No se pudo obtener la dirección.");
-                    } finally {
-                      setAddMapReversing(false);
-                    }
-                  }}
-                >
-                  {addMapReversing ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.mapConfirmText}>Confirmar</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      </BottomSheet>
+      />
 
       {/* ══ Edit Workplace ═════════════════════════════════════════ */}
       <BottomSheet
@@ -950,68 +760,22 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
         </ScrollView>
-        {/* Map inside BottomSheet */}
-        <Modal
+        <MapPickerModal
           visible={editWpMapVisible}
-          animationType="slide"
-          transparent={false}
-          statusBarTranslucent
-        >
-          <View style={{ flex: 1 }}>
-            <MapView
-              style={{ flex: 1 }}
-              initialRegion={LIMA_REGION}
-              onRegionChangeComplete={setEditWpMapRegion}
-            />
-            <View style={styles.mapPin} pointerEvents="none">
-              <Ionicons
-                name="location"
-                size={44}
-                color={Colors.primary}
-                style={{ marginTop: -22 }}
-              />
-            </View>
-            <View style={styles.mapBottomCard}>
-              <Text style={styles.mapInstruction}>
-                Mueve el mapa para ubicar tu lugar de trabajo.
-              </Text>
-              <View style={styles.mapActions}>
-                <TouchableOpacity
-                  style={styles.mapCancelBtn}
-                  onPress={() => setEditWpMapVisible(false)}
-                >
-                  <Text style={styles.mapCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.mapConfirmBtn}
-                  disabled={editWpMapReversing}
-                  onPress={async () => {
-                    setEditWpMapReversing(true);
-                    try {
-                      handleEditWpSelect(
-                        await reverseAddress(
-                          editWpMapRegion.latitude,
-                          editWpMapRegion.longitude,
-                        ),
-                      );
-                      setEditWpMapVisible(false);
-                    } catch {
-                      Alert.alert("Error", "No se pudo obtener la dirección.");
-                    } finally {
-                      setEditWpMapReversing(false);
-                    }
-                  }}
-                >
-                  {editWpMapReversing ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.mapConfirmText}>Confirmar</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+          onClose={() => setEditWpMapVisible(false)}
+          title="Editar ubicación"
+          instruction="Ubica el nuevo punto de trabajo en el mapa"
+          initialRegion={editingWp ? {
+            latitude: editingWp.work_lat,
+            longitude: editingWp.work_lon,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          } : undefined}
+          onConfirm={(s) => {
+            handleEditWpSelect(s);
+            setEditWpMapVisible(false);
+          }}
+        />
       </BottomSheet>
 
       {/* ══ Edit Home ══════════════════════════════════════════════ */}
@@ -1052,68 +816,16 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </ScrollView>
-        {/* Map inside BottomSheet */}
-        <Modal
+        <MapPickerModal
           visible={homeMapVisible}
-          animationType="slide"
-          transparent={false}
-          statusBarTranslucent
-        >
-          <View style={{ flex: 1 }}>
-            <MapView
-              style={{ flex: 1 }}
-              initialRegion={LIMA_REGION}
-              onRegionChangeComplete={setHomeMapRegion}
-            />
-            <View style={styles.mapPin} pointerEvents="none">
-              <Ionicons
-                name="location"
-                size={44}
-                color={Colors.primary}
-                style={{ marginTop: -22 }}
-              />
-            </View>
-            <View style={styles.mapBottomCard}>
-              <Text style={styles.mapInstruction}>
-                Mueve el mapa para ubicar tu vivienda.
-              </Text>
-              <View style={styles.mapActions}>
-                <TouchableOpacity
-                  style={styles.mapCancelBtn}
-                  onPress={() => setHomeMapVisible(false)}
-                >
-                  <Text style={styles.mapCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.mapConfirmBtn}
-                  disabled={homeMapReversing}
-                  onPress={async () => {
-                    setHomeMapReversing(true);
-                    try {
-                      handleHomeSelect(
-                        await reverseAddress(
-                          homeMapRegion.latitude,
-                          homeMapRegion.longitude,
-                        ),
-                      );
-                      setHomeMapVisible(false);
-                    } catch {
-                      Alert.alert("Error", "No se pudo obtener la dirección.");
-                    } finally {
-                      setHomeMapReversing(false);
-                    }
-                  }}
-                >
-                  {homeMapReversing ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.mapConfirmText}>Confirmar</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+          onClose={() => setHomeMapVisible(false)}
+          title="Ubicación de tu casa"
+          instruction="Ubica tu vivienda actual en el mapa"
+          onConfirm={(s) => {
+            handleHomeSelect(s);
+            setHomeMapVisible(false);
+          }}
+        />
       </BottomSheet>
 
       {/* ══ Edit Profile ═══════════════════════════════════════════ */}

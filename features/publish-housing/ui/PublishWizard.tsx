@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StepIndicator } from '@/shared/ui/StepIndicator';
 import { usePublishForm } from '../model/usePublishForm';
 import { Step1Location } from './Step1Location';
@@ -55,6 +56,7 @@ function validateStep(step: number, draft: ReturnType<typeof usePublishForm>['dr
 export function PublishWizard() {
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const { currentStep, draft, isSubmitting, error, updateDraft, nextStep, prevStep, submit, reset } =
     usePublishForm();
   const [showSuccess, setShowSuccess] = useState(false);
@@ -78,7 +80,7 @@ export function PublishWizard() {
       Alert.alert('Datos incompletos', validationError);
       return;
     }
-    const success = await submit(user.id, user.email);
+    const success = await submit(String(user.id), user.email);
     if (success) {
       setShowSuccess(true);
     } else {
@@ -149,9 +151,18 @@ export function PublishWizard() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Publicar vivienda</Text>
-        <Text style={styles.headerSubtitle}>Paso {currentStep} de 4</Text>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.headerTop}>
+          {currentStep === 1 && (
+            <TouchableOpacity onPress={() => router.back()} style={styles.headerBackBtn}>
+              <Ionicons name="chevron-back" size={24} color={Colors.textOnPrimary} />
+            </TouchableOpacity>
+          )}
+          <View>
+            <Text style={styles.headerTitle}>Publicar vivienda</Text>
+            <Text style={styles.headerSubtitle}>Paso {currentStep} de 4</Text>
+          </View>
+        </View>
       </View>
 
       {/* Step Indicator */}
@@ -217,6 +228,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 16,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerBackBtn: {
+    padding: 4,
+    marginLeft: -4,
   },
   headerTitle: { fontSize: 20, fontWeight: '800', color: Colors.textOnPrimary },
   headerSubtitle: { fontSize: 13, color: Colors.textOnPrimary + 'BB', marginTop: 2 },

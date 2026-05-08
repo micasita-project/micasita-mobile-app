@@ -29,6 +29,7 @@ export interface PropertyResponse {
   antiquity: number | null;
   description: string | null;
   images: string[];
+  features: string[];
   source_url: string | null;
 }
 
@@ -49,6 +50,7 @@ export interface CreatePropertyRequest {
   antiquity?: number;
   description?: string;
   images?: string[];
+  features?: string[];
   source_url?: string;
 }
 
@@ -74,7 +76,7 @@ function toHousing(p: PropertyResponse): Housing {
     antiquity: p.antiquity ?? undefined,
     description: p.description ?? '',
     images: p.images ?? [],
-    features: [],
+    features: p.features ?? [],
     source_url: p.source_url ?? undefined,
   };
 }

@@ -32,6 +32,8 @@ import {
   View,
 } from "react-native";
 import MapView, { Region } from "react-native-maps";
+import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
+
 
 type TransportOption = "Auto" | "Bicicleta" | "Caminando";
 const TRANSPORT_OPTIONS: TransportOption[] = ["Auto", "Bicicleta", "Caminando"];
@@ -590,54 +592,16 @@ export default function OnboardingScreen() {
         )}
       </ScrollView>
 
-      {/* Map Picker Modal */}
-      <Modal
+      <MapPickerModal
         visible={!!mapPickerMode}
-        animationType="slide"
-        transparent={false}
-      >
-        <View style={{ flex: 1 }}>
-          <MapView
-            style={{ flex: 1 }}
-            initialRegion={LIMA_REGION}
-            onRegionChangeComplete={setMapRegion}
-          />
-          <View style={styles.mapCenterMarker} pointerEvents="none">
-            <Ionicons
-              name="location"
-              size={40}
-              color={Colors.primary}
-              style={{ marginTop: -20 }}
-            />
-          </View>
-
-          <View style={styles.mapBottomCard}>
-            <Text style={styles.mapInstruction}>
-              Mueve el mapa para ubicar tu{" "}
-              {mapPickerMode === "home" ? "casa" : "trabajo"}.
-            </Text>
-            <View style={styles.mapActions}>
-              <TouchableOpacity
-                style={styles.mapCancelBtn}
-                onPress={() => setMapPickerMode(null)}
-              >
-                <Text style={styles.mapCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.mapConfirmBtn}
-                onPress={handleConfirmMapLocation}
-                disabled={isReversing}
-              >
-                {isReversing ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.mapConfirmText}>Confirmar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setMapPickerMode(null)}
+        title={mapPickerMode === 'home' ? 'Ubicación de tu casa' : 'Ubicación de tu trabajo'}
+        instruction={`Mueve el mapa para ubicar tu ${mapPickerMode === 'home' ? 'casa' : 'trabajo'}`}
+        onConfirm={(suggestion) => {
+          handleSelectAddress(suggestion);
+          setMapPickerMode(null);
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }

@@ -66,7 +66,9 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 
       {/* Título */}
-      <Text style={styles.sectionTitle}>Título del anuncio</Text>
+      <Text style={styles.sectionTitle}>
+        Título del anuncio <Text style={styles.required}>*</Text>
+      </Text>
       <View style={styles.inputWrapper}>
         <TextInput
           style={styles.input}
@@ -80,7 +82,9 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
       <Text style={styles.charCount}>{data.title.length}/80</Text>
 
       {/* Tipo de propiedad */}
-      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Tipo de propiedad</Text>
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
+        Tipo de propiedad <Text style={styles.required}>*</Text>
+      </Text>
       <View style={styles.typeRow}>
         {PROPERTY_TYPES.map((pt) => {
           const icon = pt === 'Casa' ? 'home-outline' : pt === 'Habitación' ? 'bed-outline' : 'business-outline';
@@ -114,7 +118,9 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
       </View>
 
       {/* Área total y cubierta */}
-      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Área</Text>
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
+        Área <Text style={styles.required}>* (Total m²)</Text>
+      </Text>
       <View style={styles.rowTwo}>
         <View style={[styles.inputWrapper, { flex: 1 }]}>
           <Ionicons name="resize-outline" size={16} color={Colors.textSecondary} style={styles.inputIcon} />
@@ -197,6 +203,7 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   sectionTitle: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
+  required: { color: Colors.error },
   inputWrapper: {
     backgroundColor: Colors.surface,
     borderRadius: 12, borderWidth: 1, borderColor: Colors.border,

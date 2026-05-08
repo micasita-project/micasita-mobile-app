@@ -46,6 +46,7 @@ export async function submitHousingListing(
     antiquity: draft.antiquity,
     description: draft.description,
     images: imageUrls,
+    features: draft.features,
   };
 
   // 3. Crear la propiedad en la base de datos

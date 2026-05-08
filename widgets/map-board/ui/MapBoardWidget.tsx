@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // Features
 import { useAuth } from '@/features/auth';
 import { useGuest, GuestSetupModal } from '@/features/guest';
+import { AddWorkplaceModal } from '@/widgets/workplace/ui/AddWorkplaceModal';
 import { useRouteCalculation } from '@/features/route-calculation';
 import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
 import { usePreferences } from '@/entities/recommendation-preferences';
@@ -84,6 +85,7 @@ export function MapBoardWidget() {
   // ── Guest data ─────────────────────────────────────────────────
   const { guestHome, guestWorkplace, guestRecommendations, isInitialized: guestInitialized } = useGuest();
   const [showSetup, setShowSetup] = useState(false);
+  const [showAddWpModal, setShowAddWpModal] = useState(false);
 
   // Show setup modal once guest data is loaded and incomplete.
   // Wait for auth to initialize so we don't trigger for users whose session is still restoring.
@@ -182,12 +184,13 @@ export function MapBoardWidget() {
 
   const handleEditWorkplace = useCallback(() => {
     if (isGuest) setShowSetup(true);
-    else router.push('/(tabs)/profile');
-  }, [isGuest, router]);
+    else setShowAddWpModal(true);
+  }, [isGuest]);
 
   return (
     <View style={styles.container}>
       <GuestSetupModal visible={showSetup && isGuest} onClose={() => setShowSetup(false)} />
+      <AddWorkplaceModal visible={showAddWpModal} onClose={() => setShowAddWpModal(false)} />
       {/* ── Purple Header ──────────────────────────────────── */}
       <View style={[styles.mapHeader, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.mapHeaderTitle}>Mapa</Text>

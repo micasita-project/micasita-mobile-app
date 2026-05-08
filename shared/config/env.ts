@@ -6,9 +6,6 @@
 
 export const ENV = {
   API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL!,
-
-  DEMO_EMAIL: process.env.EXPO_PUBLIC_DEMO_EMAIL!,
-  DEMO_PASSWORD: process.env.EXPO_PUBLIC_DEMO_PASSWORD!,
   
   OSM_TILE_URL: process.env.EXPO_PUBLIC_OSM_TILE_URL!,
   

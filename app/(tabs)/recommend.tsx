@@ -18,9 +18,10 @@ import {
 import { Colors } from "@/shared/config/colors";
 import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
 import type { Housing } from "@/shared/types";
+import { formatPrice } from "@/shared/utils/currency";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -148,14 +149,24 @@ export default function RecommendScreen() {
   // ── Authenticated ───────────────────────────────────────────────
   const { data: workplaces = [], isLoading: loadingWorkplaces } =
     useWorkplaces(isAuthenticated);
-  const { selectedWorkplaceId, setSelectedWorkplaceId } = useSelectedWorkplace();
+  const { selectedWorkplaceId, setSelectedWorkplaceId } =
+    useSelectedWorkplace();
 
   // Auto-select first workplace if none selected
   useEffect(() => {
-    if (isAuthenticated && workplaces.length > 0 && selectedWorkplaceId === null) {
+    if (
+      isAuthenticated &&
+      workplaces.length > 0 &&
+      selectedWorkplaceId === null
+    ) {
       setSelectedWorkplaceId(workplaces[0].id);
     }
-  }, [isAuthenticated, workplaces, selectedWorkplaceId, setSelectedWorkplaceId]);
+  }, [
+    isAuthenticated,
+    workplaces,
+    selectedWorkplaceId,
+    setSelectedWorkplaceId,
+  ]);
 
   const { data: cachedResults, isLoading: loadingCached } =
     useLatestRecommendations(selectedWorkplaceId);
@@ -338,7 +349,7 @@ export default function RecommendScreen() {
                   <View style={styles.searchCell}>
                     <Text style={styles.searchCellLabel}>PRESUP.</Text>
                     <Text style={styles.searchCellValue}>
-                      S/ {guestWorkplace.budget}
+                      {formatPrice(guestWorkplace.budget, "PEN")}
                     </Text>
                   </View>
                   <View style={styles.searchCell}>
@@ -480,8 +491,7 @@ export default function RecommendScreen() {
                   {/* Info */}
                   <View style={styles.cardInfo}>
                     <Text style={styles.cardPrice}>
-                      {item.property.currency ?? "S/"}{" "}
-                      {item.property.price?.toLocaleString("es-PE")}
+                      {formatPrice(item.property.price, item.property.currency)}
                       <Text style={styles.cardPriceUnit}> /mes</Text>
                     </Text>
                     <Text style={styles.cardAddr} numberOfLines={1}>

@@ -9,7 +9,7 @@
  * Defaults to 'S/' if currency is null or unknown.
  */
 export function getCurrencySymbol(currency: string | null | undefined): string {
-  if (currency === 'USD') return '$';
+  if (currency === 'USD') return 'USD';
   return 'S/';
 }
 

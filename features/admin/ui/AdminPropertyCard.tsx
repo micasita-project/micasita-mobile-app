@@ -1,13 +1,14 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Colors } from '@/shared/config/colors';
-import { Ionicons } from '@expo/vector-icons';
-import type { Housing } from '@/shared/types';
-import { HousingImages } from '@/entities/housing/api/images';
+import { HousingImages } from "@/entities/housing/api/images";
+import { Colors } from "@/shared/config/colors";
+import type { Housing } from "@/shared/types";
+import { formatPrice } from "@/shared/utils/currency";
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 function getImageSource(imagePath?: string) {
   if (!imagePath) return null;
-  if (imagePath.startsWith('http')) return { uri: imagePath };
+  if (imagePath.startsWith("http")) return { uri: imagePath };
   return HousingImages[imagePath];
 }
 
@@ -18,11 +19,20 @@ interface AdminPropertyCardProps {
   onPress: (property: Housing) => void;
 }
 
-export function AdminPropertyCard({ property, onApprove, onReject, onPress }: AdminPropertyCardProps) {
+export function AdminPropertyCard({
+  property,
+  onApprove,
+  onReject,
+  onPress,
+}: AdminPropertyCardProps) {
   const imageSource = getImageSource(property.images?.[0]);
 
   return (
-    <TouchableOpacity style={styles.container} activeOpacity={0.9} onPress={() => onPress(property)}>
+    <TouchableOpacity
+      style={styles.container}
+      activeOpacity={0.9}
+      onPress={() => onPress(property)}
+    >
       {imageSource ? (
         <Image source={imageSource} style={styles.image} resizeMode="cover" />
       ) : (
@@ -37,15 +47,25 @@ export function AdminPropertyCard({ property, onApprove, onReject, onPress }: Ad
       </View>
 
       <View style={styles.infoContainer}>
-        <Text style={styles.title} numberOfLines={2}>{property.title}</Text>
+        <Text style={styles.title} numberOfLines={2}>
+          {property.title}
+        </Text>
 
         <View style={styles.locationRow}>
-          <Ionicons name="location-outline" size={14} color={Colors.textSecondary} />
-          <Text style={styles.locationText} numberOfLines={1}>{property.district}</Text>
+          <Ionicons
+            name="location-outline"
+            size={14}
+            color={Colors.textSecondary}
+          />
+          <Text style={styles.locationText} numberOfLines={1}>
+            {property.district}
+          </Text>
         </View>
 
         <View style={styles.priceRow}>
-          <Text style={styles.priceValue}>S/{property.price}</Text>
+          <Text style={styles.priceValue}>
+            {formatPrice(property.price, property.currency)}
+          </Text>
           <Text style={styles.priceUnit}>/mes</Text>
         </View>
 
@@ -59,14 +79,22 @@ export function AdminPropertyCard({ property, onApprove, onReject, onPress }: Ad
             onPress={() => onReject(property.id)}
           >
             <Ionicons name="close-circle" size={20} color={Colors.error} />
-            <Text style={[styles.btnText, { color: Colors.error }]}>Rechazar</Text>
+            <Text style={[styles.btnText, { color: Colors.error }]}>
+              Rechazar
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.btn, styles.approveBtn]}
             onPress={() => onApprove(property.id)}
           >
-            <Ionicons name="checkmark-circle" size={20} color={Colors.textOnPrimary} />
-            <Text style={[styles.btnText, { color: Colors.textOnPrimary }]}>Aprobar</Text>
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={Colors.textOnPrimary}
+            />
+            <Text style={[styles.btnText, { color: Colors.textOnPrimary }]}>
+              Aprobar
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -78,7 +106,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
@@ -86,11 +114,11 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginBottom: 20,
   },
-  image: { width: '100%', height: 180 },
+  image: { width: "100%", height: 180 },
   noImage: {
     backgroundColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   noImageText: {
     color: Colors.textMuted,
@@ -98,37 +126,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   typeBadge: {
-    position: 'absolute', top: 12, left: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    paddingVertical: 4, paddingHorizontal: 10, borderRadius: 20,
+    position: "absolute",
+    top: 12,
+    left: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.92)",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 20,
   },
-  typeBadgeText: { fontSize: 11, fontWeight: '600', color: Colors.textPrimary },
+  typeBadgeText: { fontSize: 11, fontWeight: "600", color: Colors.textPrimary },
   infoContainer: { padding: 14 },
-  title: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 4 },
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    gap: 4,
+  },
   locationText: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 6 },
-  priceValue: { fontSize: 20, fontWeight: '800', color: Colors.primary },
+  priceRow: { flexDirection: "row", alignItems: "baseline", marginBottom: 6 },
+  priceValue: { fontSize: 20, fontWeight: "800", color: Colors.primary },
   priceUnit: { fontSize: 13, color: Colors.textSecondary, marginLeft: 2 },
   publisherInfo: { fontSize: 12, color: Colors.textMuted, marginBottom: 16 },
-  actions: { flexDirection: 'row', gap: 12 },
+  actions: { flexDirection: "row", gap: 12 },
   btn: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
     borderRadius: 10,
     gap: 6,
   },
   rejectBtn: {
-    backgroundColor: Colors.error + '15',
+    backgroundColor: Colors.error + "15",
   },
   approveBtn: {
     backgroundColor: Colors.primary,
   },
   btnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

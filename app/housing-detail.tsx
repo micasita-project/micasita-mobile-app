@@ -9,42 +9,39 @@
  * - entities/route → calculateHaversineDistance, formatDistance, formatTravelTime, estimateTravelTime
  */
 
-import React, { useMemo, useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  FlatList,
-  Dimensions,
-  ActivityIndicator,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/shared/config/colors';
-import { useAuth } from '@/features/auth';
-import { getCurrencySymbol } from '@/shared/utils/currency';
-import { useGuest } from '@/features/guest';
-import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
-import { fetchPropertyById } from '@/entities/housing/api/housing.api';
-import { HousingImages } from '@/entities/housing/api/images';
-import type { Housing } from '@/shared/types';
+import { fetchPropertyById } from "@/entities/housing/api/housing.api";
+import { HousingImages } from "@/entities/housing/api/images";
 import {
   calculateHaversineDistance,
-  formatDistance,
-  formatTravelTime,
   fetchMultiModeRoutes,
-} from '@/entities/route';
-import type { MultiModeRoutes } from '@/shared/types';
-import { useSelectedWorkplace } from '@/shared/model/SelectedWorkplaceContext';
+} from "@/entities/route";
+import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
+import { useAuth } from "@/features/auth";
+import { useGuest } from "@/features/guest";
+import { Colors } from "@/shared/config/colors";
+import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
+import type { Housing, MultiModeRoutes } from "@/shared/types";
+import { getCurrencySymbol } from "@/shared/utils/currency";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 function getImageSource(imagePath?: string) {
   if (!imagePath) return null;
-  if (imagePath.startsWith('http')) return { uri: imagePath };
+  if (imagePath.startsWith("http")) return { uri: imagePath };
   return HousingImages[imagePath];
 }
 
@@ -54,18 +51,23 @@ export default function HousingDetailScreen() {
   const { guestWorkplace } = useGuest();
   const { data: workplaces = [] } = useWorkplaces(!!user);
   const { selectedWorkplaceId } = useSelectedWorkplace();
-  const activeWorkplace = workplaces.find(wp => wp.id === selectedWorkplaceId) || workplaces[0] || null;
+  const activeWorkplace =
+    workplaces.find((wp) => wp.id === selectedWorkplaceId) ||
+    workplaces[0] ||
+    null;
   const workLat = user ? activeWorkplace?.work_lat : guestWorkplace?.lat;
   const workLon = user ? activeWorkplace?.work_lon : guestWorkplace?.lon;
   const workName = user
-    ? (activeWorkplace?.work_address ?? '')
-    : (guestWorkplace?.address.split(',')[0] ?? '');
+    ? (activeWorkplace?.work_address ?? "")
+    : (guestWorkplace?.address.split(",")[0] ?? "");
   const router = useRouter();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const [housing, setHousing] = useState<Housing | null>(() => {
     if (data) {
-      try { return JSON.parse(data) as Housing; } catch {}
+      try {
+        return JSON.parse(data) as Housing;
+      } catch {}
     }
     return null;
   });
@@ -77,7 +79,7 @@ export default function HousingDetailScreen() {
       setIsLoadingHousing(true);
       fetchPropertyById(Number(id))
         .then(setHousing)
-        .catch((err) => console.warn('Failed to fetch housing', err))
+        .catch((err) => console.warn("Failed to fetch housing", err))
         .finally(() => setIsLoadingHousing(false));
     }
   }, [id, housing]);
@@ -88,7 +90,8 @@ export default function HousingDetailScreen() {
     return null;
   }, [housing]);
 
-  const [realTravelTimes, setRealTravelTimes] = useState<MultiModeRoutes | null>(null);
+  const [realTravelTimes, setRealTravelTimes] =
+    useState<MultiModeRoutes | null>(null);
 
   useEffect(() => {
     if (!housing || !workLat || !workLon) return;
@@ -96,11 +99,11 @@ export default function HousingDetailScreen() {
       try {
         const routes = await fetchMultiModeRoutes(
           { latitude: housing.latitude, longitude: housing.longitude },
-          { latitude: workLat, longitude: workLon }
+          { latitude: workLat, longitude: workLon },
         );
         setRealTravelTimes(routes);
       } catch (err) {
-        console.warn('Failed to fetch real routes', err);
+        console.warn("Failed to fetch real routes", err);
       }
     };
     fetchRoutes();
@@ -120,9 +123,9 @@ export default function HousingDetailScreen() {
       { latitude: workLat, longitude: workLon },
     );
     return {
-      driving: Math.round((dist / 30) * 60),  // ~30 km/h average in city
-      cycling: Math.round((dist / 15) * 60),  // ~15 km/h cycling
-      walking: Math.round((dist / 5) * 60),   // ~5 km/h walking
+      driving: Math.round((dist / 30) * 60), // ~30 km/h average in city
+      cycling: Math.round((dist / 15) * 60), // ~15 km/h cycling
+      walking: Math.round((dist / 5) * 60), // ~5 km/h walking
     };
   }, [housing, workLat, workLon, realTravelTimes]);
 
@@ -138,7 +141,11 @@ export default function HousingDetailScreen() {
   if (!housing) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={48} color={Colors.textMuted} />
+        <Ionicons
+          name="alert-circle-outline"
+          size={48}
+          color={Colors.textMuted}
+        />
         <Text style={styles.errorText}>Vivienda no encontrada</Text>
       </View>
     );
@@ -148,8 +155,10 @@ export default function HousingDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* ── Image carousel ───────────────────────────────── */}
         <View style={styles.carouselWrapper}>
           <FlatList
@@ -159,7 +168,9 @@ export default function HousingDetailScreen() {
             showsHorizontalScrollIndicator={false}
             keyExtractor={(_, i) => String(i)}
             onMomentumScrollEnd={(e) => {
-              const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+              const index = Math.round(
+                e.nativeEvent.contentOffset.x / SCREEN_WIDTH,
+              );
               setActiveImageIndex(index);
             }}
             renderItem={({ item }) => (
@@ -171,20 +182,32 @@ export default function HousingDetailScreen() {
             )}
             ListEmptyComponent={
               <View style={[styles.heroImage, styles.noImagePlaceholder]}>
-                <Ionicons name="image-outline" size={48} color={Colors.textMuted} />
+                <Ionicons
+                  name="image-outline"
+                  size={48}
+                  color={Colors.textMuted}
+                />
               </View>
             }
           />
 
           {/* Back button */}
-          <TouchableOpacity style={styles.backButton} onPress={handleViewOnMap} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleViewOnMap}
+            activeOpacity={0.8}
+          >
             <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
 
           {/* Right overlay buttons */}
           <View style={styles.galleryRightBtns}>
             <TouchableOpacity style={styles.overlayBtn}>
-              <Ionicons name="share-outline" size={18} color={Colors.textPrimary} />
+              <Ionicons
+                name="share-outline"
+                size={18}
+                color={Colors.textPrimary}
+              />
             </TouchableOpacity>
             <TouchableOpacity style={styles.overlayBtn}>
               <Ionicons name="heart-outline" size={18} color={Colors.error} />
@@ -202,7 +225,10 @@ export default function HousingDetailScreen() {
               {housing.images.map((_, i) => (
                 <View
                   key={i}
-                  style={[styles.dot, i === activeImageIndex && styles.dotActive]}
+                  style={[
+                    styles.dot,
+                    i === activeImageIndex && styles.dotActive,
+                  ]}
                 />
               ))}
             </View>
@@ -213,12 +239,23 @@ export default function HousingDetailScreen() {
         <View style={styles.mainInfo}>
           <Text style={styles.title}>{housing.title}</Text>
           <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={16} color={Colors.textSecondary} />
-            <Text style={styles.locationText}>{housing.address}, {housing.district}</Text>
+            <Ionicons
+              name="location-outline"
+              size={16}
+              color={Colors.textSecondary}
+            />
+            <Text style={styles.locationText}>
+              {housing.address}, {housing.district}
+            </Text>
           </View>
           <View style={styles.priceContainer}>
-            <Text style={styles.currencyLabel}>{getCurrencySymbol(housing.currency)}</Text>
-            <Text style={styles.priceValue}> {housing.price.toLocaleString('es-PE')}</Text>
+            <Text style={styles.currencyLabel}>
+              {getCurrencySymbol(housing.currency)}
+            </Text>
+            <Text style={styles.priceValue}>
+              {" "}
+              {housing.price.toLocaleString("es-PE")}
+            </Text>
             <Text style={styles.priceUnit}>/mes</Text>
           </View>
         </View>
@@ -260,21 +297,46 @@ export default function HousingDetailScreen() {
             <View style={styles.travelSectionHeader}>
               <Text style={styles.sectionTitle}>Tiempo a tu trabajo</Text>
               {workName ? (
-                <Text style={styles.travelWorkName} numberOfLines={1}>{workName}</Text>
+                <Text style={styles.travelWorkName} numberOfLines={1}>
+                  {workName}
+                </Text>
               ) : null}
             </View>
             <View style={styles.travelCards}>
-              {([
-                { mode: 'driving', icon: 'car', label: 'Auto', mins: travelTimes.driving, color: '#E74C3C' },
-                { mode: 'cycling', icon: 'bicycle', label: 'Bici', mins: travelTimes.cycling, color: '#27AE60' },
-                { mode: 'walking', icon: 'walk', label: 'A pie', mins: travelTimes.walking, color: '#2E86C1' },
-              ] as const).map((t) => (
+              {(
+                [
+                  {
+                    mode: "driving",
+                    icon: "car",
+                    label: "Auto",
+                    mins: travelTimes.driving,
+                    color: "#E74C3C",
+                  },
+                  {
+                    mode: "cycling",
+                    icon: "bicycle",
+                    label: "Bici",
+                    mins: travelTimes.cycling,
+                    color: "#27AE60",
+                  },
+                  {
+                    mode: "walking",
+                    icon: "walk",
+                    label: "A pie",
+                    mins: travelTimes.walking,
+                    color: "#2E86C1",
+                  },
+                ] as const
+              ).map((t) => (
                 <View key={t.mode} style={styles.travelCard}>
-                  <View style={[styles.travelIcon, { backgroundColor: t.color }]}>
+                  <View
+                    style={[styles.travelIcon, { backgroundColor: t.color }]}
+                  >
                     <Ionicons name={t.icon} size={16} color="#fff" />
                   </View>
                   <Text style={styles.travelMins}>
-                    {t.mins}<Text style={styles.travelUnit}> min</Text>
+                    {t.mins}
+                    <Text style={styles.travelUnit}> min</Text>
                   </Text>
                   <Text style={styles.travelLabel}>{t.label}</Text>
                 </View>
@@ -287,15 +349,23 @@ export default function HousingDetailScreen() {
         <View style={styles.chipsRow}>
           {housing.covered_area_sqm && (
             <View style={styles.chip}>
-              <Ionicons name="square-outline" size={13} color={Colors.primary} />
-              <Text style={styles.chipText}>{housing.covered_area_sqm} m² cubiertos</Text>
+              <Ionicons
+                name="square-outline"
+                size={13}
+                color={Colors.primary}
+              />
+              <Text style={styles.chipText}>
+                {housing.covered_area_sqm} m² cubiertos
+              </Text>
             </View>
           )}
           {housing.antiquity !== undefined && (
             <View style={styles.chip}>
               <Ionicons name="time-outline" size={13} color={Colors.primary} />
               <Text style={styles.chipText}>
-                {housing.antiquity === 0 ? 'Estreno' : `${housing.antiquity} año${housing.antiquity !== 1 ? 's' : ''}`}
+                {housing.antiquity === 0
+                  ? "Estreno"
+                  : `${housing.antiquity} año${housing.antiquity !== 1 ? "s" : ""}`}
               </Text>
             </View>
           )}
@@ -314,7 +384,11 @@ export default function HousingDetailScreen() {
             <View style={styles.featuresList}>
               {housing.features.map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={18} color={Colors.success} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={18}
+                    color={Colors.success}
+                  />
                   <Text style={styles.featureText}>{feature}</Text>
                 </View>
               ))}
@@ -335,7 +409,6 @@ export default function HousingDetailScreen() {
             <Text style={styles.agentMsgText}>Mensaje</Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
 
       {/* ── Sticky CTA ──────────────────────────────────── */}
@@ -355,133 +428,314 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
-  errorContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background, gap: 12 },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.background,
+    gap: 12,
+  },
   errorText: { fontSize: 16, color: Colors.textMuted },
 
   // Image carousel
-  carouselWrapper: { position: 'relative' },
+  carouselWrapper: { position: "relative" },
   heroImage: { width: SCREEN_WIDTH, height: 250 },
-  noImagePlaceholder: { backgroundColor: Colors.surfaceElevated, alignItems: 'center', justifyContent: 'center' },
+  noImagePlaceholder: {
+    backgroundColor: Colors.surfaceElevated,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   backButton: {
-    position: 'absolute', top: 16, left: 16,
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15, shadowRadius: 4, elevation: 3,
+    position: "absolute",
+    top: 16,
+    left: 16,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  galleryRightBtns: { position: 'absolute', top: 16, right: 12, flexDirection: 'row', gap: 8 },
+  galleryRightBtns: {
+    position: "absolute",
+    top: 16,
+    right: 12,
+    flexDirection: "row",
+    gap: 8,
+  },
   overlayBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15, shadowRadius: 4, elevation: 3,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  typeBadge: { position: 'absolute', top: 66, right: 12, backgroundColor: 'rgba(255,255,255,0.92)', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20 },
-  typeBadgeText: { fontSize: 13, fontWeight: '600', color: Colors.textPrimary },
-  dots: { position: 'absolute', bottom: 10, alignSelf: 'center', flexDirection: 'row', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
+  typeBadge: {
+    position: "absolute",
+    top: 66,
+    right: 12,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  typeBadgeText: { fontSize: 13, fontWeight: "600", color: Colors.textPrimary },
+  dots: {
+    position: "absolute",
+    bottom: 10,
+    alignSelf: "center",
+    flexDirection: "row",
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.5)",
+  },
   dotActive: { backgroundColor: Colors.textOnPrimary, width: 18 },
 
   // Main info
-  mainInfo: { padding: 20, backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  title: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary, marginBottom: 6 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },
+  mainInfo: {
+    padding: 20,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: Colors.textPrimary,
+    marginBottom: 6,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 12,
+  },
   locationText: { fontSize: 14, color: Colors.textSecondary, flex: 1 },
-  priceContainer: { flexDirection: 'row', alignItems: 'baseline' },
-  currencyLabel: { fontSize: 14, fontWeight: '700', color: Colors.textSecondary },
-  priceValue: { fontSize: 28, fontWeight: '800', color: Colors.primary },
+  priceContainer: { flexDirection: "row", alignItems: "baseline" },
+  currencyLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.textSecondary,
+  },
+  priceValue: { fontSize: 28, fontWeight: "800", color: Colors.primary },
   priceUnit: { fontSize: 16, color: Colors.textSecondary, marginLeft: 2 },
 
   // Stats
-  statsGrid: { flexDirection: 'row', backgroundColor: Colors.surface, paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'space-around', marginBottom: 4 },
-  statItem: { alignItems: 'center', flex: 1 },
-  statValue: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary, marginTop: 4 },
+  statsGrid: {
+    flexDirection: "row",
+    backgroundColor: Colors.surface,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "space-around",
+    marginBottom: 4,
+  },
+  statItem: { alignItems: "center", flex: 1 },
+  statValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: Colors.textPrimary,
+    marginTop: 4,
+  },
   statLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
   statDivider: { width: 1, height: 36, backgroundColor: Colors.borderLight },
 
   // Travel times
   travelSection: { marginHorizontal: 16, marginBottom: 12 },
-  travelSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  travelWorkName: { fontSize: 11, color: Colors.textMuted, flex: 1, textAlign: 'right', marginLeft: 8 },
-  travelCards: { flexDirection: 'row', gap: 8 },
-  travelCard: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: 12,
-    padding: 12, alignItems: 'center', gap: 6,
-    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1, shadowRadius: 4, elevation: 1,
+  travelSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
   },
-  travelIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  travelMins: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, lineHeight: 20 },
-  travelUnit: { fontSize: 11, fontWeight: '500', color: Colors.textSecondary },
+  travelWorkName: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    flex: 1,
+    textAlign: "right",
+    marginLeft: 8,
+  },
+  travelCards: { flexDirection: "row", gap: 8 },
+  travelCard: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center",
+    gap: 6,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  travelIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  travelMins: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    lineHeight: 20,
+  },
+  travelUnit: { fontSize: 11, fontWeight: "500", color: Colors.textSecondary },
   travelLabel: { fontSize: 11, color: Colors.textMuted },
 
   // Chips
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: Colors.surface, marginBottom: 12 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.primary + '12', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 20 },
-  chipText: { fontSize: 12, fontWeight: '500', color: Colors.primary },
+  chipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: Colors.surface,
+    marginBottom: 12,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: Colors.primary + "12",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  chipText: { fontSize: 12, fontWeight: "500", color: Colors.primary },
 
   // Sections
-  sectionCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, marginHorizontal: 16, marginBottom: 12, shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 6, elevation: 2 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 10 },
+  sectionCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 18,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    marginBottom: 10,
+  },
   description: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },
   featuresList: { gap: 8 },
-  featureItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  featureItem: { flexDirection: "row", alignItems: "center", gap: 8 },
   featureText: { fontSize: 14, color: Colors.textPrimary },
 
   // Agent
   agentCard: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    marginHorizontal: 16, marginBottom: 12,
-    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1, shadowRadius: 6, elevation: 2,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 2,
   },
   agentAvatar: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.surfaceElevated,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  agentName: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  agentName: { fontSize: 14, fontWeight: "600", color: Colors.textPrimary },
   agentMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
   agentMsgBtn: {
-    borderWidth: 1.5, borderColor: Colors.primary,
-    borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
-  agentMsgText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+  agentMsgText: { fontSize: 13, fontWeight: "600", color: Colors.primary },
 
   // Sticky CTA
   stickyCta: {
     backgroundColor: Colors.surface,
-    borderTopWidth: 1, borderTopColor: Colors.borderLight,
-    paddingHorizontal: 16, paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 48,
-    flexDirection: 'row', gap: 10, alignItems: 'center',
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
   },
   ctaPhone: {
-    width: 48, height: 48, borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   ctaBook: {
-    flex: 1, backgroundColor: Colors.primary,
-    borderRadius: 12, paddingVertical: 14,
-    alignItems: 'center',
+    flex: 1,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
   },
-  ctaBookText: { fontSize: 15, fontWeight: '600', color: Colors.textOnPrimary },
+  ctaBookText: { fontSize: 15, fontWeight: "600", color: Colors.textOnPrimary },
 
   // Route (kept for future use)
-  routeCard: { backgroundColor: Colors.surfaceElevated, borderRadius: 16, padding: 18, marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.primaryLight + '30' },
+  routeCard: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 16,
+    padding: 18,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.primaryLight + "30",
+  },
   routeDetails: { gap: 10, marginBottom: 12 },
-  routeDetailItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  routeDetailItem: { flexDirection: "row", alignItems: "center", gap: 8 },
   routeDetailLabel: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
-  routeDetailValue: { fontSize: 14, fontWeight: '700', color: Colors.primary },
-  savingsBadge: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  savingPositive: { backgroundColor: '#e8f8ef' },
-  savingNegative: { backgroundColor: '#fdf2e9' },
-  savingsText: { fontSize: 13, fontWeight: '700', flex: 1 },
-  savingsTextPos: { color: '#27ae60' },
-  savingsTextNeg: { color: '#e67e22' },
+  routeDetailValue: { fontSize: 14, fontWeight: "700", color: Colors.primary },
+  savingsBadge: {
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  savingPositive: { backgroundColor: "#e8f8ef" },
+  savingNegative: { backgroundColor: "#fdf2e9" },
+  savingsText: { fontSize: 13, fontWeight: "700", flex: 1 },
+  savingsTextPos: { color: "#27ae60" },
+  savingsTextNeg: { color: "#e67e22" },
 });

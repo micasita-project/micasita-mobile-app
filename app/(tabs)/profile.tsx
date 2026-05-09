@@ -4,30 +4,19 @@
  */
 
 import type { Workplace } from "@/entities/workplace/api/workplace.api";
-import {
-  useCreateWorkplace,
-  useDeleteWorkplace,
-  useUpdateWorkplace,
-  useWorkplaces,
-} from "@/entities/workplace/model/useWorkplaces";
-import {
-  fetchPreferences,
-  useCreatePreference,
-  useUpdatePreference,
-} from "@/entities/recommendation-preferences";
+import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import { updateProfile } from "@/features/auth/api/auth.service";
 import {
-  reverseAddress,
   searchAddress,
   type GeocodeSuggestion,
 } from "@/shared/api/geocode.service";
 import { Colors } from "@/shared/config/colors";
 import { BottomSheet } from "@/shared/ui/BottomSheet";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
-import { AddWorkplaceModal } from "@/widgets/workplace/ui/AddWorkplaceModal";
+import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -39,28 +28,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Slider from '@react-native-community/slider';
-import MapView, { Region } from "react-native-maps";
-
-type TransportOption = "driving" | "cycling" | "walking";
-const TRANSPORT_OPTIONS: TransportOption[] = ["driving", "cycling", "walking"];
-const TRANSPORT_LABELS: Record<TransportOption, string> = {
-  driving: "Auto",
-  cycling: "Bicicleta",
-  walking: "Caminando",
-};
-const TRANSPORT_ICONS: Record<TransportOption, string> = {
-  driving: "car-outline",
-  cycling: "bicycle-outline",
-  walking: "walk-outline",
-};
-
-const LIMA_REGION: Region = {
-  latitude: -12.0464,
-  longitude: -77.0428,
-  latitudeDelta: 0.1,
-  longitudeDelta: 0.1,
-};
 
 interface AddressState {
   query: string;
@@ -78,34 +45,18 @@ const EMPTY_ADDR: AddressState = {
 export default function ProfileScreen() {
   const { user, logout, refreshUser, setHome } = useAuth();
   const router = useRouter();
-  const params = useLocalSearchParams<{ action?: string }>();
   const { data: workplaces = [] } = useWorkplaces(!!user);
-  const createWorkplace = useCreateWorkplace();
-  const deleteWorkplace = useDeleteWorkplace();
-  const updateWorkplaceMutation = useUpdateWorkplace();
-  const createPreferenceMutation = useCreatePreference();
-  const updatePreferenceMutation = useUpdatePreference();
 
-  // ── Add Workplace ────────────────────────────────────────────────
-  const [isAddWpVisible, setIsAddWpVisible] = useState(false);
+  // ── Workplace Sheet ──────────────────────────────────────────────
+  const [isWorkplaceSheetVisible, setIsWorkplaceSheetVisible] = useState(false);
 
   // ── Edit Workplace ───────────────────────────────────────────────
   const [editingWp, setEditingWp] = useState<Workplace | null>(null);
-  const [editWpBudget, setEditWpBudget] = useState("");
-  const [transport, setTransport] = useState<TransportOption>("driving");
-  const [editMaxDistKm, setEditMaxDistKm] = useState(10);
-  const [editWpAddr, setEditWpAddr] = useState<AddressState>(EMPTY_ADDR);
-  const [editWpMapVisible, setEditWpMapVisible] = useState(false);
-  const [editWpMapRegion, setEditWpMapRegion] = useState<Region>(LIMA_REGION);
-  const [editWpMapReversing, setEditWpMapReversing] = useState(false);
-  const editWpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Edit Home ────────────────────────────────────────────────────
   const [isEditHomeVisible, setIsEditHomeVisible] = useState(false);
   const [homeAddr, setHomeAddr] = useState<AddressState>(EMPTY_ADDR);
   const [homeMapVisible, setHomeMapVisible] = useState(false);
-  const [homeMapRegion, setHomeMapRegion] = useState<Region>(LIMA_REGION);
-  const [homeMapReversing, setHomeMapReversing] = useState(false);
   const [isSavingHome, setIsSavingHome] = useState(false);
   const homeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -151,47 +102,25 @@ export default function ProfileScreen() {
     };
 
   // ── Derived handlers ─────────────────────────────────────────────
-  const handleEditWpSearch = useCallback(
-    makeSearchHandler(setEditWpAddr, editWpTimer),
-    [],
-  );
-  const handleEditWpSelect = useCallback(selectAddress(setEditWpAddr), []);
   const handleHomeSearch = useCallback(
     makeSearchHandler(setHomeAddr, homeTimer),
     [],
   );
   const handleHomeSelect = useCallback(selectAddress(setHomeAddr), []);
 
-  const closeAddWp = useCallback(() => {
-    setIsAddWpVisible(false);
+  const closeWorkplaceSheet = useCallback(() => {
+    setIsWorkplaceSheetVisible(false);
+    setEditingWp(null);
   }, []);
 
-  const openEditWp = useCallback(async (wp: Workplace) => {
+  const openAddWorkplace = useCallback(() => {
+    setEditingWp(null);
+    setIsWorkplaceSheetVisible(true);
+  }, []);
+
+  const openEditWp = useCallback((wp: Workplace) => {
     setEditingWp(wp);
-    // Pre-fill address field with current workplace address
-    setEditWpAddr({
-      query: wp.work_address,
-      suggestions: [],
-      selected: {
-        display_name: wp.work_address,
-        latitude: wp.work_lat,
-        longitude: wp.work_lon,
-        place_type: 'address',
-      },
-      isSearching: false,
-    });
-    setEditWpBudget("");
-    setTransport("driving");
-    setEditMaxDistKm(10);
-    // Load preferences for this workplace
-    try {
-      const prefs = await fetchPreferences(wp.id);
-      if (prefs.length > 0) {
-        setEditWpBudget(String(prefs[0].budget));
-        setTransport(prefs[0].preferred_transportation as TransportOption || "driving");
-        setEditMaxDistKm(prefs[0].max_distance_km ?? 10);
-      }
-    } catch {}
+    setIsWorkplaceSheetVisible(true);
   }, []);
 
   const openEditHome = useCallback(() => {
@@ -293,55 +222,6 @@ export default function ProfileScreen() {
 
   // ── Handlers that need `user` ────────────────────────────────────
 
-  const handleSaveWorkplace = async () => {
-    if (!editingWp) return;
-    const budget = parseFloat(editWpBudget);
-    if (isNaN(budget) || budget <= 0) {
-      Alert.alert("Presupuesto inválido", "Ingresa un presupuesto válido.");
-      return;
-    }
-    try {
-      // Update workplace geo data + address
-      const newAddress = editWpAddr.selected
-        ? editWpAddr.query.trim() || editWpAddr.selected.display_name.split(',')[0].trim()
-        : editWpAddr.query.trim() || undefined;
-      await updateWorkplaceMutation.mutateAsync({
-        id: editingWp.id,
-        data: {
-          work_address: newAddress,
-          ...(editWpAddr.selected
-            ? {
-                work_lat: editWpAddr.selected.latitude,
-                work_lon: editWpAddr.selected.longitude,
-              }
-            : {}),
-        },
-      });
-      // Update preferences
-      const prefs = await fetchPreferences(editingWp.id);
-      if (prefs.length > 0) {
-        await updatePreferenceMutation.mutateAsync({
-          id: prefs[0].id,
-          data: {
-            budget,
-            preferred_transportation: transport,
-            max_distance_km: editMaxDistKm,
-          }
-        });
-      } else {
-        await createPreferenceMutation.mutateAsync({
-          workplace_id: editingWp.id,
-          budget,
-          preferred_transportation: transport,
-          max_distance_km: editMaxDistKm,
-        });
-      }
-      setEditingWp(null);
-    } catch {
-      Alert.alert("Error", "No se pudo actualizar el lugar de trabajo.");
-    }
-  };
-
   const handleSaveHome = async () => {
     if (!homeAddr.selected) {
       Alert.alert("Dirección faltante", "Busca o selecciona una dirección.");
@@ -360,20 +240,6 @@ export default function ProfileScreen() {
     } finally {
       setIsSavingHome(false);
     }
-  };
-
-  const confirmDeleteWp = (wp: Workplace) => {
-    Alert.alert("Eliminar", `¿Eliminar "${wp.work_address}"?`, [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: () => {
-          deleteWorkplace.mutate(wp.id);
-          setEditingWp(null);
-        },
-      },
-    ]);
   };
 
   // ── Address field renderer (shared pattern) ──────────────────────
@@ -486,7 +352,7 @@ export default function ProfileScreen() {
             <Text style={styles.listSectionLabel}>LUGARES DE TRABAJO</Text>
             <TouchableOpacity
               style={styles.listSectionAdd}
-              onPress={() => setIsAddWpVisible(true)}
+              onPress={openAddWorkplace}
             >
               <Ionicons name="add" size={12} color={Colors.primary} />
               <Text style={styles.listSectionAddText}>Añadir</Text>
@@ -647,139 +513,12 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* ══ Add Workplace ══════════════════════════════════════════ */}
-      <AddWorkplaceModal
-        visible={isAddWpVisible}
-        onClose={closeAddWp}
+      <WorkplaceSheet
+        visible={isWorkplaceSheetVisible}
+        workplace={editingWp}
+        onClose={closeWorkplaceSheet}
+        allowDelete={!!editingWp}
       />
-
-      {/* ══ Edit Workplace ═════════════════════════════════════════ */}
-      <BottomSheet
-        visible={!!editingWp}
-        onClose={() => setEditingWp(null)}
-        maxHeightRatio={0.56}
-      >
-        <ScrollView
-          style={{ paddingHorizontal: 24 }}
-          contentContainerStyle={{ paddingBottom: 32 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.sheetTitle}>Editar Lugar de Trabajo</Text>
-          {renderAddressField(
-            editWpAddr,
-            handleEditWpSearch,
-            handleEditWpSelect,
-            () => setEditWpMapVisible(true),
-            "Buscar nueva dirección...",
-          )}
-          <TextInput
-            style={[styles.fieldInput, { marginTop: 8 }]}
-            placeholder="Presupuesto Mensual (S/)"
-            placeholderTextColor={Colors.textMuted}
-            value={editWpBudget}
-            onChangeText={setEditWpBudget}
-            keyboardType="numeric"
-          />
-          <View style={[styles.transportRow, { marginBottom: 16 }]}>
-            {TRANSPORT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt}
-                style={[
-                  styles.transportChip,
-                  transport === opt && styles.transportChipActive,
-                ]}
-                onPress={() => setTransport(opt)}
-              >
-                <Ionicons
-                  name={TRANSPORT_ICONS[opt] as any}
-                  size={18}
-                  color={
-                    transport === opt
-                      ? Colors.textOnPrimary
-                      : Colors.primary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.transportText,
-                    transport === opt && styles.transportTextActive,
-                  ]}
-                >
-                  {TRANSPORT_LABELS[opt]}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {/* Radius slider */}
-          <View style={{ marginTop: 4, marginBottom: 8 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.textSecondary }}>Radio de búsqueda</Text>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: Colors.primary }}>{editMaxDistKm} km</Text>
-            </View>
-            <Slider
-              style={{ width: '100%', height: 40 }}
-              minimumValue={1}
-              maximumValue={30}
-              step={1}
-              value={editMaxDistKm}
-              onValueChange={setEditMaxDistKm}
-              minimumTrackTintColor={Colors.primary}
-              maximumTrackTintColor={Colors.border}
-              thumbTintColor={Colors.primary}
-            />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 11, color: Colors.textMuted }}>1 km</Text>
-              <Text style={{ fontSize: 11, color: Colors.textMuted }}>30 km</Text>
-            </View>
-          </View>
-
-          <View style={[styles.sheetActions, { marginTop: 8 }]}>
-            <TouchableOpacity
-              style={styles.sheetCancel}
-              onPress={() => setEditingWp(null)}
-            >
-              <Text style={styles.sheetCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.sheetConfirm}
-              onPress={handleSaveWorkplace}
-              disabled={updateWorkplaceMutation.isPending}
-            >
-              {updateWorkplaceMutation.isPending ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.sheetConfirmText}>Guardar</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-          {editingWp && (
-            <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() => editingWp && confirmDeleteWp(editingWp)}
-            >
-              <Ionicons name="trash-outline" size={15} color={Colors.error} />
-              <Text style={styles.deleteBtnText}>
-                Eliminar lugar de trabajo
-              </Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
-        <MapPickerModal
-          visible={editWpMapVisible}
-          onClose={() => setEditWpMapVisible(false)}
-          title="Editar ubicación"
-          instruction="Ubica el nuevo punto de trabajo en el mapa"
-          initialRegion={editingWp ? {
-            latitude: editingWp.work_lat,
-            longitude: editingWp.work_lon,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          } : undefined}
-          onConfirm={(s) => {
-            handleEditWpSelect(s);
-            setEditWpMapVisible(false);
-          }}
-        />
-      </BottomSheet>
 
       {/* ══ Edit Home ══════════════════════════════════════════════ */}
       <BottomSheet
@@ -1127,16 +866,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 15,
   },
-  deleteBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: 16,
-    paddingVertical: 12,
-  },
-  deleteBtnText: { fontSize: 14, fontWeight: "600", color: Colors.error },
-
   // Search
   searchContainer: {
     flexDirection: "row",
@@ -1218,23 +947,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: 12,
   },
-  transportRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  transportChip: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  transportChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  transportText: { fontSize: 12, fontWeight: "600", color: Colors.primary },
-  transportTextActive: { color: Colors.textOnPrimary },
 
   // Map Picker
   mapPin: {

@@ -9,12 +9,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RecommendationItem } from '@/features/recommendation/api/recommendation.api';
+import type { TransportMode } from '@/shared/types';
 
 const GUEST_HOME_KEY = 'micasita_guest_home';
 const GUEST_WORKPLACE_KEY = 'micasita_guest_workplace';
 const GUEST_RECOMMENDATIONS_KEY = 'micasita_guest_recommendations';
 
-export type TransportOption = 'Auto' | 'Bicicleta' | 'Caminando';
+export type TransportOption = TransportMode;
 
 export interface GuestHome {
   lat: number;

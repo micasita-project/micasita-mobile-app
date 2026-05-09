@@ -25,6 +25,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/shared/config/colors';
 import { useAuth } from '@/features/auth';
+import { getCurrencySymbol } from '@/shared/utils/currency';
 import { useGuest } from '@/features/guest';
 import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
 import { fetchPropertyById } from '@/entities/housing/api/housing.api';
@@ -216,7 +217,7 @@ export default function HousingDetailScreen() {
             <Text style={styles.locationText}>{housing.address}, {housing.district}</Text>
           </View>
           <View style={styles.priceContainer}>
-            <Text style={styles.currencyLabel}>{housing.currency ?? 'PEN'}</Text>
+            <Text style={styles.currencyLabel}>{getCurrencySymbol(housing.currency)}</Text>
             <Text style={styles.priceValue}> {housing.price.toLocaleString('es-PE')}</Text>
             <Text style={styles.priceUnit}>/mes</Text>
           </View>

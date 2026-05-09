@@ -28,7 +28,17 @@ import { Colors } from '@/shared/config/colors';
 import { useGuest, type GuestHome, type GuestWorkplace, type TransportOption } from '../model/GuestContext';
 import { useGuestRecommendations } from '@/features/recommendation/model/useRecommendations';
 
-const TRANSPORT_OPTIONS: TransportOption[] = ['Auto', 'Bicicleta', 'Caminando'];
+const TRANSPORT_OPTIONS: TransportOption[] = ['driving', 'cycling', 'walking'];
+const TRANSPORT_LABELS: Record<TransportOption, string> = {
+  'driving': 'Auto',
+  'cycling': 'Bicicleta',
+  'walking': 'Caminando',
+};
+const TRANSPORT_ICONS: Record<TransportOption, keyof typeof Ionicons.glyphMap> = {
+  'driving': 'car-outline',
+  'cycling': 'bicycle-outline',
+  'walking': 'walk-outline',
+};
 const LIMA_REGION: Region = {
   latitude: -12.0464, longitude: -77.0428,
   latitudeDelta: 0.1, longitudeDelta: 0.1,
@@ -97,7 +107,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
   const [home, setHome] = useState<AddressField>(EMPTY_FIELD);
   const [work, setWork] = useState<AddressField>(EMPTY_FIELD);
   const [budget, setBudget] = useState('');
-  const [transport, setTransport] = useState<TransportOption>('Auto');
+  const [transport, setTransport] = useState<TransportOption>(guestWorkplace?.transport ?? 'driving');
   const [maxDistanceKm, setMaxDistanceKm] = useState(DEFAULT_KM);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -296,7 +306,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
   };
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose}>
+    <BottomSheet visible={visible} onClose={handleClose} maxHeightRatio={0.58}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
@@ -355,7 +365,15 @@ export function GuestSetupModal({ visible, onClose }: Props) {
                     style={[styles.transportChip, transport === opt && styles.transportActive]}
                     onPress={() => setTransport(opt)}
                   >
-                    <Text style={[styles.transportText, transport === opt && styles.transportTextActive]}>{opt}</Text>
+                    <Ionicons 
+                      name={TRANSPORT_ICONS[opt]} 
+                      size={16} 
+                      color={transport === opt ? Colors.textOnPrimary : Colors.textSecondary} 
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text style={[styles.transportText, transport === opt && styles.transportTextActive]}>
+                      {TRANSPORT_LABELS[opt]}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>

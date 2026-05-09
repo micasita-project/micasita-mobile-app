@@ -22,7 +22,6 @@ interface Amenity {
 }
 
 const AMENITIES: Amenity[] = [
-  { label: 'Estacionamiento', icon: 'car-outline' },
   { label: 'Gimnasio', icon: 'barbell-outline' },
   { label: 'Piscina', icon: 'water-outline' },
   { label: 'Zona BBQ', icon: 'flame-outline' },

@@ -18,7 +18,7 @@ import { Colors } from '@/shared/config/colors';
 import { apiClient } from '@/shared/api';
 
 function useProtectedRoute() {
-  const { isAuthenticated, isInitialized } = useAuth();
+  const { isAuthenticated, isInitialized, user } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const [hasNavigated, setHasNavigated] = useState(false);
@@ -34,28 +34,49 @@ function useProtectedRoute() {
 
     const inLoginPage = segments[0] === 'login';
     const inOnboarding = segments[0] === 'onboarding';
+    const inAdmin = segments[0] === '(admin)';
+    const inHousingDetail = segments[0] === 'housing-detail';
 
-    if (!isAuthenticated && inOnboarding) {
-      // Guests can't access onboarding
-      router.replace('/(tabs)');
-    } else if (isAuthenticated && inLoginPage) {
-      // Authenticated user in login → check workplaces
-      apiClient
-        .get('/workplaces/')
-        .then((response) => {
-          const workplaces = response.data;
-          if (!workplaces || workplaces.length === 0) {
-            router.replace('/onboarding');
-          } else {
-            router.replace('/(tabs)');
-          }
-        })
-        .catch(() => {
-          router.replace('/(tabs)');
-        });
+    // -- Flujo para Administradores --
+    if (isAuthenticated && user?.role === 'admin') {
+      if (!inAdmin && !inHousingDetail) {
+        router.replace('/(admin)');
+      }
+      return;
     }
-    // Guests on tabs or login → allow freely
-  }, [isAuthenticated, isInitialized, hasNavigated, segments, router]);
+
+    // -- Flujo para Usuarios Normales --
+    if (isAuthenticated && user?.role !== 'admin') {
+      if (inAdmin) {
+        router.replace('/(tabs)');
+        return;
+      }
+      if (inLoginPage) {
+        // Authenticated user in login → check workplaces
+        apiClient
+          .get('/workplaces/')
+          .then((response) => {
+            const workplaces = response.data;
+            if (!workplaces || workplaces.length === 0) {
+              router.replace('/onboarding');
+            } else {
+              router.replace('/(tabs)');
+            }
+          })
+          .catch(() => {
+            router.replace('/(tabs)');
+          });
+      }
+      return;
+    }
+
+    // -- Flujo para Invitados (No Autenticados) --
+    if (!isAuthenticated) {
+      if (inOnboarding || inAdmin) {
+        router.replace('/(tabs)');
+      }
+    }
+  }, [isAuthenticated, isInitialized, hasNavigated, segments, router, user]);
 }
 
 function RootNavigator() {
@@ -69,6 +90,7 @@ function RootNavigator() {
       <Stack.Screen name="login" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(admin)" />
       <Stack.Screen
         name="housing-detail"
         options={{

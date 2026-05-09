@@ -72,11 +72,11 @@ export function LoginForm() {
         Alert.alert('Error al registrar', result.error ?? 'Intenta con otro email.');
       }
     } else {
-      const success = await login(email.trim(), password);
-      if (success) {
+      const result = await login(email.trim(), password);
+      if (result.success) {
         await clearGuestData();
       } else {
-        Alert.alert('Error', 'Email o contraseña incorrectos.');
+        Alert.alert('Error', result.error ?? 'Email o contraseña incorrectos.');
       }
     }
   };

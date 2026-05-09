@@ -32,7 +32,6 @@ import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -43,12 +42,17 @@ import {
 import Slider from '@react-native-community/slider';
 import MapView, { Region } from "react-native-maps";
 
-type TransportOption = "Auto" | "Bicicleta" | "Caminando";
-const TRANSPORT_OPTIONS: TransportOption[] = ["Auto", "Bicicleta", "Caminando"];
+type TransportOption = "driving" | "cycling" | "walking";
+const TRANSPORT_OPTIONS: TransportOption[] = ["driving", "cycling", "walking"];
+const TRANSPORT_LABELS: Record<TransportOption, string> = {
+  driving: "Auto",
+  cycling: "Bicicleta",
+  walking: "Caminando",
+};
 const TRANSPORT_ICONS: Record<TransportOption, string> = {
-  Auto: "car-outline",
-  Bicicleta: "bicycle-outline",
-  Caminando: "walk-outline",
+  driving: "car-outline",
+  cycling: "bicycle-outline",
+  walking: "walk-outline",
 };
 
 const LIMA_REGION: Region = {
@@ -88,8 +92,7 @@ export default function ProfileScreen() {
   // ── Edit Workplace ───────────────────────────────────────────────
   const [editingWp, setEditingWp] = useState<Workplace | null>(null);
   const [editWpBudget, setEditWpBudget] = useState("");
-  const [editWpTransport, setEditWpTransport] =
-    useState<TransportOption>("Auto");
+  const [transport, setTransport] = useState<TransportOption>("driving");
   const [editMaxDistKm, setEditMaxDistKm] = useState(10);
   const [editWpAddr, setEditWpAddr] = useState<AddressState>(EMPTY_ADDR);
   const [editWpMapVisible, setEditWpMapVisible] = useState(false);
@@ -178,14 +181,14 @@ export default function ProfileScreen() {
       isSearching: false,
     });
     setEditWpBudget("");
-    setEditWpTransport("Auto");
+    setTransport("driving");
     setEditMaxDistKm(10);
     // Load preferences for this workplace
     try {
       const prefs = await fetchPreferences(wp.id);
       if (prefs.length > 0) {
         setEditWpBudget(String(prefs[0].budget));
-        setEditWpTransport(prefs[0].preferred_transportation as TransportOption);
+        setTransport(prefs[0].preferred_transportation as TransportOption || "driving");
         setEditMaxDistKm(prefs[0].max_distance_km ?? 10);
       }
     } catch {}
@@ -321,7 +324,7 @@ export default function ProfileScreen() {
           id: prefs[0].id,
           data: {
             budget,
-            preferred_transportation: editWpTransport,
+            preferred_transportation: transport,
             max_distance_km: editMaxDistKm,
           }
         });
@@ -329,7 +332,7 @@ export default function ProfileScreen() {
         await createPreferenceMutation.mutateAsync({
           workplace_id: editingWp.id,
           budget,
-          preferred_transportation: editWpTransport,
+          preferred_transportation: transport,
           max_distance_km: editMaxDistKm,
         });
       }
@@ -682,15 +685,15 @@ export default function ProfileScreen() {
                 key={opt}
                 style={[
                   styles.transportChip,
-                  editWpTransport === opt && styles.transportChipActive,
+                  transport === opt && styles.transportChipActive,
                 ]}
-                onPress={() => setEditWpTransport(opt)}
+                onPress={() => setTransport(opt)}
               >
                 <Ionicons
                   name={TRANSPORT_ICONS[opt] as any}
                   size={18}
                   color={
-                    editWpTransport === opt
+                    transport === opt
                       ? Colors.textOnPrimary
                       : Colors.primary
                   }
@@ -698,10 +701,10 @@ export default function ProfileScreen() {
                 <Text
                   style={[
                     styles.transportText,
-                    editWpTransport === opt && styles.transportTextActive,
+                    transport === opt && styles.transportTextActive,
                   ]}
                 >
-                  {opt}
+                  {TRANSPORT_LABELS[opt]}
                 </Text>
               </TouchableOpacity>
             ))}

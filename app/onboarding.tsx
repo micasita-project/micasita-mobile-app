@@ -35,12 +35,17 @@ import MapView, { Region } from "react-native-maps";
 import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
 
 
-type TransportOption = "Auto" | "Bicicleta" | "Caminando";
-const TRANSPORT_OPTIONS: TransportOption[] = ["Auto", "Bicicleta", "Caminando"];
+type TransportOption = "driving" | "cycling" | "walking";
+const TRANSPORT_OPTIONS: TransportOption[] = ["driving", "cycling", "walking"];
+const TRANSPORT_LABELS: Record<TransportOption, string> = {
+  driving: "Auto",
+  cycling: "Bicicleta",
+  walking: "Caminando",
+};
 const TRANSPORT_ICONS: Record<TransportOption, string> = {
-  Auto: "car-outline",
-  Bicicleta: "bicycle-outline",
-  Caminando: "walk-outline",
+  driving: "car-outline",
+  cycling: "bicycle-outline",
+  walking: "walk-outline",
 };
 
 const LIMA_REGION: Region = {
@@ -228,7 +233,7 @@ export default function OnboardingScreen() {
   );
   const [workAddressLabel, setWorkAddressLabel] = useState("");
   const [budget, setBudget] = useState("");
-  const [transport, setTransport] = useState<TransportOption>("Auto");
+  const [transport, setTransport] = useState<TransportOption>("driving");
   const [maxDistanceKm, setMaxDistanceKm] = useState(10);
 
   // Map Picker State
@@ -537,7 +542,7 @@ export default function OnboardingScreen() {
                       transport === opt && styles.transportTextActive,
                     ]}
                   >
-                    {opt}
+                    {TRANSPORT_LABELS[opt]}
                   </Text>
                 </TouchableOpacity>
               ))}

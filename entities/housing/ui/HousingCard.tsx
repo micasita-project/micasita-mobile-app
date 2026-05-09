@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { Housing } from '@/shared/types';
 import { Colors } from '@/shared/config/colors';
 import { HousingImages } from '@/entities/housing/api/images';
+import { getCurrencySymbol } from '@/shared/utils/currency';
 
 function getImageSource(imagePath?: string) {
   if (!imagePath) return null;
@@ -37,6 +38,7 @@ export function HousingCard({
   const isCompact = variant === 'compact';
 
   const typeLabel = housing.property_type;
+  const currencySymbol = getCurrencySymbol(housing.currency);
 
   if (isCompact) {
     return (
@@ -73,7 +75,7 @@ export function HousingCard({
             </View>
           </View>
 
-          <Text style={styles.compactPrice}>S/{housing.price}<Text style={styles.compactPriceUnit}>/mes</Text></Text>
+          <Text style={styles.compactPrice}>{currencySymbol}{housing.price}<Text style={styles.compactPriceUnit}>/mes</Text></Text>
         </View>
 
         {/* Right: Image */}
@@ -127,7 +129,7 @@ export function HousingCard({
         </View>
 
         <View style={styles.priceRow}>
-          <Text style={styles.priceValue}>S/{housing.price}</Text>
+          <Text style={styles.priceValue}>{currencySymbol}{housing.price}</Text>
           <Text style={styles.priceUnit}>/mes</Text>
         </View>
       </View>

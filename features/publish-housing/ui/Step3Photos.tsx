@@ -47,7 +47,7 @@ export function Step3Photos({ data, onChange }: Step3PhotosProps) {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
-      quality: 0.8,
+      quality: 0.5,
       selectionLimit: MAX_PHOTOS - localImageUris.length,
     });
 
@@ -82,7 +82,7 @@ export function Step3Photos({ data, onChange }: Step3PhotosProps) {
             ? 'Toca para agregar fotos'
             : `Agregar más fotos (${localImageUris.length}/${MAX_PHOTOS})`}
         </Text>
-        <Text style={styles.uploadHint}>JPG, PNG — hasta 10 MB por foto</Text>
+        <Text style={styles.uploadHint}>JPG, PNG — hasta 5 MB por foto</Text>
       </TouchableOpacity>
 
       {/* Grid de fotos seleccionadas */}

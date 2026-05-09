@@ -164,19 +164,19 @@ export function Step1Location({ data, onChange }: Step1LocationProps) {
         </View>
       )}
 
-      {data.address.trim().length > 3 && (
+      <View style={styles.orDivider}>
+        <View style={styles.line} />
+        <Text style={styles.orText}>O</Text>
+        <View style={styles.line} />
+      </View>
+
+      <TouchableOpacity style={styles.mapPickerBtn} onPress={() => setShowMapPicker(true)}>
+        <Ionicons name="map-outline" size={20} color={Colors.primary} />
+        <Text style={styles.mapPickerBtnText}>Elegir en el mapa</Text>
+      </TouchableOpacity>
+
+      {data.address.trim().length > 0 && (
         <>
-          <View style={styles.orDivider}>
-            <View style={styles.line} />
-            <Text style={styles.orText}>O</Text>
-            <View style={styles.line} />
-          </View>
-
-          <TouchableOpacity style={styles.mapPickerBtn} onPress={() => setShowMapPicker(true)}>
-            <Ionicons name="map-outline" size={20} color={Colors.primary} />
-            <Text style={styles.mapPickerBtnText}>Elegir en el mapa</Text>
-          </TouchableOpacity>
-
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
             Ubicación en el Mapa
           </Text>
@@ -187,16 +187,16 @@ export function Step1Location({ data, onChange }: Step1LocationProps) {
               provider={PROVIDER_DEFAULT}
               style={styles.map}
               initialRegion={{
-                latitude: data.latitude || -12.0464,
-                longitude: data.longitude || -77.0428,
+                latitude: data.latitude,
+                longitude: data.longitude,
                 latitudeDelta: 0.02,
                 longitudeDelta: 0.02,
               }}
             >
               <Marker
                 coordinate={{
-                  latitude: data.latitude || -12.0464,
-                  longitude: data.longitude || -77.0428,
+                  latitude: data.latitude,
+                  longitude: data.longitude,
                 }}
               />
             </MapView>

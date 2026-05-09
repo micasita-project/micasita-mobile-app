@@ -1,6 +1,6 @@
 /**
  * @layer app (pages)
- * @description Housing list page with district filters.
+ * @description Housing list page with infinite scroll and advanced filters via BottomSheet.
  * - Publish FAB and "Mis publicaciones" only visible for authenticated users.
  * - Guests can browse all properties freely.
  */
@@ -15,56 +15,137 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth';
 import { HousingCard } from '@/entities/housing';
 import { useProperties } from '@/entities/housing/model/useProperties';
+import type { PropertyFilters } from '@/entities/housing/api/housing.api';
 import { Colors } from '@/shared/config/colors';
 import type { Housing } from '@/shared/types';
+import { BottomSheet } from '@/shared/ui/BottomSheet';
+
+// ── Filter defaults ──────────────────────────────────────────────
+const EMPTY_FILTERS: PropertyFilters = {};
+
+function filtersAreActive(f: PropertyFilters): boolean {
+  return !!(f.district || f.bedrooms != null || f.bathrooms != null || f.parking != null || f.min_area_sqm != null);
+}
+
+// ── Filter Panel ─────────────────────────────────────────────────
+function StepperField({
+  label,
+  icon,
+  value,
+  onChange,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+}) {
+  const dec = () => {
+    if (value == null || value <= 1) { onChange(undefined); return; }
+    onChange(value - 1);
+  };
+  const inc = () => onChange((value ?? 0) + 1);
+  return (
+    <View style={filterStyles.stepperRow}>
+      <View style={filterStyles.stepperLabelContainer}>
+        <Ionicons name={icon} size={20} color={Colors.textSecondary} style={{ marginRight: 10 }} />
+        <Text style={filterStyles.stepperLabel}>{label}</Text>
+      </View>
+      <View style={filterStyles.stepperControls}>
+        <TouchableOpacity onPress={dec} style={filterStyles.stepperBtn}>
+          <Ionicons name="remove" size={18} color={Colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={filterStyles.stepperValue}>{value ?? '–'}</Text>
+        <TouchableOpacity onPress={inc} style={filterStyles.stepperBtn}>
+          <Ionicons name="add" size={18} color={Colors.textPrimary} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 export default function HousingScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const { data: allHousing = [], isLoading, isError, refetch } = useProperties();
 
-  const districts = useMemo(() => {
-    const set = new Set(allHousing.map((h) => h.district));
-    return Array.from(set).sort();
-  }, [allHousing]);
+  // Applied filters (sent to API)
+  const [filters, setFilters] = useState<PropertyFilters>(EMPTY_FILTERS);
+  // Draft filters (being edited in BottomSheet)
+  const [draft, setDraft] = useState<PropertyFilters>(EMPTY_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
 
-  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    refetch,
+  } = useProperties(filters);
 
-  const filteredHousing = useMemo(() => {
-    if (!selectedDistrict) return allHousing;
-    return allHousing.filter((h) => h.district === selectedDistrict);
-  }, [selectedDistrict, allHousing]);
+  const allHousing = useMemo(
+    () => data?.pages.flatMap((p) => p.items) ?? [],
+    [data]
+  );
+  const total = data?.pages[0]?.total ?? 0;
+  const activeFilters = filtersAreActive(filters);
 
-  const handleHousingPress = useCallback((housing: Housing) => {
-    router.push({ pathname: '/housing-detail', params: { id: housing.id, data: JSON.stringify(housing) } });
-  }, [router]);
+  const handleHousingPress = useCallback(
+    (housing: Housing) => {
+      router.push({ pathname: '/housing-detail', params: { id: housing.id, data: JSON.stringify(housing) } });
+    },
+    [router]
+  );
 
   const handlePublishPress = useCallback(() => {
     if (!isAuthenticated) {
-      Alert.alert(
-        'Inicia sesión',
-        'Necesitas una cuenta para publicar una vivienda.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Iniciar sesión', onPress: () => router.push('/login') },
-        ]
-      );
+      Alert.alert('Inicia sesión', 'Necesitas una cuenta para publicar una vivienda.', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Iniciar sesión', onPress: () => router.push('/login') },
+      ]);
       return;
     }
     router.push('/publish-housing');
   }, [isAuthenticated, router]);
 
-  const renderHousingItem = useCallback(({ item }: { item: Housing }) => (
-    <HousingCard housing={item} onPress={handleHousingPress} />
-  ), [handleHousingPress]);
+  const openFilters = () => {
+    setDraft({ ...filters });
+    setFilterOpen(true);
+  };
 
-  // ── Loading state ────────────────────────────────────────────
+  const applyFilters = () => {
+    setFilters({ ...draft });
+    setFilterOpen(false);
+  };
+
+  const clearFilters = () => {
+    setDraft(EMPTY_FILTERS);
+    setFilters(EMPTY_FILTERS);
+    setFilterOpen(false);
+  };
+
+  const renderHousingItem = useCallback(
+    ({ item }: { item: Housing }) => <HousingCard housing={item} onPress={handleHousingPress} />,
+    [handleHousingPress]
+  );
+
+  const renderFooter = () => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <View style={{ paddingVertical: 20 }}>
+        <ActivityIndicator size="small" color={Colors.primary} />
+      </View>
+    );
+  };
+
+  // ── Loading state ────────────────────────────────────────────────
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -74,7 +155,7 @@ export default function HousingScreen() {
     );
   }
 
-  // ── Error state ──────────────────────────────────────────────
+  // ── Error state ──────────────────────────────────────────────────
   if (isError) {
     return (
       <View style={styles.centered}>
@@ -105,59 +186,138 @@ export default function HousingScreen() {
         </TouchableOpacity>
       )}
 
-      {/* District filter */}
-      <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Filtrar por distrito:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-          <TouchableOpacity
-            style={[styles.filterChip, !selectedDistrict && styles.filterChipActive]}
-            onPress={() => setSelectedDistrict(null)}
-          >
-            <Text style={[styles.filterChipText, !selectedDistrict && styles.filterChipTextActive]}>Todos</Text>
-          </TouchableOpacity>
-          {districts.map((district) => (
-            <TouchableOpacity
-              key={district}
-              style={[styles.filterChip, selectedDistrict === district && styles.filterChipActive]}
-              onPress={() => setSelectedDistrict(selectedDistrict === district ? null : district)}
-            >
-              <Text style={[styles.filterChipText, selectedDistrict === district && styles.filterChipTextActive]}>
-                {district}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      <View style={styles.resultCount}>
+      {/* Header bar: count + filter button */}
+      <View style={styles.headerBar}>
         <Text style={styles.resultCountText}>
-          {filteredHousing.length} vivienda{filteredHousing.length !== 1 ? 's' : ''} disponible{filteredHousing.length !== 1 ? 's' : ''}
+          <Text style={styles.resultCountBold}>{total}</Text> vivienda{total !== 1 ? 's' : ''} disponible{total !== 1 ? 's' : ''}
         </Text>
+        <TouchableOpacity
+          onPress={openFilters}
+          style={[styles.filterBtn, activeFilters && styles.filterBtnActive]}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="options-outline" size={18} color={activeFilters ? Colors.textOnPrimary : Colors.textPrimary} />
+          <Text style={[styles.filterBtnText, activeFilters && styles.filterBtnTextActive]}>Filtros</Text>
+          {activeFilters && <View style={styles.filterDot} />}
+        </TouchableOpacity>
       </View>
 
       <FlatList
-        data={filteredHousing}
+        data={allHousing}
         renderItem={renderHousingItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={renderFooter}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🏚️</Text>
-            <Text style={styles.emptyText}>No se encontraron viviendas en este distrito</Text>
+            <Text style={styles.emptyText}>No se encontraron viviendas con estos filtros</Text>
+            {activeFilters && (
+              <TouchableOpacity style={styles.clearBtn} onPress={clearFilters}>
+                <Text style={styles.clearBtnText}>Limpiar filtros</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
       />
 
-      {/* FAB — Publicar vivienda (visible for all, requires auth) */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={handlePublishPress}
-        activeOpacity={0.85}
-      >
+      {/* FAB — Publicar vivienda */}
+      <TouchableOpacity style={styles.fab} onPress={handlePublishPress} activeOpacity={0.85}>
         <Ionicons name="add" size={26} color={Colors.textOnPrimary} />
         <Text style={styles.fabText}>Publicar</Text>
       </TouchableOpacity>
+
+      {/* Filter BottomSheet */}
+      <BottomSheet visible={filterOpen} onClose={() => setFilterOpen(false)} maxHeightRatio={0.58}>
+        <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={filterStyles.container}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={filterStyles.title}>Filtros de búsqueda</Text>
+
+          {/* District */}
+          <Text style={filterStyles.sectionLabel}>Distrito</Text>
+          <View style={filterStyles.inputRow}>
+            <Ionicons name="location-outline" size={18} color={Colors.textMuted} />
+            <TextInput
+              style={filterStyles.input}
+              placeholder="Ej. Miraflores, San Isidro..."
+              placeholderTextColor={Colors.textMuted}
+              value={draft.district ?? ''}
+              onChangeText={(t) => setDraft((d) => ({ ...d, district: t || undefined }))}
+              autoCapitalize="words"
+            />
+            {draft.district ? (
+              <TouchableOpacity onPress={() => setDraft((d) => ({ ...d, district: undefined }))}>
+                <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* Bedrooms / Bathrooms / Parking */}
+          <Text style={filterStyles.sectionLabel}>Características</Text>
+          <StepperField
+            label="Habitaciones"
+            icon="bed-outline"
+            value={draft.bedrooms}
+            onChange={(v) => setDraft((d) => ({ ...d, bedrooms: v }))}
+          />
+          <StepperField
+            label="Baños"
+            icon="water-outline"
+            value={draft.bathrooms}
+            onChange={(v) => setDraft((d) => ({ ...d, bathrooms: v }))}
+          />
+          <StepperField
+            label="Estacionamientos"
+            icon="car-outline"
+            value={draft.parking}
+            onChange={(v) => setDraft((d) => ({ ...d, parking: v }))}
+          />
+
+          {/* Min area */}
+          <Text style={filterStyles.sectionLabel}>Área mínima (m²)</Text>
+          <View style={filterStyles.inputRow}>
+            <Ionicons name="resize-outline" size={18} color={Colors.textMuted} />
+            <TextInput
+              style={filterStyles.input}
+              placeholder="Ej. 50"
+              placeholderTextColor={Colors.textMuted}
+              value={draft.min_area_sqm != null ? String(draft.min_area_sqm) : ''}
+              onChangeText={(t) => setDraft((d) => ({ ...d, min_area_sqm: t ? Number(t) : undefined }))}
+              keyboardType="numeric"
+            />
+            {draft.min_area_sqm != null ? (
+              <TouchableOpacity onPress={() => setDraft((d) => ({ ...d, min_area_sqm: undefined }))}>
+                <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* Actions */}
+          <View style={filterStyles.actions}>
+            <TouchableOpacity 
+              style={[filterStyles.clearBtn, !filtersAreActive(draft) && filterStyles.btnDisabled]} 
+              onPress={clearFilters}
+              disabled={!filtersAreActive(draft)}
+            >
+              <Text style={filterStyles.clearBtnText}>Limpiar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[filterStyles.applyBtn, !filtersAreActive(draft) && filterStyles.btnDisabled]} 
+              onPress={applyFilters}
+              disabled={!filtersAreActive(draft)}
+            >
+              <Text style={filterStyles.applyBtnText}>Aplicar filtros</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </BottomSheet>
     </View>
   );
 }
@@ -176,7 +336,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10, paddingHorizontal: 20, marginTop: 4,
   },
   retryText: { fontSize: 14, fontWeight: '700', color: Colors.textOnPrimary },
-
   myListingsBanner: {
     backgroundColor: Colors.surface,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -185,28 +344,38 @@ const styles = StyleSheet.create({
   },
   myListingsBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   myListingsBannerText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
-
-  filterSection: {
-    backgroundColor: Colors.surface, paddingVertical: 12, paddingHorizontal: 16,
+  headerBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 10,
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1, borderBottomColor: Colors.borderLight,
   },
-  filterLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 8 },
-  filterScroll: { gap: 8 },
-  filterChip: {
-    paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20,
-    backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border,
+  resultCountText: { fontSize: 13, color: Colors.textSecondary },
+  resultCountBold: { fontWeight: '700', color: Colors.textPrimary },
+  filterBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingVertical: 7, paddingHorizontal: 14,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 20, borderWidth: 1, borderColor: Colors.border,
   },
-  filterChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  filterChipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  filterChipTextActive: { color: Colors.textOnPrimary },
-
-  resultCount: { paddingHorizontal: 16, paddingVertical: 10 },
-  resultCountText: { fontSize: 13, color: Colors.textMuted, fontWeight: '500' },
-  listContent: { paddingHorizontal: 16, paddingBottom: 100 },
+  filterBtnActive: {
+    backgroundColor: Colors.primary, borderColor: Colors.primary,
+  },
+  filterBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textPrimary },
+  filterBtnTextActive: { color: Colors.textOnPrimary },
+  filterDot: {
+    width: 6, height: 6, borderRadius: 3,
+    backgroundColor: Colors.textOnPrimary, marginLeft: 2,
+  },
+  listContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 15, color: Colors.textMuted, textAlign: 'center' },
-
+  emptyText: { fontSize: 15, color: Colors.textMuted, textAlign: 'center', marginBottom: 16 },
+  clearBtn: {
+    paddingVertical: 10, paddingHorizontal: 20,
+    borderRadius: 12, borderWidth: 1, borderColor: Colors.border,
+  },
+  clearBtnText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
   fab: {
     position: 'absolute', bottom: 24, right: 20,
     backgroundColor: Colors.primary,
@@ -216,4 +385,44 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
   },
   fabText: { fontSize: 15, fontWeight: '700', color: Colors.textOnPrimary },
+});
+
+const filterStyles = StyleSheet.create({
+  container: { padding: 20, paddingBottom: 32 },
+  title: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 20 },
+  sectionLabel: { fontSize: 12, fontWeight: '700', color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 16, marginBottom: 8 },
+  inputRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: Colors.background,
+    borderRadius: 12, borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 12, height: 48,
+  },
+  input: { flex: 1, fontSize: 15, color: Colors.textPrimary },
+  stepperRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight,
+  },
+  stepperLabel: { fontSize: 15, color: Colors.textPrimary },
+  stepperControls: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  stepperBtn: {
+    width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  stepperValue: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, minWidth: 24, textAlign: 'center' },
+  actions: { flexDirection: 'row', gap: 12, marginTop: 28 },
+  clearBtn: {
+    flex: 1, paddingVertical: 14, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+  },
+  clearBtnText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
+  applyBtn: {
+    flex: 2, paddingVertical: 14, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.primary,
+  },
+  applyBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textOnPrimary },
+  stepperLabelContainer: { flexDirection: 'row', alignItems: 'center' },
+  btnDisabled: { opacity: 0.5 },
 });

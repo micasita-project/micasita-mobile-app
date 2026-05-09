@@ -1,31 +1,40 @@
 /**
  * @layer entities/housing/model
  * @description React Query hooks para la entidad Housing.
- * Provee useProperties() para consumir datos del backend con cache automático.
+ * Usa useInfiniteQuery para el scroll infinito con soporte de filtros.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchAllProperties,
   createProperty,
   deleteProperty,
   uploadPropertyImage,
 } from '../api/housing.api';
-import type { CreatePropertyRequest } from '../api/housing.api';
+import type { CreatePropertyRequest, PropertyFilters } from '../api/housing.api';
 
 /** Keys centralizadas para invalidar cache */
 export const propertyKeys = {
   all: ['properties'] as const,
+  list: (filters: PropertyFilters) => [...propertyKeys.all, 'list', filters] as const,
 };
 
+const LIMIT = 10;
+
 /**
- * Hook para listar todas las propiedades.
+ * Hook para listar propiedades con infinite scroll y filtros.
  * Público: no requiere auth.
  */
-export function useProperties(skip = 0, limit = 100) {
-  return useQuery({
-    queryKey: [...propertyKeys.all, skip, limit],
-    queryFn: () => fetchAllProperties(skip, limit),
+export function useProperties(filters: PropertyFilters = {}) {
+  return useInfiniteQuery({
+    queryKey: propertyKeys.list(filters),
+    queryFn: ({ pageParam = 0 }) => fetchAllProperties(pageParam as number, LIMIT, filters),
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.flatMap((p) => p.items).length;
+      if (loaded >= lastPage.total) return undefined;
+      return loaded; // next skip = total items loaded so far
+    },
+    initialPageParam: 0,
   });
 }
 
@@ -57,7 +66,7 @@ export function useDeleteProperty() {
 }
 
 /**
- * Hook para subir una imagen a Cloudinary.
+ * Hook para subir una imagen.
  * Retorna la URL pública.
  */
 export function useUploadPropertyImage() {

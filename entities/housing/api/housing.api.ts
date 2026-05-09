@@ -56,7 +56,19 @@ export interface CreatePropertyRequest {
   features?: string[];
   source_url?: string;
 }
+export interface PaginatedPropertyResponse {
+  items: PropertyResponse[];
+  total: number;
+}
 
+export interface PropertyFilters {
+  district?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  parking?: number;
+  min_area_sqm?: number;
+  max_price?: number;
+}
 // ── Mapper (Backend → Frontend) ─────────────────────────────────
 
 /** Convierte la respuesta del backend al tipo Housing que usa toda la app */
@@ -84,17 +96,28 @@ function toHousing(p: PropertyResponse): Housing {
   };
 }
 
-// ── API Calls ───────────────────────────────────────────────────
-
 /**
- * Lista todas las propiedades desde el backend.
+ * Lista propiedades desde el backend con soporte de paginación y filtros.
  * Público: no requiere autenticación.
  */
-export async function fetchAllProperties(skip = 0, limit = 100): Promise<Housing[]> {
-  const response = await apiClient.get<PropertyResponse[]>('/properties/', {
-    params: { skip, limit },
-  });
-  return response.data.map(toHousing);
+export async function fetchAllProperties(
+  skip = 0,
+  limit = 10,
+  filters: PropertyFilters = {}
+): Promise<{ items: Housing[]; total: number }> {
+  const params: Record<string, any> = { skip, limit };
+  if (filters.district) params.district = filters.district;
+  if (filters.bedrooms != null) params.bedrooms = filters.bedrooms;
+  if (filters.bathrooms != null) params.bathrooms = filters.bathrooms;
+  if (filters.parking != null) params.parking = filters.parking;
+  if (filters.min_area_sqm != null) params.min_area_sqm = filters.min_area_sqm;
+  if (filters.max_price != null) params.max_price = filters.max_price;
+
+  const response = await apiClient.get<PaginatedPropertyResponse>('/properties/', { params });
+  return {
+    items: response.data.items.map(toHousing),
+    total: response.data.total,
+  };
 }
 
 /**

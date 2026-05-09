@@ -24,7 +24,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (email: string, password: string, guestData?: GuestDataForTransfer, name?: string, lastName?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setHome: (data: UserHomeUpdate) => Promise<boolean>;
@@ -73,18 +73,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
       const response = await loginUser(email, password);
       const userProfile = await getMe();
       setUser({ ...userProfile });
       setIsLoading(false);
-      return true;
-    } catch (error) {
+      return { success: true };
+    } catch (error: any) {
       console.error('Login failed:', error);
       setIsLoading(false);
-      return false;
+      
+      if (error?.response?.status === 403) {
+        return { success: false, error: 'Tu cuenta ha sido bloqueada. Comunícate con un administrador.' };
+      }
+      return { success: false, error: 'Email o contraseña incorrectos.' };
     }
   }, []);
 

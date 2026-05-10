@@ -4,18 +4,25 @@
  */
 
 export {
-  getGuestRecommendations,
   generateRecommendations,
+  getGuestRecommendations,
   getLatestRecommendations,
-} from './api/recommendation.api';
+} from "./api/recommendation.api";
 
 export type {
   GuestRecommendRequest,
   RecommendationItem,
-} from './api/recommendation.api';
+} from "./api/recommendation.api";
 
 export {
+  useGenerateRecommendations,
   useGuestRecommendations,
   useLatestRecommendations,
-  useGenerateRecommendations,
-} from './model/useRecommendations';
+} from "./model/useRecommendations";
+
+export {
+  buildInsightBody,
+  buildInsightTitle,
+  buildRecommendationMessage,
+  scoreLabel,
+} from "./model/recommendationMessage";

@@ -13,6 +13,9 @@ import { useGenerateRecommendations } from "@/features/recommendation/model/useR
 import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
 import { reverseAddress, searchAddress } from "@/shared/api/geocode.service";
 import { Colors } from "@/shared/config/colors";
+import { LIMA_REGION } from "@/shared/config/map";
+import { TRANSPORT_MODE_CONFIG } from "@/shared/config/transport";
+import type { TransportMode } from "@/shared/types";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
@@ -31,29 +34,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { Region } from "react-native-maps";
+import { Region } from "react-native-maps";
 import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
 
-
-type TransportOption = "driving" | "cycling" | "walking";
-const TRANSPORT_OPTIONS: TransportOption[] = ["driving", "cycling", "walking"];
-const TRANSPORT_LABELS: Record<TransportOption, string> = {
-  driving: "Auto",
-  cycling: "Bicicleta",
-  walking: "Caminando",
-};
-const TRANSPORT_ICONS: Record<TransportOption, string> = {
-  driving: "car-outline",
-  cycling: "bicycle-outline",
-  walking: "walk-outline",
-};
-
-const LIMA_REGION: Region = {
-  latitude: -12.0464,
-  longitude: -77.0428,
-  latitudeDelta: 0.1,
-  longitudeDelta: 0.1,
-};
 
 // ── Loading screen ────────────────────────────────────────────────
 
@@ -233,7 +216,7 @@ export default function OnboardingScreen() {
   );
   const [workAddressLabel, setWorkAddressLabel] = useState("");
   const [budget, setBudget] = useState("");
-  const [transport, setTransport] = useState<TransportOption>("driving");
+  const [transport, setTransport] = useState<TransportMode>("driving");
   const [maxDistanceKm, setMaxDistanceKm] = useState(10);
 
   // Map Picker State
@@ -520,29 +503,29 @@ export default function OnboardingScreen() {
               Transporte preferido al trabajo
             </Text>
             <View style={styles.transportRow}>
-              {TRANSPORT_OPTIONS.map((opt) => (
+              {TRANSPORT_MODE_CONFIG.map((cfg) => (
                 <TouchableOpacity
-                  key={opt}
+                  key={cfg.id}
                   style={[
                     styles.transportChip,
-                    transport === opt && styles.transportChipActive,
+                    transport === cfg.id && styles.transportChipActive,
                   ]}
-                  onPress={() => setTransport(opt)}
+                  onPress={() => setTransport(cfg.id)}
                 >
                   <Ionicons
-                    name={TRANSPORT_ICONS[opt] as any}
+                    name={cfg.iconOutline}
                     size={22}
                     color={
-                      transport === opt ? Colors.textOnPrimary : Colors.primary
+                      transport === cfg.id ? Colors.textOnPrimary : Colors.primary
                     }
                   />
                   <Text
                     style={[
                       styles.transportText,
-                      transport === opt && styles.transportTextActive,
+                      transport === cfg.id && styles.transportTextActive,
                     ]}
                   >
-                    {TRANSPORT_LABELS[opt]}
+                    {cfg.labelFull}
                   </Text>
                 </TouchableOpacity>
               ))}

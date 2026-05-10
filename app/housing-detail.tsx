@@ -10,7 +10,6 @@
  */
 
 import { fetchPropertyById } from "@/entities/housing/api/housing.api";
-import { HousingImages } from "@/entities/housing/api/images";
 import {
   calculateHaversineDistance,
   fetchMultiModeRoutes,
@@ -19,9 +18,12 @@ import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import { useGuest } from "@/features/guest";
 import { Colors } from "@/shared/config/colors";
+import { TRANSPORT_MODE_CONFIG } from "@/shared/config/transport";
 import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
 import type { Housing, MultiModeRoutes } from "@/shared/types";
+import { ImageLightbox } from "@/shared/ui/ImageLightbox";
 import { getCurrencySymbol } from "@/shared/utils/currency";
+import { getImageSource } from "@/shared/utils/image";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
@@ -38,12 +40,6 @@ import {
 } from "react-native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-function getImageSource(imagePath?: string) {
-  if (!imagePath) return null;
-  if (imagePath.startsWith("http")) return { uri: imagePath };
-  return HousingImages[imagePath];
-}
 
 export default function HousingDetailScreen() {
   const { id, data } = useLocalSearchParams<{ id: string; data?: string }>();
@@ -62,6 +58,7 @@ export default function HousingDetailScreen() {
     : (guestWorkplace?.address.split(",")[0] ?? "");
   const router = useRouter();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const [housing, setHousing] = useState<Housing | null>(() => {
     if (data) {
@@ -173,12 +170,17 @@ export default function HousingDetailScreen() {
               );
               setActiveImageIndex(index);
             }}
-            renderItem={({ item }) => (
-              <Image
-                source={getImageSource(item)}
-                style={styles.heroImage}
-                resizeMode="cover"
-              />
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                activeOpacity={0.95}
+                onPress={() => setLightboxIndex(index)}
+              >
+                <Image
+                  source={getImageSource(item)}
+                  style={styles.heroImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
             )}
             ListEmptyComponent={
               <View style={[styles.heroImage, styles.noImagePlaceholder]}>
@@ -303,42 +305,18 @@ export default function HousingDetailScreen() {
               ) : null}
             </View>
             <View style={styles.travelCards}>
-              {(
-                [
-                  {
-                    mode: "driving",
-                    icon: "car",
-                    label: "Auto",
-                    mins: travelTimes.driving,
-                    color: "#E74C3C",
-                  },
-                  {
-                    mode: "cycling",
-                    icon: "bicycle",
-                    label: "Bici",
-                    mins: travelTimes.cycling,
-                    color: "#27AE60",
-                  },
-                  {
-                    mode: "walking",
-                    icon: "walk",
-                    label: "A pie",
-                    mins: travelTimes.walking,
-                    color: "#2E86C1",
-                  },
-                ] as const
-              ).map((t) => (
-                <View key={t.mode} style={styles.travelCard}>
+              {TRANSPORT_MODE_CONFIG.map((cfg) => (
+                <View key={cfg.id} style={styles.travelCard}>
                   <View
-                    style={[styles.travelIcon, { backgroundColor: t.color }]}
+                    style={[styles.travelIcon, { backgroundColor: cfg.color }]}
                   >
-                    <Ionicons name={t.icon} size={16} color="#fff" />
+                    <Ionicons name={cfg.icon} size={16} color="#fff" />
                   </View>
                   <Text style={styles.travelMins}>
-                    {t.mins}
+                    {travelTimes[cfg.id]}
                     <Text style={styles.travelUnit}> min</Text>
                   </Text>
-                  <Text style={styles.travelLabel}>{t.label}</Text>
+                  <Text style={styles.travelLabel}>{cfg.label}</Text>
                 </View>
               ))}
             </View>
@@ -410,6 +388,16 @@ export default function HousingDetailScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {lightboxIndex !== null && housing.images.length > 0 && (
+        <ImageLightbox
+          sources={housing.images
+            .map(getImageSource)
+            .filter((s): s is { uri: string } => s !== undefined)}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
 
       {/* ── Sticky CTA ──────────────────────────────────── */}
       <View style={styles.stickyCta}>

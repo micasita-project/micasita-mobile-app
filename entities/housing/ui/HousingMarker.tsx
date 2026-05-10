@@ -4,8 +4,8 @@
  */
 
 import { Colors } from "@/shared/config/colors";
+import { getTransportConfig } from "@/shared/config/transport";
 import type { Housing, TransportMode } from "@/shared/types";
-import { TRANSPORT_MODE_COLORS } from "@/shared/types";
 import { formatPrice } from "@/shared/utils/currency";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -25,14 +25,8 @@ export function HousingMarker({
   isSelected = false,
   priorityRecommendedMode,
 }: HousingMarkerProps) {
-  const iconName =
-    priorityRecommendedMode === "driving"
-      ? "car"
-      : priorityRecommendedMode === "cycling"
-        ? "bicycle"
-        : "walk";
-  const priorityColor = priorityRecommendedMode
-    ? TRANSPORT_MODE_COLORS[priorityRecommendedMode]
+  const transportCfg = priorityRecommendedMode
+    ? getTransportConfig(priorityRecommendedMode)
     : null;
 
   return (
@@ -42,14 +36,14 @@ export function HousingMarker({
       tracksViewChanges={false}
     >
       <View style={styles.markerContainer}>
-        {priorityRecommendedMode && (
+        {transportCfg && (
           <View
             style={[
               styles.recommendedBadge,
-              { backgroundColor: priorityColor! },
+              { backgroundColor: transportCfg.color },
             ]}
           >
-            <Ionicons name={iconName} size={12} color="#FFF" />
+            <Ionicons name={transportCfg.icon} size={12} color="#FFF" />
             <Text style={styles.recommendedText}>Recomendado</Text>
           </View>
         )}
@@ -57,10 +51,10 @@ export function HousingMarker({
           style={[
             styles.markerBubble,
             isSelected && styles.bubbleSelected,
-            priorityRecommendedMode && {
-              borderColor: priorityColor!,
+            transportCfg && {
+              borderColor: transportCfg.color,
               borderWidth: 2.5,
-              shadowColor: priorityColor!,
+              shadowColor: transportCfg.color,
               shadowOpacity: 0.6,
               shadowRadius: 8,
             },
@@ -81,8 +75,7 @@ export function HousingMarker({
           style={[
             styles.markerArrow,
             isSelected && styles.arrowSelected,
-            priorityRecommendedMode &&
-              !isSelected && { borderTopColor: priorityColor! },
+            transportCfg && !isSelected && { borderTopColor: transportCfg.color },
           ]}
         />
       </View>

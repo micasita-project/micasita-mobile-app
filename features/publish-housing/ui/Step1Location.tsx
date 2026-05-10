@@ -5,7 +5,7 @@
  * y puede ingresar coordenadas manualmente.
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,17 +14,12 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Modal,
-  Alert,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/shared/config/colors';
 import type { HousingDraft } from '@/shared/types';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { searchAddress, reverseAddress, type GeocodeSuggestion } from '@/shared/api/geocode.service';
-import { MapPickerModal } from '@/widgets/location-picker/MapPickerModal';
-
+import { searchAddress, type GeocodeSuggestion } from '@/shared/api/geocode.service';
 
 const LIMA_DISTRICTS = [
   'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Chorrillos', 'Comas',
@@ -36,28 +31,29 @@ const LIMA_DISTRICTS = [
   'Santiago de Surco', 'Surquillo', 'Villa El Salvador', 'Villa María del Triunfo',
 ].sort();
 
-const LIMA_REGION: Region = {
-  latitude: -12.0464,
-  longitude: -77.0428,
-  latitudeDelta: 0.05,
-  longitudeDelta: 0.05,
-};
-
 interface Step1LocationProps {
   data: Pick<HousingDraft, 'address' | 'district' | 'latitude' | 'longitude'>;
   onChange: (partial: Partial<HousingDraft>) => void;
+  onOpenMapPicker: () => void;
 }
 
-export function Step1Location({ data, onChange }: Step1LocationProps) {
-  const insets = useSafeAreaInsets();
+export function Step1Location({ data, onChange, onOpenMapPicker }: Step1LocationProps) {
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [showMapPicker, setShowMapPicker] = useState(false);
-  const [mapRegion, setMapRegion] = useState<Region>(LIMA_REGION);
-  const [isReversing, setIsReversing] = useState(false);
-  
+
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    if (data.latitude && data.longitude) {
+      mapRef.current?.animateToRegion({
+        latitude: data.latitude,
+        longitude: data.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 1000);
+    }
+  }, [data.latitude, data.longitude]);
 
   const extractDistrict = useCallback((displayName: string) => {
     return LIMA_DISTRICTS.find((d) =>
@@ -94,42 +90,7 @@ export function Step1Location({ data, onChange }: Step1LocationProps) {
       district: detectedDistrict,
     });
     setSuggestions([]);
-    
-    // Animate map to new location
-    mapRef.current?.animateToRegion({
-      latitude: item.latitude,
-      longitude: item.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    }, 1000);
   }, [onChange, extractDistrict]);
-
-  const handleConfirmMapLocation = async () => {
-    setIsReversing(true);
-    try {
-      const suggestion = await reverseAddress(mapRegion.latitude, mapRegion.longitude);
-      const detectedDistrict = suggestion.district || extractDistrict(suggestion.display_name) || 'Lima';
-      onChange({
-        address: suggestion.display_name,
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude,
-        district: detectedDistrict,
-      });
-      setShowMapPicker(false);
-      
-      // Update local map too
-      mapRef.current?.animateToRegion({
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }, 1000);
-    } catch {
-      Alert.alert('Error', 'No se pudo obtener la dirección de esta ubicación.');
-    } finally {
-      setIsReversing(false);
-    }
-  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -170,7 +131,7 @@ export function Step1Location({ data, onChange }: Step1LocationProps) {
         <View style={styles.line} />
       </View>
 
-      <TouchableOpacity style={styles.mapPickerBtn} onPress={() => setShowMapPicker(true)}>
+      <TouchableOpacity style={styles.mapPickerBtn} onPress={onOpenMapPicker}>
         <Ionicons name="map-outline" size={20} color={Colors.primary} />
         <Text style={styles.mapPickerBtnText}>Elegir en el mapa</Text>
       </TouchableOpacity>
@@ -180,7 +141,7 @@ export function Step1Location({ data, onChange }: Step1LocationProps) {
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
             Ubicación en el Mapa
           </Text>
-          
+
           <View style={styles.mapContainer}>
             <MapView
               ref={mapRef}
@@ -210,35 +171,6 @@ export function Step1Location({ data, onChange }: Step1LocationProps) {
           </View>
         </>
       )}
-
-      <MapPickerModal
-        visible={showMapPicker}
-        onClose={() => setShowMapPicker(false)}
-        onConfirm={(suggestion) => {
-          const detectedDistrict = suggestion.district || extractDistrict(suggestion.display_name) || 'Lima';
-          onChange({
-            address: suggestion.display_name,
-            latitude: suggestion.latitude,
-            longitude: suggestion.longitude,
-            district: detectedDistrict,
-          });
-          setShowMapPicker(false);
-          
-          // Actualizar mapa local
-          mapRef.current?.animateToRegion({
-            latitude: suggestion.latitude,
-            longitude: suggestion.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }, 1000);
-        }}
-        initialRegion={data.latitude && data.longitude ? {
-          latitude: data.latitude,
-          longitude: data.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        } : LIMA_REGION}
-      />
     </ScrollView>
   );
 }
@@ -259,7 +191,6 @@ const styles = StyleSheet.create({
   },
   inputIcon: { marginRight: 8 },
   input: { flex: 1, fontSize: 15, color: Colors.textPrimary, paddingVertical: 12 },
-  
   suggestionsContainer: {
     backgroundColor: Colors.surface,
     borderRadius: 12,
@@ -278,7 +209,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   suggestionText: { flex: 1, fontSize: 14, color: Colors.textPrimary },
-
   orDivider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,7 +222,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-
   mapPickerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -305,42 +234,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary + '30',
   },
   mapPickerBtnText: { color: Colors.primary, fontWeight: '700', fontSize: 15 },
-
-  districtSelector: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  districtText: { fontSize: 15, color: Colors.textPrimary, fontWeight: '500' },
-  districtPlaceholder: { fontSize: 15, color: Colors.textMuted },
-  districtList: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginTop: 4,
-    maxHeight: 240,
-    overflow: 'hidden',
-  },
-  districtItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  districtItemActive: { backgroundColor: Colors.primaryLight + '15' },
-  districtItemText: { fontSize: 14, color: Colors.textPrimary },
-  districtItemTextActive: { color: Colors.primary, fontWeight: '600' },
-  
   infoBox: {
     flexDirection: 'row',
     gap: 8,
@@ -361,33 +254,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   map: { flex: 1 },
-
-  // Map Picker Modal
-  mapCenterPin: { position: 'absolute', top: '50%', left: '50%', marginLeft: -22 },
-  modalCloseBtn: {
-    position: 'absolute',
-    left: 20,
-    backgroundColor: Colors.surface,
-    padding: 8,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalFooter: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.surface,
-    padding: 24,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10,
-  },
-  modalInstruction: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary, textAlign: 'center', marginBottom: 20 },
-  modalActions: { flexDirection: 'row', gap: 12 },
-  modalCancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border },
-  modalCancelText: { color: Colors.textSecondary, fontWeight: '700', fontSize: 15 },
-  modalConfirmBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.primary },
-  modalConfirmText: { color: Colors.textOnPrimary, fontWeight: '700', fontSize: 15 },
 });

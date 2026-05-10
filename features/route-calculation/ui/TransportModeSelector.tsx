@@ -8,9 +8,9 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { TransportMode, MultiModeRoutes } from '@/shared/types';
-import { TRANSPORT_MODE_COLORS } from '@/shared/types';
 import { formatTravelTime } from '@/entities/route';
 import { Colors } from '@/shared/config/colors';
+import { TRANSPORT_MODE_CONFIG } from '@/shared/config/transport';
 
 interface TransportModeSelectorProps {
   routes: MultiModeRoutes;
@@ -20,12 +20,6 @@ interface TransportModeSelectorProps {
   onModeChange: (mode: TransportMode) => void;
 }
 
-const MODE_CONFIG: { mode: TransportMode; icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
-  { mode: 'driving', icon: 'car-outline', label: 'Auto' },
-  { mode: 'cycling', icon: 'bicycle-outline', label: 'Bici' },
-  { mode: 'walking', icon: 'walk-outline', label: 'A pie' },
-];
-
 export function TransportModeSelector({
   routes,
   selectedMode,
@@ -34,35 +28,35 @@ export function TransportModeSelector({
   onModeChange,
 }: TransportModeSelectorProps) {
   const sortedModes = useMemo(() => {
-    if (!priorityMode) return MODE_CONFIG;
-    return [...MODE_CONFIG].sort((a, b) => {
-      if (a.mode === priorityMode) return -1;
-      if (b.mode === priorityMode) return 1;
+    if (!priorityMode) return TRANSPORT_MODE_CONFIG;
+    return [...TRANSPORT_MODE_CONFIG].sort((a, b) => {
+      if (a.id === priorityMode) return -1;
+      if (b.id === priorityMode) return 1;
       return 0;
     });
   }, [priorityMode]);
 
   return (
     <View style={styles.container}>
-      {sortedModes.map(({ mode, icon, label }) => {
-        const isSelected = selectedMode === mode;
-        const isOptimal = optimalMode === mode;
-        const time = routes[mode].timeMinutes;
-        const color = TRANSPORT_MODE_COLORS[mode];
+      {sortedModes.map((cfg) => {
+        const isSelected = selectedMode === cfg.id;
+        const isOptimal = optimalMode === cfg.id;
+        const time = routes[cfg.id].timeMinutes;
+        const color = cfg.color;
 
         return (
           <TouchableOpacity
-            key={mode}
+            key={cfg.id}
             style={[
               styles.pill,
               isSelected && { backgroundColor: color + '18', borderColor: color },
             ]}
-            onPress={() => onModeChange(mode)}
+            onPress={() => onModeChange(cfg.id)}
             activeOpacity={0.7}
           >
             <View style={styles.pillHeader}>
               <Ionicons
-                name={icon as any}
+                name={cfg.iconOutline as any}
                 size={20}
                 color={isSelected ? color : Colors.textMuted}
               />
@@ -76,7 +70,7 @@ export function TransportModeSelector({
               {formatTravelTime(time)}
             </Text>
             <Text style={[styles.pillLabel, isSelected && { color }]}>
-              {label}
+              {cfg.label}
             </Text>
           </TouchableOpacity>
         );

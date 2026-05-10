@@ -19,6 +19,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StepIndicator } from '@/shared/ui/StepIndicator';
+import { MapPickerModal } from '@/widgets/location-picker/MapPickerModal';
+import { LIMA_REGION } from '@/shared/config/map';
 import { usePublishForm } from '../model/usePublishForm';
 import { Step1Location } from './Step1Location';
 import { Step2Features } from './Step2Features';
@@ -65,6 +67,7 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
   const { currentStep, draft, isSubmitting, error, updateDraft, nextStep, prevStep, submit, update, reset } =
     usePublishForm(initialDraft, propertyId);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   const handleNext = () => {
     const validationError = validateStep(currentStep, draft);
@@ -119,6 +122,7 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
           <Step1Location
             data={{ address: draft.address, district: draft.district, latitude: draft.latitude, longitude: draft.longitude }}
             onChange={updateDraft}
+            onOpenMapPicker={() => setShowMapPicker(true)}
           />
         );
       case 2:
@@ -229,6 +233,24 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
         onViewMyListings={handleViewMyListings}
         onClose={handleClose}
         isEdit={!!propertyId}
+      />
+      <MapPickerModal
+        visible={showMapPicker}
+        onClose={() => setShowMapPicker(false)}
+        onConfirm={(suggestion) => {
+          updateDraft({
+            address: suggestion.display_name,
+            latitude: suggestion.latitude,
+            longitude: suggestion.longitude,
+            district: suggestion.district || 'Lima',
+          });
+          setShowMapPicker(false);
+        }}
+        initialRegion={
+          draft.latitude && draft.longitude
+            ? { latitude: draft.latitude, longitude: draft.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }
+            : LIMA_REGION
+        }
       />
     </KeyboardAvoidingView>
   );

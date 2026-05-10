@@ -5,7 +5,6 @@
  * - Invitados: lee latest de AsyncStorage → genera/actualiza bajo demanda.
  */
 
-import { HousingImages } from "@/entities/housing/api/images";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import { GuestSetupModal, useGuest } from "@/features/guest";
@@ -193,6 +192,16 @@ export default function RecommendScreen() {
       router.push({
         pathname: "/housing-detail",
         params: { id: housing.id, data: JSON.stringify(housing) },
+      });
+    },
+    [router],
+  );
+
+  const handleInsightPress = useCallback(
+    (item: RecommendationItem) => {
+      router.push({
+        pathname: "/recommendation-insight",
+        params: { data: JSON.stringify(item) },
       });
     },
     [router],
@@ -454,104 +463,109 @@ export default function RecommendScreen() {
 
             {results.map((item, index) => {
               const img = item.property.images?.[0];
-              const thumbSrc = img
-                ? img.startsWith("http")
-                  ? { uri: img }
-                  : HousingImages[img]
-                : null;
+              const thumbSrc = img ? { uri: img } : null;
               return (
-                <TouchableOpacity
-                  key={item.property.id}
-                  style={styles.resultCard}
-                  onPress={() => handleHousingPress(item.property)}
-                  activeOpacity={0.85}
-                >
+                <View key={item.property.id} style={styles.resultCard}>
                   {/* Rank badge */}
                   <View style={styles.rankBadge}>
                     <Text style={styles.rankText}>#{index + 1}</Text>
                   </View>
-                  {/* Thumbnail */}
-                  {thumbSrc ? (
-                    <Image
-                      source={thumbSrc}
-                      style={styles.cardThumb}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View
-                      style={[styles.cardThumb, styles.cardThumbPlaceholder]}
-                    >
-                      <Ionicons
-                        name="home-outline"
-                        size={24}
-                        color={Colors.textMuted}
+                  {/* Main area → housing detail */}
+                  <TouchableOpacity
+                    style={styles.cardMain}
+                    onPress={() => handleHousingPress(item.property)}
+                    activeOpacity={0.85}
+                  >
+                    {/* Thumbnail */}
+                    {thumbSrc ? (
+                      <Image
+                        source={thumbSrc}
+                        style={styles.cardThumb}
+                        resizeMode="cover"
                       />
-                    </View>
-                  )}
-                  {/* Info */}
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.cardPrice}>
-                      {formatPrice(item.property.price, item.property.currency)}
-                      <Text style={styles.cardPriceUnit}> /mes</Text>
-                    </Text>
-                    <Text style={styles.cardAddr} numberOfLines={1}>
-                      {item.property.district}
-                    </Text>
-                    <Text style={styles.cardSpecs} numberOfLines={1}>
-                      {item.property.bedrooms}h · {item.property.bathrooms}b ·{" "}
-                      {item.property.total_area_sqm}m²
-                    </Text>
-                    <View style={styles.timeChip}>
-                      <Ionicons
-                        name="time-outline"
-                        size={11}
-                        color={Colors.accent}
-                      />
-                      <Text style={styles.timeText}>
-                        ~{item.predicted_time_min} min al trabajo
+                    ) : (
+                      <View
+                        style={[styles.cardThumb, styles.cardThumbPlaceholder]}
+                      >
+                        <Ionicons
+                          name="home-outline"
+                          size={24}
+                          color={Colors.textMuted}
+                        />
+                      </View>
+                    )}
+                    {/* Info */}
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.cardPrice}>
+                        {formatPrice(item.property.price, item.property.currency)}
+                        <Text style={styles.cardPriceUnit}> /mes</Text>
                       </Text>
-                    </View>
-                    {item.time_saved_mins !== null &&
-                      item.time_saved_mins !== 0 && (
-                        <View
-                          style={[
-                            styles.timeSavedChip,
-                            item.time_saved_mins > 0
-                              ? styles.timeSavedPos
-                              : styles.timeSavedNeg,
-                          ]}
-                        >
-                          <Ionicons
-                            name={
-                              item.time_saved_mins > 0
-                                ? "trending-down"
-                                : "trending-up"
-                            }
-                            size={11}
-                            color={
-                              item.time_saved_mins > 0
-                                ? Colors.success
-                                : Colors.error
-                            }
-                          />
-                          <Text
+                      <Text style={styles.cardAddr} numberOfLines={1}>
+                        {item.property.district}
+                      </Text>
+                      <Text style={styles.cardSpecs} numberOfLines={1}>
+                        {item.property.bedrooms}h · {item.property.bathrooms}b ·{" "}
+                        {item.property.total_area_sqm}m²
+                      </Text>
+                      <View style={styles.timeChip}>
+                        <Ionicons
+                          name="time-outline"
+                          size={11}
+                          color={Colors.accent}
+                        />
+                        <Text style={styles.timeText}>
+                          ~{item.predicted_time_min} min al trabajo
+                        </Text>
+                      </View>
+                      {item.time_saved_mins !== null &&
+                        item.time_saved_mins !== 0 && (
+                          <View
                             style={[
-                              styles.timeSavedText,
+                              styles.timeSavedChip,
                               item.time_saved_mins > 0
-                                ? styles.timeSavedTextPos
-                                : styles.timeSavedTextNeg,
+                                ? styles.timeSavedPos
+                                : styles.timeSavedNeg,
                             ]}
                           >
-                            {item.time_saved_mins > 0
-                              ? `Ahorras ${item.time_saved_mins} min`
-                              : `${Math.abs(item.time_saved_mins)} min más`}
-                          </Text>
-                        </View>
-                      )}
-                  </View>
-                  {/* Circular match score */}
-                  <MatchRing score={item.match_score} />
-                </TouchableOpacity>
+                            <Ionicons
+                              name={
+                                item.time_saved_mins > 0
+                                  ? "trending-down"
+                                  : "trending-up"
+                              }
+                              size={11}
+                              color={
+                                item.time_saved_mins > 0
+                                  ? Colors.success
+                                  : Colors.error
+                              }
+                            />
+                            <Text
+                              style={[
+                                styles.timeSavedText,
+                                item.time_saved_mins > 0
+                                  ? styles.timeSavedTextPos
+                                  : styles.timeSavedTextNeg,
+                              ]}
+                            >
+                              {item.time_saved_mins > 0
+                                ? `Ahorras ${item.time_saved_mins} min`
+                                : `${Math.abs(item.time_saved_mins)} min más`}
+                            </Text>
+                          </View>
+                        )}
+                    </View>
+                  </TouchableOpacity>
+                  {/* Match ring → insight screen */}
+                  <TouchableOpacity
+                    style={styles.ringBtn}
+                    onPress={() => handleInsightPress(item)}
+                    activeOpacity={0.7}
+                  >
+                    <MatchRing score={item.match_score} />
+                    <Text style={styles.ringHint}>Ver análisis</Text>
+                  </TouchableOpacity>
+                </View>
               );
             })}
           </View>
@@ -808,6 +822,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  cardMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  ringBtn: { alignItems: "center", gap: 3 },
+  ringHint: { fontSize: 9, fontWeight: "600", color: Colors.primary, opacity: 0.75 },
   cardInfo: { flex: 1, minWidth: 0 },
   cardPrice: { fontSize: 15, fontWeight: "700", color: Colors.textPrimary },
   cardPriceUnit: {

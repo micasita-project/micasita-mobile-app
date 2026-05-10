@@ -14,8 +14,8 @@ export const OSM_TILE_URL = ENV.OSM_TILE_URL;
 // ── Default Region - Lima Metropolitana ─────────────────────
 
 export const LIMA_REGION = {
-  latitude: -12.1058,
-  longitude: -76.9665,
+  latitude: -12.0464,
+  longitude: -77.0428,
   latitudeDelta: 0.08,
   longitudeDelta: 0.08,
 };

@@ -10,15 +10,9 @@ import {
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/shared/config/colors';
+import { LIMA_REGION } from '@/shared/config/map';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { reverseAddress, GeocodeSuggestion } from '@/shared/api/geocode.service';
-
-const LIMA_REGION: Region = {
-  latitude: -12.0464,
-  longitude: -77.0428,
-  latitudeDelta: 0.05,
-  longitudeDelta: 0.05,
-};
 
 interface MapPickerModalProps {
   visible: boolean;

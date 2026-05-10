@@ -119,6 +119,10 @@ function RootNavigator() {
           headerTitleStyle: { fontWeight: '700' },
         }}
       />
+      <Stack.Screen
+        name="recommendation-insight"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }

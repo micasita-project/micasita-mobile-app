@@ -19,6 +19,7 @@ import {
   type GeocodeSuggestion,
 } from "@/shared/api/geocode.service";
 import { Colors } from "@/shared/config/colors";
+import { TRANSPORT_MODE_CONFIG } from "@/shared/config/transport";
 import type { TransportMode } from "@/shared/types";
 import { BottomSheet } from "@/shared/ui/BottomSheet";
 import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
@@ -36,15 +37,6 @@ import {
   View,
 } from "react-native";
 
-const TRANSPORT_OPTIONS: {
-  id: TransportMode;
-  label: string;
-  icon: "car-outline" | "bicycle-outline" | "walk-outline";
-}[] = [
-  { id: "driving", label: "Auto", icon: "car-outline" },
-  { id: "cycling", label: "Bicicleta", icon: "bicycle-outline" },
-  { id: "walking", label: "Caminando", icon: "walk-outline" },
-];
 
 interface AddressState {
   query: string;
@@ -390,29 +382,29 @@ export function WorkplaceSheet({
         />
 
         <View style={styles.transportRow}>
-          {TRANSPORT_OPTIONS.map((opt) => (
+          {TRANSPORT_MODE_CONFIG.map((cfg) => (
             <TouchableOpacity
-              key={opt.id}
+              key={cfg.id}
               style={[
                 styles.transportChip,
-                transport === opt.id && styles.transportChipActive,
+                transport === cfg.id && styles.transportChipActive,
               ]}
-              onPress={() => setTransport(opt.id)}
+              onPress={() => setTransport(cfg.id)}
             >
               <Ionicons
-                name={opt.icon}
+                name={cfg.iconOutline}
                 size={18}
                 color={
-                  transport === opt.id ? Colors.textOnPrimary : Colors.primary
+                  transport === cfg.id ? Colors.textOnPrimary : Colors.primary
                 }
               />
               <Text
                 style={[
                   styles.transportText,
-                  transport === opt.id && styles.transportTextActive,
+                  transport === cfg.id && styles.transportTextActive,
                 ]}
               >
-                {opt.label}
+                {cfg.labelFull}
               </Text>
             </TouchableOpacity>
           ))}

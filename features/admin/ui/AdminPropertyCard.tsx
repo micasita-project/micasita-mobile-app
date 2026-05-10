@@ -1,16 +1,10 @@
-import { HousingImages } from "@/entities/housing/api/images";
 import { Colors } from "@/shared/config/colors";
 import type { Housing } from "@/shared/types";
 import { formatPrice } from "@/shared/utils/currency";
+import { getImageSource } from "@/shared/utils/image";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-function getImageSource(imagePath?: string) {
-  if (!imagePath) return null;
-  if (imagePath.startsWith("http")) return { uri: imagePath };
-  return HousingImages[imagePath];
-}
 
 interface AdminPropertyCardProps {
   property: Housing & { status: string; publisher_id: number };

@@ -25,24 +25,11 @@ import { MapPickerModal } from '@/widgets/location-picker/MapPickerModal';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { searchAddress, reverseAddress, type GeocodeSuggestion } from '@/shared/api/geocode.service';
 import { Colors } from '@/shared/config/colors';
+import { LIMA_REGION } from '@/shared/config/map';
+import { TRANSPORT_MODE_CONFIG } from '@/shared/config/transport';
 import { useGuest, type GuestHome, type GuestWorkplace, type TransportOption } from '../model/GuestContext';
 import { useGuestRecommendations } from '@/features/recommendation/model/useRecommendations';
 
-const TRANSPORT_OPTIONS: TransportOption[] = ['driving', 'cycling', 'walking'];
-const TRANSPORT_LABELS: Record<TransportOption, string> = {
-  'driving': 'Auto',
-  'cycling': 'Bicicleta',
-  'walking': 'Caminando',
-};
-const TRANSPORT_ICONS: Record<TransportOption, keyof typeof Ionicons.glyphMap> = {
-  'driving': 'car-outline',
-  'cycling': 'bicycle-outline',
-  'walking': 'walk-outline',
-};
-const LIMA_REGION: Region = {
-  latitude: -12.0464, longitude: -77.0428,
-  latitudeDelta: 0.1, longitudeDelta: 0.1,
-};
 const KM_MIN = 1;
 const KM_MAX = 30;
 const DEFAULT_KM = 10;
@@ -359,20 +346,20 @@ export function GuestSetupModal({ visible, onClose }: Props) {
 
               <Text style={styles.fieldLabel}>Transporte preferido</Text>
               <View style={styles.transportRow}>
-                {TRANSPORT_OPTIONS.map((opt) => (
+                {TRANSPORT_MODE_CONFIG.map((cfg) => (
                   <TouchableOpacity
-                    key={opt}
-                    style={[styles.transportChip, transport === opt && styles.transportActive]}
-                    onPress={() => setTransport(opt)}
+                    key={cfg.id}
+                    style={[styles.transportChip, transport === cfg.id && styles.transportActive]}
+                    onPress={() => setTransport(cfg.id)}
                   >
-                    <Ionicons 
-                      name={TRANSPORT_ICONS[opt]} 
-                      size={16} 
-                      color={transport === opt ? Colors.textOnPrimary : Colors.textSecondary} 
+                    <Ionicons
+                      name={cfg.iconOutline}
+                      size={16}
+                      color={transport === cfg.id ? Colors.textOnPrimary : Colors.textSecondary}
                       style={{ marginRight: 6 }}
                     />
-                    <Text style={[styles.transportText, transport === opt && styles.transportTextActive]}>
-                      {TRANSPORT_LABELS[opt]}
+                    <Text style={[styles.transportText, transport === cfg.id && styles.transportTextActive]}>
+                      {cfg.labelFull}
                     </Text>
                   </TouchableOpacity>
                 ))}

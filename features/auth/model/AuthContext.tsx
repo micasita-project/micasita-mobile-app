@@ -10,6 +10,7 @@ import type { AuthUser, UserHomeUpdate } from '../api/auth.service';
 import { getAuthToken } from '@/shared/api';
 import { createWorkplace } from '@/entities/workplace/api/workplace.api';
 import { createPreference } from '@/entities/recommendation-preferences';
+import { queryClient } from '@/shared/api';
 
 export interface GuestDataForTransfer {
   home?: { lat: number; lon: number; address: string };
@@ -139,6 +140,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = useCallback(async () => {
     setUser(null);
     await logoutUser();
+    queryClient.clear(); // Limpiar todo el caché de React Query al cerrar sesión
   }, []);
 
   const setHome = useCallback(async (data: UserHomeUpdate): Promise<boolean> => {

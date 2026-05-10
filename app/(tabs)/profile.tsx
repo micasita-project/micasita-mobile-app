@@ -7,17 +7,15 @@ import type { Workplace } from "@/entities/workplace/api/workplace.api";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import { updateProfile } from "@/features/auth/api/auth.service";
-import {
-  searchAddress,
-  type GeocodeSuggestion,
-} from "@/shared/api/geocode.service";
+import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
+import { AddressSearchInput } from "@/shared/ui/AddressSearchInput";
 import { Colors } from "@/shared/config/colors";
 import { BottomSheet } from "@/shared/ui/BottomSheet";
 import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
 import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -31,16 +29,9 @@ import {
 
 interface AddressState {
   query: string;
-  suggestions: GeocodeSuggestion[];
   selected: GeocodeSuggestion | null;
-  isSearching: boolean;
 }
-const EMPTY_ADDR: AddressState = {
-  query: "",
-  suggestions: [],
-  selected: null,
-  isSearching: false,
-};
+const EMPTY_ADDR: AddressState = { query: "", selected: null };
 
 export default function ProfileScreen() {
   const { user, logout, refreshUser, setHome } = useAuth();
@@ -58,7 +49,6 @@ export default function ProfileScreen() {
   const [homeAddr, setHomeAddr] = useState<AddressState>(EMPTY_ADDR);
   const [homeMapVisible, setHomeMapVisible] = useState(false);
   const [isSavingHome, setIsSavingHome] = useState(false);
-  const homeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Edit Profile ─────────────────────────────────────────────────
   const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
@@ -66,47 +56,14 @@ export default function ProfileScreen() {
   const [editLastName, setEditLastName] = useState("");
   const [isEditingSaving, setIsEditingSaving] = useState(false);
 
-  // ── Generic address search handler ──────────────────────────────
-  const makeSearchHandler =
-    (
-      setter: React.Dispatch<React.SetStateAction<AddressState>>,
-      timer: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
-    ) =>
-    (text: string) => {
-      setter((p) => ({ ...p, query: text, selected: null }));
-      if (timer.current) clearTimeout(timer.current);
-      if (text.trim().length < 3) {
-        setter((p) => ({ ...p, suggestions: [] }));
-        return;
-      }
-      setter((p) => ({ ...p, isSearching: true }));
-      timer.current = setTimeout(async () => {
-        try {
-          const results = await searchAddress(text);
-          setter((p) => ({ ...p, suggestions: results, isSearching: false }));
-        } catch {
-          setter((p) => ({ ...p, isSearching: false }));
-        }
-      }, 400);
-    };
-
-  const selectAddress =
-    (setter: React.Dispatch<React.SetStateAction<AddressState>>) =>
-    (s: GeocodeSuggestion) => {
-      setter({
-        query: s.display_name.split(",")[0].trim(),
-        suggestions: [],
-        selected: s,
-        isSearching: false,
-      });
-    };
-
   // ── Derived handlers ─────────────────────────────────────────────
-  const handleHomeSearch = useCallback(
-    makeSearchHandler(setHomeAddr, homeTimer),
-    [],
-  );
-  const handleHomeSelect = useCallback(selectAddress(setHomeAddr), []);
+  const handleHomeSearch = useCallback((text: string) => {
+    setHomeAddr((p) => ({ ...p, query: text, selected: null }));
+  }, []);
+
+  const handleHomeSelect = useCallback((s: GeocodeSuggestion) => {
+    setHomeAddr({ query: s.display_name.split(",")[0].trim(), selected: s });
+  }, []);
 
   const closeWorkplaceSheet = useCallback(() => {
     setIsWorkplaceSheetVisible(false);
@@ -242,7 +199,7 @@ export default function ProfileScreen() {
     }
   };
 
-  // ── Address field renderer (shared pattern) ──────────────────────
+  // ── Address field renderer ────────────────────────────────────────
   const renderAddressField = (
     state: AddressState,
     onSearch: (t: string) => void,
@@ -251,54 +208,18 @@ export default function ProfileScreen() {
     placeholder = "Buscar dirección...",
   ) => (
     <>
-      <View style={styles.searchContainer}>
-        <Ionicons
-          name="search"
-          size={18}
-          color={Colors.textMuted}
-          style={{ marginLeft: 14 }}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder={placeholder}
-          placeholderTextColor={Colors.textMuted}
-          value={state.query}
-          onChangeText={onSearch}
-        />
-        {state.isSearching && (
-          <ActivityIndicator
-            size="small"
-            color={Colors.primary}
-            style={{ marginRight: 10 }}
-          />
-        )}
-      </View>
+      <AddressSearchInput
+        value={state.query}
+        onChangeText={onSearch}
+        onSelect={onSelect}
+        placeholder={placeholder}
+      />
       {state.selected && (
         <View style={styles.selectedBadge}>
           <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
           <Text style={styles.selectedBadgeText} numberOfLines={1}>
             Ubicación seleccionada
           </Text>
-        </View>
-      )}
-      {state.suggestions.length > 0 && !state.selected && (
-        <View style={styles.suggestionsContainer}>
-          {state.suggestions.slice(0, 4).map((item, idx) => (
-            <TouchableOpacity
-              key={`${item.latitude}-${idx}`}
-              style={styles.suggestionItem}
-              onPress={() => onSelect(item)}
-            >
-              <Ionicons
-                name="location-outline"
-                size={16}
-                color={Colors.primary}
-              />
-              <Text style={styles.suggestionText} numberOfLines={1}>
-                {item.display_name}
-              </Text>
-            </TouchableOpacity>
-          ))}
         </View>
       )}
       <View style={styles.orDivider}>

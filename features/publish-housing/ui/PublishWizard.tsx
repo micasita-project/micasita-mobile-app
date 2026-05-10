@@ -4,7 +4,7 @@
  * Orquesta Step1..Step4 + StepIndicator + PublishSuccessModal.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StepIndicator } from '@/shared/ui/StepIndicator';
@@ -29,6 +29,7 @@ import { Step4Amenities } from './Step4Amenities';
 import { PublishSuccessModal } from './PublishSuccessModal';
 import { Colors } from '@/shared/config/colors';
 import { useAuth } from '@/features/auth';
+import { getPublishDraft, savePublishDraft, clearPublishDraft } from '../model/publishDraft.storage';
 
 const STEP_LABELS = ['Ubicación', 'Características', 'Fotos', 'Amenidades'];
 
@@ -68,6 +69,46 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
     usePublishForm(initialDraft, propertyId);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const isPublishedRef = useRef(false);
+
+  // Cargar borrador al montar si no es edición
+  useEffect(() => {
+    const checkDraft = async () => {
+      if (propertyId) return;
+
+      const savedDraft = await getPublishDraft();
+      if (savedDraft) {
+        Alert.alert(
+          'Borrador encontrado',
+          'Tienes un borrador anterior sin publicar. ¿Deseas recuperarlo?',
+          [
+            {
+              text: 'Ignorar',
+              onPress: () => clearPublishDraft(),
+              style: 'cancel',
+            },
+            {
+              text: 'Recuperar',
+              onPress: () => updateDraft(savedDraft),
+            },
+          ]
+        );
+      }
+    };
+    checkDraft();
+  }, [propertyId]);
+
+  // Guardar borrador al salir de la pantalla
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        // Al "desenfocar" (salir), si no es edición y NO se ha publicado con éxito, guardamos
+        if (!propertyId && !isPublishedRef.current) {
+          savePublishDraft(draft);
+        }
+      };
+    }, [draft, propertyId])
+  );
 
   const handleNext = () => {
     const validationError = validateStep(currentStep, draft);
@@ -97,7 +138,11 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
     }
 
     if (success) {
+      isPublishedRef.current = true; // Marcar como publicado para evitar guardado accidental en el blur
       setShowSuccess(true);
+      if (!propertyId) {
+        await clearPublishDraft();
+      }
     } else {
       Alert.alert(propertyId ? 'Error al actualizar' : 'Error al publicar', error ?? 'Intenta de nuevo más tarde.');
     }

@@ -5,21 +5,20 @@
  * y puede ingresar coordenadas manualmente.
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/shared/config/colors';
 import type { HousingDraft } from '@/shared/types';
-import { searchAddress, type GeocodeSuggestion } from '@/shared/api/geocode.service';
+import { AddressSearchInput } from '@/shared/ui/AddressSearchInput';
+import type { GeocodeSuggestion } from '@/shared/api/geocode.service';
 
 const LIMA_DISTRICTS = [
   'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Chorrillos', 'Comas',
@@ -38,10 +37,6 @@ interface Step1LocationProps {
 }
 
 export function Step1Location({ data, onChange, onOpenMapPicker }: Step1LocationProps) {
-  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -61,27 +56,7 @@ export function Step1Location({ data, onChange, onOpenMapPicker }: Step1Location
     );
   }, []);
 
-  const handleSearchChange = useCallback((text: string) => {
-    onChange({ address: text });
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (text.trim().length < 3) {
-      setSuggestions([]);
-      return;
-    }
-    searchTimer.current = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const results = await searchAddress(text);
-        setSuggestions(results);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 400);
-  }, [onChange]);
-
-  const handleSelectAddress = useCallback((item: GeocodeSuggestion) => {
+  const handleSelect = useCallback((item: GeocodeSuggestion) => {
     const detectedDistrict = item.district || extractDistrict(item.display_name) || 'Lima';
     onChange({
       address: item.display_name,
@@ -89,7 +64,6 @@ export function Step1Location({ data, onChange, onOpenMapPicker }: Step1Location
       longitude: item.longitude,
       district: detectedDistrict,
     });
-    setSuggestions([]);
   }, [onChange, extractDistrict]);
 
   return (
@@ -97,33 +71,13 @@ export function Step1Location({ data, onChange, onOpenMapPicker }: Step1Location
       <Text style={styles.sectionTitle}>
         Dirección exacta <Text style={styles.required}>*</Text>
       </Text>
-      <View style={styles.inputWrapper}>
-        <Ionicons name="search" size={18} color={Colors.textSecondary} style={styles.inputIcon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Ej: Av. Caminos del Inca 1250, Piso 8"
-          placeholderTextColor={Colors.textMuted}
-          value={data.address}
-          onChangeText={handleSearchChange}
-          returnKeyType="done"
-        />
-        {isSearching && <ActivityIndicator size="small" color={Colors.primary} style={{ marginRight: 8 }} />}
-      </View>
 
-      {suggestions.length > 0 && (
-        <View style={styles.suggestionsContainer}>
-          {suggestions.map((item, idx) => (
-            <TouchableOpacity
-              key={`${item.latitude}-${idx}`}
-              style={styles.suggestionItem}
-              onPress={() => handleSelectAddress(item)}
-            >
-              <Ionicons name="location-outline" size={16} color={Colors.primary} />
-              <Text style={styles.suggestionText} numberOfLines={2}>{item.display_name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      <AddressSearchInput
+        value={data.address}
+        onChangeText={(text) => onChange({ address: text })}
+        onSelect={handleSelect}
+        placeholder="Ej: Av. Caminos del Inca 1250, Piso 8"
+      />
 
       <View style={styles.orDivider}>
         <View style={styles.line} />
@@ -179,36 +133,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   sectionTitle: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
   required: { color: Colors.error },
-  inputWrapper: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    minHeight: 50,
-  },
-  inputIcon: { marginRight: 8 },
-  input: { flex: 1, fontSize: 15, color: Colors.textPrimary, paddingVertical: 12 },
-  suggestionsContainer: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginTop: 4,
-    overflow: 'hidden',
-    zIndex: 10,
-  },
-  suggestionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-    gap: 10,
-  },
-  suggestionText: { flex: 1, fontSize: 14, color: Colors.textPrimary },
   orDivider: {
     flexDirection: 'row',
     alignItems: 'center',

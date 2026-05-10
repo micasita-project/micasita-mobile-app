@@ -7,8 +7,9 @@ import React, { useMemo } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { PublishWizard } from '@/features/publish-housing';
-import type { Housing, HousingDraft } from '@/shared/types';
+import type { PublishedHousing, HousingDraft } from '@/shared/types';
 import { Colors } from '@/shared/config/colors';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function EditHousingScreen() {
   const { data } = useLocalSearchParams<{ data: string }>();
@@ -16,9 +17,8 @@ export default function EditHousingScreen() {
   const propertyData = useMemo(() => {
     if (!data) return null;
     try {
-      const parsed = JSON.parse(data) as Housing;
-      
-      // Map Housing to HousingDraft
+      const parsed = JSON.parse(data) as PublishedHousing;
+
       const draft: HousingDraft = {
         address: parsed.address,
         district: parsed.district,
@@ -39,10 +39,7 @@ export default function EditHousingScreen() {
         features: parsed.features,
       };
 
-      return {
-        id: parsed.id,
-        draft,
-      };
+      return { id: parsed.id, status: parsed.status, draft };
     } catch (e) {
       console.warn('Failed to parse housing data for editing', e);
       return null;
@@ -51,9 +48,23 @@ export default function EditHousingScreen() {
 
   if (!propertyData) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={styles.center}>
         <ActivityIndicator color={Colors.primary} size="large" />
-        <Text style={styles.errorText}>Cargando datos de la propiedad...</Text>
+        <Text style={styles.centerText}>Cargando datos de la propiedad...</Text>
+      </View>
+    );
+  }
+
+  if (propertyData.status === 'pending') {
+    return (
+      <View style={styles.center}>
+        <View style={styles.iconWrap}>
+          <Ionicons name="time-outline" size={36} color={Colors.warning} />
+        </View>
+        <Text style={styles.blockedTitle}>Publicación en revisión</Text>
+        <Text style={styles.blockedBody}>
+          Tu anuncio está siendo revisado por nuestro equipo. No puedes editarlo mientras esté pendiente de aprobación.
+        </Text>
       </View>
     );
   }
@@ -62,15 +73,38 @@ export default function EditHousingScreen() {
 }
 
 const styles = StyleSheet.create({
-  errorContainer: {
+  center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.background,
+    padding: 32,
   },
-  errorText: {
+  centerText: {
     marginTop: 12,
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textSecondary,
+  },
+  iconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.warning + '18',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  blockedTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  blockedBody: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

@@ -6,7 +6,7 @@
  * - Incluye slider de radio de búsqueda (max_distance_km).
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,16 +16,14 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
-  Modal,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { type Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { MapPickerModal } from '@/widgets/location-picker/MapPickerModal';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
-import { searchAddress, reverseAddress, type GeocodeSuggestion } from '@/shared/api/geocode.service';
+import { type GeocodeSuggestion } from '@/shared/api/geocode.service';
+import { AddressSearchInput } from '@/shared/ui/AddressSearchInput';
 import { Colors } from '@/shared/config/colors';
-import { LIMA_REGION } from '@/shared/config/map';
 import { TRANSPORT_MODE_CONFIG } from '@/shared/config/transport';
 import { useGuest, type GuestHome, type GuestWorkplace, type TransportOption } from '../model/GuestContext';
 import { useGuestRecommendations } from '@/features/recommendation/model/useRecommendations';
@@ -37,11 +35,9 @@ const DEFAULT_LIMIT = 20;
 
 interface AddressField {
   query: string;
-  suggestions: GeocodeSuggestion[];
   selected: GeocodeSuggestion | null;
-  isSearching: boolean;
 }
-const EMPTY_FIELD: AddressField = { query: '', suggestions: [], selected: null, isSearching: false };
+const EMPTY_FIELD: AddressField = { query: '', selected: null };
 
 interface Props {
   visible: boolean;
@@ -97,14 +93,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
   const [transport, setTransport] = useState<TransportOption>(guestWorkplace?.transport ?? 'driving');
   const [maxDistanceKm, setMaxDistanceKm] = useState(DEFAULT_KM);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Map picker state
   const [mapTarget, setMapTarget] = useState<'home' | 'work' | null>(null);
-  const [mapRegion, setMapRegion] = useState<Region>(LIMA_REGION);
-  const [isReversing, setIsReversing] = useState(false);
-
-  const homeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const workTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Pre-fill with existing data when opening for edit
   useEffect(() => {
@@ -112,75 +101,35 @@ export function GuestSetupModal({ visible, onClose }: Props) {
     if (guestHome) {
       setHome({
         query: guestHome.address.split(',')[0].trim(),
-        suggestions: [],
         selected: {
           display_name: guestHome.address,
           latitude: guestHome.lat,
           longitude: guestHome.lon,
           place_type: 'address',
         },
-        isSearching: false,
       });
     }
     if (guestWorkplace) {
       setWork({
         query: guestWorkplace.address.split(',')[0].trim(),
-        suggestions: [],
         selected: {
           display_name: guestWorkplace.address,
           latitude: guestWorkplace.lat,
           longitude: guestWorkplace.lon,
           place_type: 'address',
         },
-        isSearching: false,
       });
       setBudget(String(guestWorkplace.budget));
       setTransport(guestWorkplace.transport);
       setMaxDistanceKm(guestWorkplace.maxDistanceKm ?? DEFAULT_KM);
-      // Start at step 1 always so user sees full flow
       setStep('home');
     }
   }, [visible]);
 
-  // ── Address search ─────────────────────────────────────────────
-  const handleSearch = useCallback((text: string, field: 'home' | 'work') => {
-    const setter = field === 'home' ? setHome : setWork;
-    const timer = field === 'home' ? homeTimer : workTimer;
-    setter((prev) => ({ ...prev, query: text, selected: null }));
-    if (timer.current) clearTimeout(timer.current);
-    if (text.trim().length < 3) {
-      setter((prev) => ({ ...prev, suggestions: [] }));
-      return;
-    }
-    setter((prev) => ({ ...prev, isSearching: true }));
-    timer.current = setTimeout(async () => {
-      try {
-        const results = await searchAddress(text);
-        setter((prev) => ({ ...prev, suggestions: results, isSearching: false }));
-      } catch {
-        setter((prev) => ({ ...prev, isSearching: false }));
-      }
-    }, 400);
-  }, []);
-
   const handleSelect = useCallback((suggestion: GeocodeSuggestion, field: 'home' | 'work') => {
     const setter = field === 'home' ? setHome : setWork;
-    setter({ query: suggestion.display_name.split(',')[0].trim(), suggestions: [], selected: suggestion, isSearching: false });
+    setter({ query: suggestion.display_name.split(',')[0].trim(), selected: suggestion });
   }, []);
-
-  // ── Map picker ─────────────────────────────────────────────────
-  const handleConfirmMap = async () => {
-    setIsReversing(true);
-    try {
-      const suggestion = await reverseAddress(mapRegion.latitude, mapRegion.longitude);
-      handleSelect(suggestion, mapTarget!);
-      setMapTarget(null);
-    } catch {
-      Alert.alert('Error', 'No se pudo obtener la dirección.');
-    } finally {
-      setIsReversing(false);
-    }
-  };
 
   // ── Navigation ────────────────────────────────────────────────
   const handleNextStep = () => {
@@ -203,7 +152,6 @@ export function GuestSetupModal({ visible, onClose }: Props) {
       };
       await Promise.all([setGuestHome(homeData), setGuestWorkplace(workData)]);
 
-      // Llamar recomendaciones inmediatamente con los datos recién guardados
       try {
         const items = await guestMutation.mutateAsync({
           work_lat: workData.lat,
@@ -241,18 +189,15 @@ export function GuestSetupModal({ visible, onClose }: Props) {
 
     return (
       <>
-        {/* Text search */}
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={16} color={Colors.textMuted} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={placeholder}
-            placeholderTextColor={Colors.textMuted}
-            value={state.query}
-            onChangeText={(t) => handleSearch(t, field)}
-          />
-          {state.isSearching && <ActivityIndicator size="small" color={Colors.primary} style={{ marginRight: 10 }} />}
-        </View>
+        <AddressSearchInput
+          value={state.query}
+          onChangeText={(t) => {
+            const setter = field === 'home' ? setHome : setWork;
+            setter((p) => ({ ...p, query: t, selected: null }));
+          }}
+          onSelect={(s) => handleSelect(s, field)}
+          placeholder={placeholder}
+        />
 
         {state.selected && (
           <View style={styles.selectedBadge}>
@@ -261,29 +206,12 @@ export function GuestSetupModal({ visible, onClose }: Props) {
           </View>
         )}
 
-        {state.suggestions.length > 0 && !state.selected && (
-          <View style={styles.suggestionsList}>
-            {state.suggestions.slice(0, 4).map((s, i) => (
-              <TouchableOpacity
-                key={`${s.latitude}-${s.longitude}-${i}`}
-                style={styles.suggestionItem}
-                onPress={() => handleSelect(s, field)}
-              >
-                <Ionicons name="location-outline" size={14} color={Colors.primary} />
-                <Text style={styles.suggestionText} numberOfLines={2}>{s.display_name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Divider */}
         <View style={styles.orRow}>
           <View style={styles.orLine} />
           <Text style={styles.orText}>O</Text>
           <View style={styles.orLine} />
         </View>
 
-        {/* Map button */}
         <TouchableOpacity style={styles.mapBtn} onPress={() => setMapTarget(field)}>
           <Ionicons name="map-outline" size={18} color={Colors.primary} />
           <Text style={styles.mapBtnText}>Elegir {mapLabel} en el mapa</Text>
@@ -414,22 +342,12 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
 
   fieldLabel: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary, marginBottom: 6, marginTop: 4 },
-  searchBox: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surfaceElevated, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 6,
-  },
-  searchIcon: { marginLeft: 12 },
-  searchInput: { flex: 1, paddingVertical: 13, paddingHorizontal: 10, fontSize: 14, color: Colors.textPrimary },
   selectedBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: Colors.success + '18', padding: 7, borderRadius: 8,
-    marginBottom: 10, alignSelf: 'flex-start',
+    marginTop: 8, marginBottom: 10, alignSelf: 'flex-start',
   },
   selectedText: { fontSize: 12, color: Colors.success, fontWeight: '600', maxWidth: 220 },
-  suggestionsList: { backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, marginBottom: 10, overflow: 'hidden' },
-  suggestionItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  suggestionText: { flex: 1, fontSize: 13, color: Colors.textPrimary },
 
   orRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
   orLine: { flex: 1, height: 1, backgroundColor: Colors.border },
@@ -458,14 +376,4 @@ const styles = StyleSheet.create({
   primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 20 },
   btnDisabled: { opacity: 0.5 },
   primaryBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textOnPrimary },
-
-  // Map picker
-  mapPin: { position: 'absolute', top: '50%', left: '50%', marginLeft: -22 },
-  mapCard: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: Colors.surface, padding: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
-  mapInstruction: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary, textAlign: 'center', marginBottom: 20 },
-  mapActions: { flexDirection: 'row', gap: 12 },
-  mapCancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border },
-  mapCancelText: { color: Colors.textSecondary, fontWeight: '700', fontSize: 15 },
-  mapConfirmBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: Colors.primary },
-  mapConfirmText: { color: Colors.textOnPrimary, fontWeight: '700', fontSize: 15 },
 });

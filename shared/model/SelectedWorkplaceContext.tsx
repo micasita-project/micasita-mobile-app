@@ -4,7 +4,8 @@
  * (recommend → map). Permite que el mapa refleje el workplace activo del tab de recomendaciones.
  */
 
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { useAuth } from '@/features/auth';
 
 interface SelectedWorkplaceContextValue {
   selectedWorkplaceId: number | null;
@@ -15,6 +16,15 @@ const SelectedWorkplaceContext = createContext<SelectedWorkplaceContextValue | u
 
 export function SelectedWorkplaceProvider({ children }: { children: ReactNode }) {
   const [selectedWorkplaceId, setSelectedWorkplaceId] = useState<number | null>(null);
+  const { isAuthenticated } = useAuth();
+
+  // Resetear selección al cerrar sesión
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSelectedWorkplaceId(null);
+    }
+  }, [isAuthenticated]);
+
   return (
     <SelectedWorkplaceContext.Provider value={{ selectedWorkplaceId, setSelectedWorkplaceId }}>
       {children}

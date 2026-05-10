@@ -11,9 +11,8 @@ import { createPreference } from "@/entities/recommendation-preferences";
 import { useAuth } from "@/features/auth";
 import { useGenerateRecommendations } from "@/features/recommendation/model/useRecommendations";
 import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
-import { reverseAddress, searchAddress } from "@/shared/api/geocode.service";
+import { AddressSearchInput } from "@/shared/ui/AddressSearchInput";
 import { Colors } from "@/shared/config/colors";
-import { LIMA_REGION } from "@/shared/config/map";
 import { TRANSPORT_MODE_CONFIG } from "@/shared/config/transport";
 import type { TransportMode } from "@/shared/types";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,7 +20,6 @@ import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   KeyboardAvoidingView,
@@ -34,7 +32,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Region } from "react-native-maps";
 import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
 
 
@@ -203,9 +200,6 @@ export default function OnboardingScreen() {
 
   // Search State (shared between home/workplace)
   const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Selected Data
   const [homeAddress, setHomeAddress] = useState<GeocodeSuggestion | null>(
@@ -223,37 +217,12 @@ export default function OnboardingScreen() {
   const [mapPickerMode, setMapPickerMode] = useState<
     "home" | "workplace" | null
   >(null);
-  const [mapRegion, setMapRegion] = useState<Region>(LIMA_REGION);
-  const [isReversing, setIsReversing] = useState(false);
 
   // ── Handlers ──────────────────────────────────────────────────
-
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchQuery(text);
-
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    if (text.trim().length < 3) {
-      setSuggestions([]);
-      return;
-    }
-
-    debounceTimer.current = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const results = await searchAddress(text);
-        setSuggestions(results);
-      } catch (error) {
-        console.error("Geocode search error:", error);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 400);
-  }, []);
 
   const handleSelectAddress = useCallback(
     (suggestion: GeocodeSuggestion) => {
       setSearchQuery("");
-      setSuggestions([]);
       if (step === "home") {
         setHomeAddress(suggestion);
         setStep("workplace");
@@ -269,25 +238,6 @@ export default function OnboardingScreen() {
 
   const openMapPicker = () => {
     setMapPickerMode(step as "home" | "workplace");
-  };
-
-  const handleConfirmMapLocation = async () => {
-    setIsReversing(true);
-    try {
-      const suggestion = await reverseAddress(
-        mapRegion.latitude,
-        mapRegion.longitude,
-      );
-      setMapPickerMode(null);
-      handleSelectAddress(suggestion);
-    } catch (e) {
-      Alert.alert(
-        "Error",
-        "No se pudo obtener la dirección de esta ubicación.",
-      );
-    } finally {
-      setIsReversing(false);
-    }
   };
 
   const handleSubmit = async () => {
@@ -409,52 +359,13 @@ export default function OnboardingScreen() {
         {step === "home" || step === "workplace" ? (
           <>
             {/* Search */}
-            <View style={styles.searchContainer}>
-              <Ionicons
-                name="search"
-                size={20}
-                color={Colors.textMuted}
-                style={styles.searchIcon}
-              />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Ej: Av. Javier Prado 123..."
-                placeholderTextColor={Colors.textMuted}
-                value={searchQuery}
-                onChangeText={handleSearchChange}
-                autoFocus
-              />
-              {isSearching && (
-                <ActivityIndicator
-                  size="small"
-                  color={Colors.primary}
-                  style={styles.searchSpinner}
-                />
-              )}
-            </View>
-
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
-              <View style={styles.suggestionsContainer}>
-                {suggestions.map((item, index) => (
-                  <TouchableOpacity
-                    key={`${item.latitude}-${item.longitude}-${index}`}
-                    style={styles.suggestionItem}
-                    onPress={() => handleSelectAddress(item)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name="location-outline"
-                      size={18}
-                      color={Colors.primary}
-                    />
-                    <Text style={styles.suggestionText} numberOfLines={2}>
-                      {item.display_name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+            <AddressSearchInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSelect={handleSelectAddress}
+              placeholder="Ej: Av. Javier Prado 123..."
+              autoFocus
+            />
 
             <View style={styles.orDivider}>
               <View style={styles.line} />

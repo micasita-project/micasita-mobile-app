@@ -7,6 +7,8 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import 'react-native-reanimated';
 import { QueryClientProvider } from '@tanstack/react-query';
 
@@ -81,6 +83,7 @@ function useProtectedRoute() {
 
 function RootNavigator() {
   useProtectedRoute();
+  const router = useRouter();
 
   return (
     <Stack
@@ -95,11 +98,7 @@ function RootNavigator() {
         name="housing-detail"
         options={{
           presentation: 'modal',
-          headerShown: true,
-          headerTitle: 'Detalle de Vivienda',
-          headerStyle: { backgroundColor: Colors.background },
-          headerTintColor: Colors.primary,
-          headerTitleStyle: { fontWeight: '700' },
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -111,17 +110,18 @@ function RootNavigator() {
       <Stack.Screen
         name="my-listings"
         options={{
-          presentation: 'modal',
-          headerShown: true,
-          headerTitle: 'Mis publicaciones',
-          headerStyle: { backgroundColor: Colors.background },
-          headerTintColor: Colors.primary,
-          headerTitleStyle: { fontWeight: '700' },
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="recommendation-insight"
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="favorites"
+        options={{
+          headerShown: false,
+        }}
       />
     </Stack>
   );

@@ -14,6 +14,7 @@ import {
   useGuestRecommendations,
   useLatestRecommendations,
 } from "@/features/recommendation/model/useRecommendations";
+import { useToggleFavorite } from "@/entities/housing/model/useProperties";
 import { Colors } from "@/shared/config/colors";
 import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
 import type { Housing } from "@/shared/types";
@@ -170,6 +171,7 @@ export default function RecommendScreen() {
   const { data: cachedResults, isLoading: loadingCached } =
     useLatestRecommendations(selectedWorkplaceId);
   const generateRecs = useGenerateRecommendations();
+  const toggleFavorite = useToggleFavorite();
 
   const handleRefresh = useCallback(() => {
     if (!selectedWorkplaceId) return;

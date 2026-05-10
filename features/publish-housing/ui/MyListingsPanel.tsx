@@ -69,10 +69,10 @@ function ListingCard({
 
       {/* Status badge */}
       <View
-        style={[styles.statusBadge, { backgroundColor: status.color + "20" }]}
+        style={[styles.statusBadge, { backgroundColor: status.color }]}
       >
-        <Ionicons name={status.icon as any} size={13} color={status.color} />
-        <Text style={[styles.statusText, { color: status.color }]}>
+        <Ionicons name={status.icon as any} size={13} color="#FFFFFF" />
+        <Text style={[styles.statusText, { color: "#FFFFFF" }]}>
           {status.label}
         </Text>
       </View>

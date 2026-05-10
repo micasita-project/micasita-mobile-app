@@ -241,30 +241,57 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Profile header card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarInitials}>
-            <Text style={styles.avatarInitialsText}>
-              {user.name
-                ? `${user.name[0]}${user.last_name?.[0] ?? ""}`.toUpperCase()
-                : user.email[0].toUpperCase()}
-            </Text>
+        <View style={styles.profileHeader}>
+          <View style={styles.profileMainInfo}>
+            <View style={styles.avatarInitials}>
+              <Text style={styles.avatarInitialsText}>
+                {user.name
+                  ? `${user.name[0]}${user.last_name?.[0] ?? ""}`.toUpperCase()
+                  : user.email[0].toUpperCase()}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.profileName}>
+                {user.name
+                  ? `${user.name} ${user.last_name ?? ""}`.trim()
+                  : "Usuario"}
+              </Text>
+              <Text style={styles.profileEmail} numberOfLines={1}>
+                {user.email}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.profileEditBtn}
+              onPress={openEditProfile}
+            >
+              <Ionicons name="pencil" size={16} color={Colors.primary} />
+            </TouchableOpacity>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.profileName}>
-              {user.name
-                ? `${user.name} ${user.last_name ?? ""}`.trim()
-                : "Usuario"}
-            </Text>
-            <Text style={styles.profileEmail} numberOfLines={1}>
-              {user.email}
-            </Text>
+
+          {/* Quick Stats Dashboard */}
+          <View style={styles.statsDashboard}>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => router.push("/favorites" as any)}
+            >
+              <View style={[styles.statIconBg, { backgroundColor: '#FFEDF0' }]}>
+                <Ionicons name="heart" size={20} color="#FF4B6E" />
+              </View>
+              <Text style={styles.statLabel}>Favoritos</Text>
+            </TouchableOpacity>
+
+            <View style={styles.statDivider} />
+
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => router.push("/my-listings" as any)}
+            >
+              <View style={[styles.statIconBg, { backgroundColor: '#E8F5FF' }]}>
+                <Ionicons name="home" size={20} color="#0091FF" />
+              </View>
+              <Text style={styles.statLabel}>Publicaciones</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.profileEditBtn}
-            onPress={openEditProfile}
-          >
-            <Ionicons name="pencil-outline" size={16} color={Colors.primary} />
-          </TouchableOpacity>
         </View>
 
         {/* Lugares de trabajo */}
@@ -368,57 +395,6 @@ export default function ProfileScreen() {
                 color={Colors.textMuted}
               />
             </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Ajustes */}
-        <View style={styles.listSection}>
-          <Text style={styles.listSectionLabel}>AJUSTES</Text>
-          <View style={[styles.listCard, { marginTop: 8 }]}>
-            {(
-              [
-                {
-                  icon: "bookmark-outline",
-                  label: "Favoritos guardados",
-                  detail: "0",
-                },
-                {
-                  icon: "time-outline",
-                  label: "Historial de búsquedas",
-                  detail: null,
-                },
-                {
-                  icon: "notifications-outline",
-                  label: "Notificaciones",
-                  detail: null,
-                },
-                {
-                  icon: "help-circle-outline",
-                  label: "Ayuda y soporte",
-                  detail: null,
-                },
-              ] as const
-            ).map((row, i) => (
-              <View
-                key={row.label}
-                style={[styles.listRow, i < 3 && styles.listRowDivider]}
-              >
-                <View style={styles.listRowIcon}>
-                  <Ionicons name={row.icon} size={14} color={Colors.primary} />
-                </View>
-                <Text style={[styles.listRowTitle, { flex: 1 }]}>
-                  {row.label}
-                </Text>
-                {row.detail && (
-                  <Text style={styles.settingDetail}>{row.detail}</Text>
-                )}
-                <Ionicons
-                  name="chevron-forward"
-                  size={14}
-                  color={Colors.textMuted}
-                />
-              </View>
-            ))}
           </View>
         </View>
 
@@ -633,37 +609,80 @@ const styles = StyleSheet.create({
   benefitRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   benefitText: { fontSize: 14, color: Colors.textPrimary, fontWeight: "500" },
 
-  // Profile card
-  profileCard: {
+  // Profile header
+  profileHeader: {
     backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  profileMainInfo: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    marginBottom: 14,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 16,
+    marginBottom: 20,
   },
   avatarInitials: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: Colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarInitialsText: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "700",
     color: Colors.textOnPrimary,
   },
-  profileName: { fontSize: 16, fontWeight: "700", color: Colors.textPrimary },
+  profileName: { fontSize: 18, fontWeight: "800", color: Colors.textPrimary },
   profileEmail: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  profileEditBtn: { padding: 8 },
+  profileEditBtn: { 
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Stats Dashboard
+  statsDashboard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 16,
+    paddingVertical: 12,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+  },
+  statIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: Colors.border,
+  },
 
   // List sections
   listSection: { marginBottom: 14 },

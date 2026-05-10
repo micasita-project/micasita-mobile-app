@@ -14,6 +14,7 @@ import {
   calculateHaversineDistance,
   fetchMultiModeRoutes,
 } from "@/entities/route";
+import { useToggleFavorite } from "@/entities/housing/model/useProperties";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import { useGuest } from "@/features/guest";
@@ -25,10 +26,12 @@ import { ImageLightbox } from "@/shared/ui/ImageLightbox";
 import { getCurrencySymbol } from "@/shared/utils/currency";
 import { getImageSource } from "@/shared/utils/image";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -59,27 +62,23 @@ export default function HousingDetailScreen() {
   const router = useRouter();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const toggleFavorite = useToggleFavorite();
 
-  const [housing, setHousing] = useState<Housing | null>(() => {
+  const initialHousing = useMemo(() => {
     if (data) {
       try {
         return JSON.parse(data) as Housing;
       } catch {}
     }
-    return null;
+    return undefined;
+  }, [data]);
+
+  const { data: housing, isLoading: isLoadingHousing } = useQuery({
+    queryKey: ['property', id],
+    queryFn: () => fetchPropertyById(Number(id)),
+    initialData: initialHousing,
+    enabled: !!id,
   });
-
-  const [isLoadingHousing, setIsLoadingHousing] = useState(!housing);
-
-  useEffect(() => {
-    if (!housing && id) {
-      setIsLoadingHousing(true);
-      fetchPropertyById(Number(id))
-        .then(setHousing)
-        .catch((err) => console.warn("Failed to fetch housing", err))
-        .finally(() => setIsLoadingHousing(false));
-    }
-  }, [id, housing]);
 
   const routeInfo = useMemo(() => {
     // TODO: Integrar Workplace del backend para calcular distancias
@@ -150,6 +149,19 @@ export default function HousingDetailScreen() {
 
   const handleViewOnMap = () => router.back();
 
+  const handleFavoriteToggle = () => {
+    if (!housing) return;
+    if (!user) {
+      Alert.alert("Inicia sesión", "Debes iniciar sesión para guardar favoritos.", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Iniciar sesión", onPress: () => router.push("/login") },
+      ]);
+      return;
+    }
+    const newStatus = !housing.isFavorite;
+    toggleFavorite.mutate({ id: housing.id, isFavorite: newStatus });
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -211,8 +223,15 @@ export default function HousingDetailScreen() {
                 color={Colors.textPrimary}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.overlayBtn}>
-              <Ionicons name="heart-outline" size={18} color={Colors.error} />
+            <TouchableOpacity 
+              style={styles.overlayBtn}
+              onPress={handleFavoriteToggle}
+            >
+              <Ionicons 
+                name={housing.isFavorite ? "heart" : "heart-outline"} 
+                size={18} 
+                color={Colors.error} 
+              />
             </TouchableOpacity>
           </View>
 

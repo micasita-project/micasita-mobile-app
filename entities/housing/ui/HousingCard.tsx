@@ -15,12 +15,14 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 interface HousingCardProps {
   housing: Housing;
   onPress?: (housing: Housing) => void;
+  onFavoriteToggle?: (id: string, isFavorite: boolean) => void;
   variant?: "full" | "compact";
 }
 
 export function HousingCard({
   housing,
   onPress,
+  onFavoriteToggle,
   variant = "full",
 }: HousingCardProps) {
   const isCompact = variant === "compact";
@@ -82,6 +84,18 @@ export function HousingCard({
           </Text>
         </View>
 
+        {/* Favorite Icon for Compact */}
+        <TouchableOpacity 
+          style={styles.compactFavoriteBtn}
+          onPress={() => onFavoriteToggle?.(housing.id, !housing.isFavorite)}
+        >
+          <Ionicons 
+            name={housing.isFavorite ? "heart" : "heart-outline"} 
+            size={22} 
+            color={housing.isFavorite ? Colors.error : Colors.textMuted} 
+          />
+        </TouchableOpacity>
+
         {/* Right: Image */}
         <Image
           source={getImageSource(housing.images[0])}
@@ -108,6 +122,20 @@ export function HousingCard({
       <View style={styles.typeBadge}>
         <Text style={styles.typeBadgeText}>{typeLabel}</Text>
       </View>
+
+      <TouchableOpacity 
+        style={styles.favoriteBtn}
+        onPress={() => onFavoriteToggle?.(housing.id, !housing.isFavorite)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.favoriteCircle}>
+          <Ionicons 
+            name={housing.isFavorite ? "heart" : "heart-outline"} 
+            size={22} 
+            color={housing.isFavorite ? Colors.error : Colors.textSecondary} 
+          />
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.infoContainer}>
         <Text style={styles.title} numberOfLines={2}>
@@ -261,4 +289,29 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   compactImage: { width: 110, height: "100%", minHeight: 120 },
+  favoriteBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    zIndex: 1,
+  },
+  favoriteCircle: {
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  compactFavoriteBtn: {
+    position: "absolute",
+    top: 8,
+    right: 120, // To avoid overlapping with image which is 110px wide on the right
+    zIndex: 1,
+  },
 });

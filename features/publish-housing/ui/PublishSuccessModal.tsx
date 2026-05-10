@@ -59,7 +59,7 @@ export function PublishSuccessModal({
           <View style={styles.processContainer}>
             {[
               { icon: 'cloud-upload-outline', label: 'Publicado', done: true },
-              { icon: 'search-outline', label: 'En revisión', done: false },
+              { icon: 'search-outline', label: 'Pendiente', done: false },
               { icon: 'checkmark-done-outline', label: 'Aprobado', done: false },
             ].map((step, i) => (
               <View key={i} style={styles.processStep}>

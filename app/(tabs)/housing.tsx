@@ -21,7 +21,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth';
 import { HousingCard } from '@/entities/housing';
-import { useProperties } from '@/entities/housing/model/useProperties';
+import { useProperties, useToggleFavorite } from '@/entities/housing/model/useProperties';
 import type { PropertyFilters } from '@/entities/housing/api/housing.api';
 import { Colors } from '@/shared/config/colors';
 import type { Housing } from '@/shared/types';
@@ -31,7 +31,15 @@ import { BottomSheet } from '@/shared/ui/BottomSheet';
 const EMPTY_FILTERS: PropertyFilters = {};
 
 function filtersAreActive(f: PropertyFilters): boolean {
-  return !!(f.district || f.bedrooms != null || f.bathrooms != null || f.parking != null || f.min_area_sqm != null);
+  return !!(
+    f.district || 
+    f.bedrooms != null || 
+    f.bathrooms != null || 
+    f.parking != null || 
+    f.min_area_sqm != null ||
+    f.min_price != null ||
+    f.max_price != null
+  );
 }
 
 // ── Filter Panel ─────────────────────────────────────────────────
@@ -89,6 +97,7 @@ export default function HousingScreen() {
     hasNextPage,
     refetch,
   } = useProperties(filters);
+  const toggleFavorite = useToggleFavorite();
 
   const allHousing = useMemo(
     () => data?.pages.flatMap((p) => p.items) ?? [],
@@ -131,9 +140,29 @@ export default function HousingScreen() {
     setFilterOpen(false);
   };
 
+  const handleFavoriteToggle = useCallback(
+    (id: string, isFavorite: boolean) => {
+      if (!isAuthenticated) {
+        Alert.alert('Inicia sesión', 'Debes iniciar sesión para guardar favoritos.', [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Iniciar sesión', onPress: () => router.push('/login') },
+        ]);
+        return;
+      }
+      toggleFavorite.mutate({ id, isFavorite });
+    },
+    [isAuthenticated, router, toggleFavorite]
+  );
+
   const renderHousingItem = useCallback(
-    ({ item }: { item: Housing }) => <HousingCard housing={item} onPress={handleHousingPress} />,
-    [handleHousingPress]
+    ({ item }: { item: Housing }) => (
+      <HousingCard 
+        housing={item} 
+        onPress={handleHousingPress} 
+        onFavoriteToggle={handleFavoriteToggle}
+      />
+    ),
+    [handleHousingPress, handleFavoriteToggle]
   );
 
   const renderFooter = () => {
@@ -297,6 +326,43 @@ export default function HousingScreen() {
                 <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
               </TouchableOpacity>
             ) : null}
+          </View>
+          
+          {/* Price Range */}
+          <Text style={filterStyles.sectionLabel}>Rango de precio ($)</Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={[filterStyles.inputRow, { flex: 1 }]}>
+              <Text style={{ fontSize: 13, color: Colors.textMuted, fontWeight: '600' }}>Min</Text>
+              <TextInput
+                style={filterStyles.input}
+                placeholder="0"
+                placeholderTextColor={Colors.textMuted}
+                value={draft.min_price != null ? String(draft.min_price) : ''}
+                onChangeText={(t) => setDraft((d) => ({ ...d, min_price: t ? Number(t) : undefined }))}
+                keyboardType="numeric"
+              />
+              {draft.min_price != null ? (
+                <TouchableOpacity onPress={() => setDraft((d) => ({ ...d, min_price: undefined }))}>
+                  <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            <View style={[filterStyles.inputRow, { flex: 1 }]}>
+              <Text style={{ fontSize: 13, color: Colors.textMuted, fontWeight: '600' }}>Max</Text>
+              <TextInput
+                style={filterStyles.input}
+                placeholder="Inf"
+                placeholderTextColor={Colors.textMuted}
+                value={draft.max_price != null ? String(draft.max_price) : ''}
+                onChangeText={(t) => setDraft((d) => ({ ...d, max_price: t ? Number(t) : undefined }))}
+                keyboardType="numeric"
+              />
+              {draft.max_price != null ? (
+                <TouchableOpacity onPress={() => setDraft((d) => ({ ...d, max_price: undefined }))}>
+                  <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
 
           {/* Actions */}

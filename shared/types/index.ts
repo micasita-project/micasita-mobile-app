@@ -65,6 +65,7 @@ export interface Housing {
   features: string[];
   /** Original listing URL from the scraper */
   source_url?: string;
+  isFavorite?: boolean;
 }
 
 // ── Coordinates & Routes ────────────────────────────────────

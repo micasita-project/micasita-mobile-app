@@ -34,6 +34,7 @@ export interface PropertyResponse {
   images: string[];
   features: string[];
   source_url: string | null;
+  is_favorite: boolean;
 }
 
 export interface CreatePropertyRequest {
@@ -67,6 +68,7 @@ export interface PropertyFilters {
   bathrooms?: number;
   parking?: number;
   min_area_sqm?: number;
+  min_price?: number;
   max_price?: number;
 }
 // ── Mapper (Backend → Frontend) ─────────────────────────────────
@@ -93,6 +95,7 @@ function toHousing(p: PropertyResponse): Housing {
     images: p.images ?? [],
     features: p.features ?? [],
     source_url: p.source_url ?? undefined,
+    isFavorite: p.is_favorite ?? false,
   };
 }
 
@@ -111,6 +114,7 @@ export async function fetchAllProperties(
   if (filters.bathrooms != null) params.bathrooms = filters.bathrooms;
   if (filters.parking != null) params.parking = filters.parking;
   if (filters.min_area_sqm != null) params.min_area_sqm = filters.min_area_sqm;
+  if (filters.min_price != null) params.min_price = filters.min_price;
   if (filters.max_price != null) params.max_price = filters.max_price;
 
   const response = await apiClient.get<PaginatedPropertyResponse>('/properties/', { params });
@@ -184,4 +188,28 @@ export async function uploadPropertyImage(fileUri: string): Promise<string> {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data.url;
+}
+
+// ── Favorites (HU26) ───────────────────────────────────────────
+
+/**
+ * Añade una propiedad a la lista de favoritos del usuario.
+ */
+export async function addToFavorites(propertyId: string): Promise<void> {
+  await apiClient.post(`/properties/${propertyId}/favorite`);
+}
+
+/**
+ * Quita una propiedad de la lista de favoritos.
+ */
+export async function removeFromFavorites(propertyId: string): Promise<void> {
+  await apiClient.delete(`/properties/${propertyId}/favorite`);
+}
+
+/**
+ * Obtiene la lista de propiedades favoritas del usuario logueado.
+ */
+export async function fetchMyFavorites(): Promise<Housing[]> {
+  const response = await apiClient.get<PropertyResponse[]>('/properties/favorites');
+  return response.data.map(toHousing);
 }

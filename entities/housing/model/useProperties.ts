@@ -10,6 +10,8 @@ import {
   createProperty,
   deleteProperty,
   uploadPropertyImage,
+  addToFavorites,
+  removeFromFavorites,
 } from '../api/housing.api';
 import type { CreatePropertyRequest, PropertyFilters } from '../api/housing.api';
 
@@ -72,5 +74,28 @@ export function useDeleteProperty() {
 export function useUploadPropertyImage() {
   return useMutation({
     mutationFn: (fileUri: string) => uploadPropertyImage(fileUri),
+  });
+}
+
+/**
+ * Hook para alternar el estado de favorito de una propiedad.
+ * Optimista: Podríamos invalidar la cache o actualizarla manualmente.
+ */
+export function useToggleFavorite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, isFavorite }: { id: string; isFavorite: boolean }) => {
+      if (isFavorite) {
+        await addToFavorites(id);
+      } else {
+        await removeFromFavorites(id);
+      }
+    },
+    onSuccess: (_, variables) => {
+      // Invalida todas las listas para que se refresquen los corazones
+      qc.invalidateQueries({ queryKey: propertyKeys.all });
+      qc.invalidateQueries({ queryKey: ['favorites'] });
+      qc.invalidateQueries({ queryKey: ['property', variables.id] });
+    },
   });
 }

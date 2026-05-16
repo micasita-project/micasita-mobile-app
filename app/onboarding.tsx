@@ -23,7 +23,6 @@ import {
   Alert,
   Animated,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,

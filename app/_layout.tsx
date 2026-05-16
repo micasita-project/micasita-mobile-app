@@ -7,8 +7,6 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import 'react-native-reanimated';
 import { QueryClientProvider } from '@tanstack/react-query';
 
@@ -16,8 +14,9 @@ import { AuthProvider, useAuth } from '@/features/auth';
 import { GuestProvider } from '@/features/guest';
 import { SelectedWorkplaceProvider } from '@/shared/model/SelectedWorkplaceContext';
 import { queryClient } from '@/shared/api';
-import { Colors } from '@/shared/config/colors';
-import { apiClient } from '@/shared/api';
+
+
+import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
 
 function useProtectedRoute() {
   const { isAuthenticated, isInitialized, user } = useAuth();
@@ -25,14 +24,11 @@ function useProtectedRoute() {
   const router = useRouter();
   const [hasNavigated, setHasNavigated] = useState(false);
 
+  const isNormalUserWithHome = !!isAuthenticated && user?.role !== 'admin' && !!user?.home_address;
+  const { data: workplaces, isLoading: isWorkplacesLoading, isFetching: isWorkplacesFetching } = useWorkplaces(isNormalUserWithHome);
+
   useEffect(() => {
     if (!isInitialized) return;
-
-    // Skip the very first render — Stack needs to mount first
-    if (!hasNavigated) {
-      setHasNavigated(true);
-      return;
-    }
 
     const inLoginPage = segments[0] === 'login';
     const inOnboarding = segments[0] === 'onboarding';
@@ -41,6 +37,7 @@ function useProtectedRoute() {
 
     // -- Flujo para Administradores --
     if (isAuthenticated && user?.role === 'admin') {
+      if (!hasNavigated) setHasNavigated(true);
       if (!inAdmin && !inHousingDetail) {
         router.replace('/(admin)');
       }
@@ -50,35 +47,50 @@ function useProtectedRoute() {
     // -- Flujo para Usuarios Normales --
     if (isAuthenticated && user?.role !== 'admin') {
       if (inAdmin) {
+        if (!hasNavigated) setHasNavigated(true);
         router.replace('/(tabs)');
         return;
       }
+
+      // 1. Verificación síncrona: si no tiene casa, falta onboarding
+      if (!user?.home_address) {
+        if (!hasNavigated) setHasNavigated(true);
+        if (!inOnboarding) {
+          router.replace('/onboarding');
+        }
+        return;
+      }
+
+      // 2. Esperar a que la consulta de workplaces termine
+      if (isWorkplacesLoading || isWorkplacesFetching) return;
+
+      if (!hasNavigated) setHasNavigated(true);
+
+      const hasWorkplaces = workplaces && workplaces.length > 0;
+
+      // Si definitivamente no tiene workplaces, ir al onboarding
+      if (!hasWorkplaces) {
+        if (!inOnboarding) {
+          router.replace('/onboarding');
+        }
+        return;
+      }
+
+      // Si todo está bien y está en login, mandarlo a tabs
       if (inLoginPage) {
-        // Authenticated user in login → check workplaces
-        apiClient
-          .get('/workplaces/')
-          .then((response) => {
-            const workplaces = response.data;
-            if (!workplaces || workplaces.length === 0) {
-              router.replace('/onboarding');
-            } else {
-              router.replace('/(tabs)');
-            }
-          })
-          .catch(() => {
-            router.replace('/(tabs)');
-          });
+        router.replace('/(tabs)');
       }
       return;
     }
 
     // -- Flujo para Invitados (No Autenticados) --
     if (!isAuthenticated) {
+      if (!hasNavigated) setHasNavigated(true);
       if (inOnboarding || inAdmin) {
         router.replace('/(tabs)');
       }
     }
-  }, [isAuthenticated, isInitialized, hasNavigated, segments, router, user]);
+  }, [isAuthenticated, isInitialized, hasNavigated, segments, router, user, workplaces, isWorkplacesLoading, isWorkplacesFetching]);
 }
 
 function RootNavigator() {

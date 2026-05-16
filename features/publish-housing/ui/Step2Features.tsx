@@ -169,14 +169,15 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
         <View style={[styles.counterCard, { flex: 1 }]}>
           <Ionicons name="time-outline" size={20} color={Colors.primary} />
           <Text style={styles.counterLabel}>Antigüedad (años)</Text>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, { width: 90, paddingHorizontal: 8, paddingVertical: 0, marginTop: 4 }]}>
             <TextInput
-              style={[styles.input, { textAlign: 'center', fontSize: 18, fontWeight: '800' }]}
+              style={[styles.input, { textAlign: 'center', fontSize: 18, fontWeight: '800', paddingVertical: 8 }]}
               placeholder="0"
               placeholderTextColor={Colors.textMuted}
               value={data.antiquity > 0 ? data.antiquity.toString() : ''}
               onChangeText={(v) => onChange({ antiquity: parseInt(v) || 0 })}
               keyboardType="numeric"
+              maxLength={3}
             />
           </View>
         </View>

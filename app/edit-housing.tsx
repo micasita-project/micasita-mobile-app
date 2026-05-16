@@ -4,8 +4,8 @@
  */
 
 import React, { useMemo } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PublishWizard } from '@/features/publish-housing';
 import type { PublishedHousing, HousingDraft } from '@/shared/types';
 import { Colors } from '@/shared/config/colors';
@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function EditHousingScreen() {
   const { data } = useLocalSearchParams<{ data: string }>();
+  const router = useRouter();
 
   const propertyData = useMemo(() => {
     if (!data) return null;
@@ -65,6 +66,10 @@ export default function EditHousingScreen() {
         <Text style={styles.blockedBody}>
           Tu anuncio está siendo revisado por nuestro equipo. No puedes editarlo mientras esté pendiente de aprobación.
         </Text>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.8}>
+          <Ionicons name="arrow-back" size={20} color={Colors.textOnPrimary} />
+          <Text style={styles.backButtonText}>Volver atrás</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -106,5 +111,21 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 32,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+  },
+  backButtonText: {
+    color: Colors.textOnPrimary,
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

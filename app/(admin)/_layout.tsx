@@ -58,7 +58,7 @@ export default function AdminLayout() {
       />
       </Tabs>
 
-      <BottomSheet visible={profileVisible} onClose={() => setProfileVisible(false)} maxHeightRatio={0.6}>
+      <BottomSheet visible={profileVisible} onClose={() => setProfileVisible(false)} maxHeightRatio={0.38}>
         <View style={styles.sheetContent}>
           <View style={styles.sheetHeader}>
             <View style={styles.largeAvatar}>

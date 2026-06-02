@@ -220,8 +220,45 @@ export function GuestSetupModal({ visible, onClose }: Props) {
     );
   };
 
+  const footer = step === 'home' ? (
+    <View style={styles.row}>
+      <TouchableOpacity
+        style={[styles.primaryBtn, { flex: 1 }, !home.selected && styles.btnDisabled]}
+        onPress={handleNextStep}
+        disabled={!home.selected}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.primaryBtnText}>Siguiente</Text>
+        <Ionicons name="arrow-forward" size={18} color={Colors.textOnPrimary} />
+      </TouchableOpacity>
+    </View>
+  ) : (
+    <View style={styles.row}>
+      <TouchableOpacity style={styles.backBtn} onPress={() => setStep('home')}>
+        <Ionicons name="arrow-back" size={18} color={Colors.textSecondary} />
+        <Text style={styles.backBtnText}>Atrás</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.primaryBtn, { flex: 1 }, isSaving && styles.btnDisabled]}
+        onPress={handleSave}
+        disabled={isSaving}
+        activeOpacity={0.8}
+      >
+        {isSaving ? (
+          <ActivityIndicator color={Colors.textOnPrimary} />
+        ) : (
+          <>
+            <Ionicons name="sparkles" size={18} color={Colors.textOnPrimary} />
+            <Text style={styles.primaryBtnText}>Ver recomendaciones</Text>
+          </>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
-    <BottomSheet visible={visible} onClose={handleClose} maxHeightRatio={0.58}>
+    <>
+      <BottomSheet visible={visible} onClose={handleClose} maxHeightRatio={0.42} expandable footer={footer}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
@@ -247,15 +284,6 @@ export function GuestSetupModal({ visible, onClose }: Props) {
             <>
               <Text style={styles.fieldLabel}>Tu vivienda actual</Text>
               {renderAddressField('home')}
-              <TouchableOpacity
-                style={[styles.primaryBtn, !home.selected && styles.btnDisabled]}
-                onPress={handleNextStep}
-                disabled={!home.selected}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.primaryBtnText}>Siguiente</Text>
-                <Ionicons name="arrow-forward" size={18} color={Colors.textOnPrimary} />
-              </TouchableOpacity>
             </>
           ) : (
             <>
@@ -294,43 +322,22 @@ export function GuestSetupModal({ visible, onClose }: Props) {
               </View>
 
               <RadiusSlider value={maxDistanceKm} onChange={setMaxDistanceKm} />
-
-              <View style={styles.row}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => setStep('home')}>
-                  <Ionicons name="arrow-back" size={18} color={Colors.textSecondary} />
-                  <Text style={styles.backBtnText}>Atrás</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.primaryBtn, { flex: 1 }, isSaving && styles.btnDisabled]}
-                  onPress={handleSave}
-                  disabled={isSaving}
-                  activeOpacity={0.8}
-                >
-                  {isSaving ? (
-                    <ActivityIndicator color={Colors.textOnPrimary} />
-                  ) : (
-                    <>
-                      <Ionicons name="sparkles" size={18} color={Colors.textOnPrimary} />
-                      <Text style={styles.primaryBtnText}>Ver recomendaciones</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
             </>
           )}
         </ScrollView>
+      </BottomSheet>
 
-        <MapPickerModal
-          visible={!!mapTarget}
-          onClose={() => setMapTarget(null)}
-          title={mapTarget === 'home' ? 'Tu vivienda actual' : 'Tu lugar de trabajo'}
-          instruction={`Mueve el mapa para ubicar tu ${mapTarget === 'home' ? 'vivienda actual' : 'lugar de trabajo'}`}
-          onConfirm={(s) => {
-            handleSelect(s, mapTarget!);
-            setMapTarget(null);
-          }}
-        />
-    </BottomSheet>
+      <MapPickerModal
+        visible={!!mapTarget}
+        onClose={() => setMapTarget(null)}
+        title={mapTarget === 'home' ? 'Tu vivienda actual' : 'Tu lugar de trabajo'}
+        instruction={`Mueve el mapa para ubicar tu ${mapTarget === 'home' ? 'vivienda actual' : 'lugar de trabajo'}`}
+        onConfirm={(s) => {
+          handleSelect(s, mapTarget!);
+          setMapTarget(null);
+        }}
+      />
+    </>
   );
 }
 

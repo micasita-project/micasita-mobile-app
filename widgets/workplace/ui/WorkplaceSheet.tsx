@@ -247,143 +247,150 @@ export function WorkplaceSheet({
     createPreferenceMutation.isPending ||
     updatePreferenceMutation.isPending;
 
-  return (
-    <BottomSheet
-      visible={visible}
-      onClose={handleClose}
-      maxHeightRatio={isEdit ? 0.56 : 0.55}
-    >
-      <ScrollView
-        style={{ paddingHorizontal: 24 }}
-        contentContainerStyle={{ paddingBottom: 32 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.sheetTitle}>
-          {isEdit ? "Editar Lugar de Trabajo" : "Nuevo Lugar de Trabajo"}
-        </Text>
-
-        <AddressSearchInput
-          value={addr.query}
-          onChangeText={(text) =>
-            setAddr((p) => ({ ...p, query: text, selected: null }))
-          }
-          onSelect={handleSelect}
-          placeholder={isEdit ? "Buscar nueva direccion..." : "Buscar direccion..."}
-        />
-
-        {addr.selected && (
-          <View style={styles.selectedBadge}>
-            <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-            <Text style={styles.selectedBadgeText} numberOfLines={1}>
-              Ubicacion seleccionada
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.orDivider}>
-          <View style={styles.orLine} />
-          <Text style={styles.orText}>O</Text>
-          <View style={styles.orLine} />
-        </View>
-
-        <TouchableOpacity
-          style={styles.mapBtn}
-          onPress={() => setMapVisible(true)}
-        >
-          <Ionicons name="map-outline" size={20} color={Colors.primary} />
-          <Text style={styles.mapBtnText}>Elegir en el mapa</Text>
+  const footer = (
+    <>
+      <View style={styles.sheetActions}>
+        <TouchableOpacity style={styles.sheetCancel} onPress={handleClose}>
+          <Text style={styles.sheetCancelText}>Cancelar</Text>
         </TouchableOpacity>
-
-        <TextInput
-          style={[styles.fieldInput, { marginTop: 8 }]}
-          placeholder="Presupuesto Mensual (S/)"
-          placeholderTextColor={Colors.textMuted}
-          value={budget}
-          onChangeText={setBudget}
-          keyboardType="numeric"
-        />
-
-        <View style={styles.transportRow}>
-          {TRANSPORT_MODE_CONFIG.map((cfg) => (
-            <TouchableOpacity
-              key={cfg.id}
-              style={[
-                styles.transportChip,
-                transport === cfg.id && styles.transportChipActive,
-              ]}
-              onPress={() => setTransport(cfg.id)}
-            >
-              <Ionicons
-                name={cfg.iconOutline}
-                size={18}
-                color={
-                  transport === cfg.id ? Colors.textOnPrimary : Colors.primary
-                }
-              />
-              <Text
-                style={[
-                  styles.transportText,
-                  transport === cfg.id && styles.transportTextActive,
-                ]}
-              >
-                {cfg.labelFull}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={{ marginTop: 12, marginBottom: 8 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-            <Text style={{ fontSize: 12, fontWeight: "600", color: Colors.textSecondary }}>
-              Radio de busqueda
+        <TouchableOpacity
+          style={styles.sheetConfirm}
+          onPress={handleSubmit}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.sheetConfirmText}>
+              {isEdit ? "Guardar" : "Añadir"}
             </Text>
-            <Text style={{ fontSize: 13, fontWeight: "800", color: Colors.primary }}>
-              {maxDistKm} km
-            </Text>
-          </View>
-          <Slider
-            style={{ width: "100%", height: 40 }}
-            minimumValue={1}
-            maximumValue={30}
-            step={1}
-            value={maxDistKm}
-            onValueChange={setMaxDistKm}
-            minimumTrackTintColor={Colors.primary}
-            maximumTrackTintColor={Colors.border}
-            thumbTintColor={Colors.primary}
+          )}
+        </TouchableOpacity>
+      </View>
+      {isEdit && allowDelete && (
+        <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+          <Ionicons name="trash-outline" size={15} color={Colors.error} />
+          <Text style={styles.deleteBtnText}>Eliminar lugar de trabajo</Text>
+        </TouchableOpacity>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      <BottomSheet
+        visible={visible}
+        onClose={handleClose}
+        maxHeightRatio={isEdit ? 0.56 : 0.55}
+        expandable
+        footer={footer}
+      >
+        <ScrollView
+          style={{ paddingHorizontal: 24 }}
+          contentContainerStyle={{ paddingBottom: 16 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.sheetTitle}>
+            {isEdit ? "Editar Lugar de Trabajo" : "Nuevo Lugar de Trabajo"}
+          </Text>
+
+          <AddressSearchInput
+            value={addr.query}
+            onChangeText={(text) =>
+              setAddr((p) => ({ ...p, query: text, selected: null }))
+            }
+            onSelect={handleSelect}
+            placeholder={isEdit ? "Buscar nueva direccion..." : "Buscar direccion..."}
           />
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={{ fontSize: 11, color: Colors.textMuted }}>1 km</Text>
-            <Text style={{ fontSize: 11, color: Colors.textMuted }}>30 km</Text>
-          </View>
-        </View>
 
-        <View style={styles.sheetActions}>
-          <TouchableOpacity style={styles.sheetCancel} onPress={handleClose}>
-            <Text style={styles.sheetCancelText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.sheetConfirm}
-            onPress={handleSubmit}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.sheetConfirmText}>
-                {isEdit ? "Guardar" : "Añadir"}
+          {addr.selected && (
+            <View style={styles.selectedBadge}>
+              <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+              <Text style={styles.selectedBadgeText} numberOfLines={1}>
+                Ubicacion seleccionada
               </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+            </View>
+          )}
 
-        {isEdit && allowDelete && (
-          <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-            <Ionicons name="trash-outline" size={15} color={Colors.error} />
-            <Text style={styles.deleteBtnText}>Eliminar lugar de trabajo</Text>
+          <View style={styles.orDivider}>
+            <View style={styles.orLine} />
+            <Text style={styles.orText}>O</Text>
+            <View style={styles.orLine} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.mapBtn}
+            onPress={() => setMapVisible(true)}
+          >
+            <Ionicons name="map-outline" size={20} color={Colors.primary} />
+            <Text style={styles.mapBtnText}>Elegir en el mapa</Text>
           </TouchableOpacity>
-        )}
-      </ScrollView>
+
+          <TextInput
+            style={[styles.fieldInput, { marginTop: 8 }]}
+            placeholder="Presupuesto Mensual (S/)"
+            placeholderTextColor={Colors.textMuted}
+            value={budget}
+            onChangeText={setBudget}
+            keyboardType="numeric"
+          />
+
+          <View style={styles.transportRow}>
+            {TRANSPORT_MODE_CONFIG.map((cfg) => (
+              <TouchableOpacity
+                key={cfg.id}
+                style={[
+                  styles.transportChip,
+                  transport === cfg.id && styles.transportChipActive,
+                ]}
+                onPress={() => setTransport(cfg.id)}
+              >
+                <Ionicons
+                  name={cfg.iconOutline}
+                  size={18}
+                  color={
+                    transport === cfg.id ? Colors.textOnPrimary : Colors.primary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.transportText,
+                    transport === cfg.id && styles.transportTextActive,
+                  ]}
+                >
+                  {cfg.labelFull}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={{ marginTop: 12, marginBottom: 8 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: Colors.textSecondary }}>
+                Radio de busqueda
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: Colors.primary }}>
+                {maxDistKm} km
+              </Text>
+            </View>
+            <Slider
+              style={{ width: "100%", height: 40 }}
+              minimumValue={1}
+              maximumValue={30}
+              step={1}
+              value={maxDistKm}
+              onValueChange={setMaxDistKm}
+              minimumTrackTintColor={Colors.primary}
+              maximumTrackTintColor={Colors.border}
+              thumbTintColor={Colors.primary}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={{ fontSize: 11, color: Colors.textMuted }}>1 km</Text>
+              <Text style={{ fontSize: 11, color: Colors.textMuted }}>30 km</Text>
+            </View>
+          </View>
+        </ScrollView>
+      </BottomSheet>
 
       <MapPickerModal
         visible={mapVisible}
@@ -409,7 +416,7 @@ export function WorkplaceSheet({
           setMapVisible(false);
         }}
       />
-    </BottomSheet>
+    </>
   );
 }
 
@@ -487,7 +494,7 @@ const styles = StyleSheet.create({
   transportChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   transportText: { marginTop: 6, fontSize: 13, fontWeight: "600", color: Colors.primary },
   transportTextActive: { color: Colors.textOnPrimary },
-  sheetActions: { flexDirection: "row", gap: 12, marginTop: 20 },
+  sheetActions: { flexDirection: "row", gap: 12 },
   sheetCancel: {
     flex: 1,
     paddingVertical: 16,
@@ -512,8 +519,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    marginTop: 16,
-    paddingVertical: 12,
+    marginTop: 4,
+    paddingVertical: 6,
   },
   deleteBtnText: { fontSize: 14, fontWeight: "600", color: Colors.error },
 });

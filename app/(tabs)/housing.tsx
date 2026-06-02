@@ -260,9 +260,32 @@ export default function HousingScreen() {
       </TouchableOpacity>
 
       {/* Filter BottomSheet */}
-      <BottomSheet visible={filterOpen} onClose={() => setFilterOpen(false)} maxHeightRatio={0.58}>
-        <ScrollView 
-          style={{ flex: 1 }} 
+      <BottomSheet
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        maxHeightRatio={0.58}
+        expandable
+        footer={
+          <View style={filterStyles.actions}>
+            <TouchableOpacity
+              style={[filterStyles.clearBtn, !filtersAreActive(draft) && filterStyles.btnDisabled]}
+              onPress={clearFilters}
+              disabled={!filtersAreActive(draft)}
+            >
+              <Text style={filterStyles.clearBtnText}>Limpiar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[filterStyles.applyBtn, !filtersAreActive(draft) && filterStyles.btnDisabled]}
+              onPress={applyFilters}
+              disabled={!filtersAreActive(draft)}
+            >
+              <Text style={filterStyles.applyBtnText}>Aplicar filtros</Text>
+            </TouchableOpacity>
+          </View>
+        }
+      >
+        <ScrollView
+          style={{ flex: 1 }}
           contentContainerStyle={filterStyles.container}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -327,7 +350,7 @@ export default function HousingScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
-          
+
           {/* Price Range */}
           <Text style={filterStyles.sectionLabel}>Rango de precio ($)</Text>
           <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -363,24 +386,6 @@ export default function HousingScreen() {
                 </TouchableOpacity>
               ) : null}
             </View>
-          </View>
-
-          {/* Actions */}
-          <View style={filterStyles.actions}>
-            <TouchableOpacity 
-              style={[filterStyles.clearBtn, !filtersAreActive(draft) && filterStyles.btnDisabled]} 
-              onPress={clearFilters}
-              disabled={!filtersAreActive(draft)}
-            >
-              <Text style={filterStyles.clearBtnText}>Limpiar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[filterStyles.applyBtn, !filtersAreActive(draft) && filterStyles.btnDisabled]} 
-              onPress={applyFilters}
-              disabled={!filtersAreActive(draft)}
-            >
-              <Text style={filterStyles.applyBtnText}>Aplicar filtros</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </BottomSheet>
@@ -455,7 +460,7 @@ const styles = StyleSheet.create({
 
 const filterStyles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 32 },
-  title: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 20 },
+  title: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12 },
   sectionLabel: { fontSize: 12, fontWeight: '700', color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 16, marginBottom: 8 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -476,7 +481,7 @@ const filterStyles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   stepperValue: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, minWidth: 24, textAlign: 'center' },
-  actions: { flexDirection: 'row', gap: 12, marginTop: 28 },
+  actions: { flexDirection: 'row', gap: 12 },
   clearBtn: {
     flex: 1, paddingVertical: 14, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',

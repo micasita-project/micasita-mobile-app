@@ -421,25 +421,10 @@ export default function ProfileScreen() {
       <BottomSheet
         visible={isEditHomeVisible}
         onClose={closeEditHome}
-        maxHeightRatio={0.8}
-      >
-        <ScrollView
-          style={{ paddingHorizontal: 24 }}
-          contentContainerStyle={{ paddingBottom: 32 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.sheetTitle}>Mi Vivienda Actual</Text>
-          {renderAddressField(
-            homeAddr,
-            handleHomeSearch,
-            handleHomeSelect,
-            () => setHomeMapVisible(true),
-          )}
-          <View style={[styles.sheetActions, { marginTop: 8 }]}>
-            <TouchableOpacity
-              style={styles.sheetCancel}
-              onPress={closeEditHome}
-            >
+        maxHeightRatio={0.42}
+        footer={
+          <View style={styles.sheetActions}>
+            <TouchableOpacity style={styles.sheetCancel} onPress={closeEditHome}>
               <Text style={styles.sheetCancelText}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -454,43 +439,41 @@ export default function ProfileScreen() {
               )}
             </TouchableOpacity>
           </View>
+        }
+      >
+        <ScrollView
+          style={{ paddingHorizontal: 24 }}
+          contentContainerStyle={{ paddingBottom: 16 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.sheetTitle}>Mi Vivienda Actual</Text>
+          {renderAddressField(
+            homeAddr,
+            handleHomeSearch,
+            handleHomeSelect,
+            () => setHomeMapVisible(true),
+          )}
         </ScrollView>
-        <MapPickerModal
-          visible={homeMapVisible}
-          onClose={() => setHomeMapVisible(false)}
-          title="Ubicación de tu casa"
-          instruction="Ubica tu vivienda actual en el mapa"
-          onConfirm={(s) => {
-            handleHomeSelect(s);
-            setHomeMapVisible(false);
-          }}
-        />
       </BottomSheet>
+
+      <MapPickerModal
+        visible={homeMapVisible}
+        onClose={() => setHomeMapVisible(false)}
+        title="Ubicación de tu casa"
+        instruction="Ubica tu vivienda actual en el mapa"
+        onConfirm={(s) => {
+          handleHomeSelect(s);
+          setHomeMapVisible(false);
+        }}
+      />
 
       {/* ══ Edit Profile ═══════════════════════════════════════════ */}
       <BottomSheet
         visible={isEditProfileVisible}
         onClose={() => setIsEditProfileVisible(false)}
-      >
-        <View style={{ paddingHorizontal: 24, paddingBottom: 32 }}>
-          <Text style={styles.sheetTitle}>Editar Perfil</Text>
-          <TextInput
-            style={styles.fieldInput}
-            placeholder="Nombre"
-            placeholderTextColor={Colors.textMuted}
-            value={editName}
-            onChangeText={setEditName}
-            autoCapitalize="words"
-          />
-          <TextInput
-            style={[styles.fieldInput, { marginTop: 12 }]}
-            placeholder="Apellido"
-            placeholderTextColor={Colors.textMuted}
-            value={editLastName}
-            onChangeText={setEditLastName}
-            autoCapitalize="words"
-          />
-          <View style={[styles.sheetActions, { marginTop: 24 }]}>
+        maxHeightRatio={0.42}
+        footer={
+          <View style={styles.sheetActions}>
             <TouchableOpacity
               style={styles.sheetCancel}
               onPress={() => setIsEditProfileVisible(false)}
@@ -509,6 +492,26 @@ export default function ProfileScreen() {
               )}
             </TouchableOpacity>
           </View>
+        }
+      >
+        <View style={{ paddingHorizontal: 24, paddingTop: 4 }}>
+          <Text style={styles.sheetTitle}>Editar Perfil</Text>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="Nombre"
+            placeholderTextColor={Colors.textMuted}
+            value={editName}
+            onChangeText={setEditName}
+            autoCapitalize="words"
+          />
+          <TextInput
+            style={[styles.fieldInput, { marginTop: 12 }]}
+            placeholder="Apellido"
+            placeholderTextColor={Colors.textMuted}
+            value={editLastName}
+            onChangeText={setEditLastName}
+            autoCapitalize="words"
+          />
         </View>
       </BottomSheet>
     </View>

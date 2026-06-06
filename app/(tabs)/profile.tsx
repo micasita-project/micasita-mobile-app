@@ -454,18 +454,18 @@ export default function ProfileScreen() {
             () => setHomeMapVisible(true),
           )}
         </ScrollView>
-      </BottomSheet>
 
-      <MapPickerModal
-        visible={homeMapVisible}
-        onClose={() => setHomeMapVisible(false)}
-        title="Ubicación de tu casa"
-        instruction="Ubica tu vivienda actual en el mapa"
-        onConfirm={(s) => {
-          handleHomeSelect(s);
-          setHomeMapVisible(false);
-        }}
-      />
+        <MapPickerModal
+          visible={homeMapVisible}
+          onClose={() => setHomeMapVisible(false)}
+          title="Ubicación de tu casa"
+          instruction="Ubica tu vivienda actual en el mapa"
+          onConfirm={(s) => {
+            handleHomeSelect(s);
+            setHomeMapVisible(false);
+          }}
+        />
+      </BottomSheet>
 
       {/* ══ Edit Profile ═══════════════════════════════════════════ */}
       <BottomSheet

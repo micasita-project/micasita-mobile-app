@@ -257,75 +257,73 @@ export function GuestSetupModal({ visible, onClose }: Props) {
   );
 
   return (
-    <>
-      <BottomSheet visible={visible} onClose={handleClose} maxHeightRatio={0.42} expandable footer={footer}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="sparkles" size={20} color={Colors.textOnPrimary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Configura tu búsqueda</Text>
-            <Text style={styles.subtitle}>
-              {step === 'home' ? 'Paso 1 de 2 — Tu vivienda actual' : 'Paso 2 de 2 — Tu lugar de trabajo'}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={handleClose} hitSlop={12}>
-            <Ionicons name="close" size={22} color={Colors.textMuted} />
-          </TouchableOpacity>
+    <BottomSheet visible={visible} onClose={handleClose} maxHeightRatio={0.42} expandable footer={footer}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerIcon}>
+          <Ionicons name="sparkles" size={20} color={Colors.textOnPrimary} />
         </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Configura tu búsqueda</Text>
+          <Text style={styles.subtitle}>
+            {step === 'home' ? 'Paso 1 de 2 — Tu vivienda actual' : 'Paso 2 de 2 — Tu lugar de trabajo'}
+          </Text>
+        </View>
+        <TouchableOpacity onPress={handleClose} hitSlop={12}>
+          <Ionicons name="close" size={22} color={Colors.textMuted} />
+        </TouchableOpacity>
+      </View>
 
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {step === 'home' ? (
-            <>
-              <Text style={styles.fieldLabel}>Tu vivienda actual</Text>
-              {renderAddressField('home')}
-            </>
-          ) : (
-            <>
-              <Text style={styles.fieldLabel}>Tu lugar de trabajo</Text>
-              {renderAddressField('work')}
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {step === 'home' ? (
+          <>
+            <Text style={styles.fieldLabel}>Tu vivienda actual</Text>
+            {renderAddressField('home')}
+          </>
+        ) : (
+          <>
+            <Text style={styles.fieldLabel}>Tu lugar de trabajo</Text>
+            {renderAddressField('work')}
 
-              <Text style={styles.fieldLabel}>Presupuesto mensual (S/)</Text>
-              <TextInput
-                style={styles.fieldInput}
-                placeholder="1500"
-                placeholderTextColor={Colors.textMuted}
-                value={budget}
-                onChangeText={setBudget}
-                keyboardType="numeric"
-              />
+            <Text style={styles.fieldLabel}>Presupuesto mensual (S/)</Text>
+            <TextInput
+              style={styles.fieldInput}
+              placeholder="1500"
+              placeholderTextColor={Colors.textMuted}
+              value={budget}
+              onChangeText={setBudget}
+              keyboardType="numeric"
+            />
 
-              <Text style={styles.fieldLabel}>Transporte preferido</Text>
-              <View style={styles.transportRow}>
-                {TRANSPORT_MODE_CONFIG.map((cfg) => (
-                  <TouchableOpacity
-                    key={cfg.id}
-                    style={[styles.transportChip, transport === cfg.id && styles.transportActive]}
-                    onPress={() => setTransport(cfg.id)}
-                  >
-                    <Ionicons
-                      name={cfg.iconOutline}
-                      size={16}
-                      color={transport === cfg.id ? Colors.textOnPrimary : Colors.textSecondary}
-                      style={{ marginRight: 6 }}
-                    />
-                    <Text style={[styles.transportText, transport === cfg.id && styles.transportTextActive]}>
-                      {cfg.labelFull}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+            <Text style={styles.fieldLabel}>Transporte preferido</Text>
+            <View style={styles.transportRow}>
+              {TRANSPORT_MODE_CONFIG.map((cfg) => (
+                <TouchableOpacity
+                  key={cfg.id}
+                  style={[styles.transportChip, transport === cfg.id && styles.transportActive]}
+                  onPress={() => setTransport(cfg.id)}
+                >
+                  <Ionicons
+                    name={cfg.iconOutline}
+                    size={16}
+                    color={transport === cfg.id ? Colors.textOnPrimary : Colors.textSecondary}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={[styles.transportText, transport === cfg.id && styles.transportTextActive]}>
+                    {cfg.labelFull}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-              <RadiusSlider value={maxDistanceKm} onChange={setMaxDistanceKm} />
-            </>
-          )}
-        </ScrollView>
-      </BottomSheet>
+            <RadiusSlider value={maxDistanceKm} onChange={setMaxDistanceKm} />
+          </>
+        )}
+      </ScrollView>
 
       <MapPickerModal
         visible={!!mapTarget}
@@ -337,7 +335,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
           setMapTarget(null);
         }}
       />
-    </>
+    </BottomSheet>
   );
 }
 

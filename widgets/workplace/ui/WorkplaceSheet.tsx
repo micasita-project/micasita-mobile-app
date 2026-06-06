@@ -277,120 +277,118 @@ export function WorkplaceSheet({
   );
 
   return (
-    <>
-      <BottomSheet
-        visible={visible}
-        onClose={handleClose}
-        maxHeightRatio={isEdit ? 0.56 : 0.55}
-        expandable
-        footer={footer}
+    <BottomSheet
+      visible={visible}
+      onClose={handleClose}
+      maxHeightRatio={isEdit ? 0.56 : 0.55}
+      expandable
+      footer={footer}
+    >
+      <ScrollView
+        style={{ paddingHorizontal: 24 }}
+        contentContainerStyle={{ paddingBottom: 16 }}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          style={{ paddingHorizontal: 24 }}
-          contentContainerStyle={{ paddingBottom: 16 }}
-          keyboardShouldPersistTaps="handled"
+        <Text style={styles.sheetTitle}>
+          {isEdit ? "Editar Lugar de Trabajo" : "Nuevo Lugar de Trabajo"}
+        </Text>
+
+        <AddressSearchInput
+          value={addr.query}
+          onChangeText={(text) =>
+            setAddr((p) => ({ ...p, query: text, selected: null }))
+          }
+          onSelect={handleSelect}
+          placeholder={isEdit ? "Buscar nueva direccion..." : "Buscar direccion..."}
+        />
+
+        {addr.selected && (
+          <View style={styles.selectedBadge}>
+            <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+            <Text style={styles.selectedBadgeText} numberOfLines={1}>
+              Ubicacion seleccionada
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.orDivider}>
+          <View style={styles.orLine} />
+          <Text style={styles.orText}>O</Text>
+          <View style={styles.orLine} />
+        </View>
+
+        <TouchableOpacity
+          style={styles.mapBtn}
+          onPress={() => setMapVisible(true)}
         >
-          <Text style={styles.sheetTitle}>
-            {isEdit ? "Editar Lugar de Trabajo" : "Nuevo Lugar de Trabajo"}
-          </Text>
+          <Ionicons name="map-outline" size={20} color={Colors.primary} />
+          <Text style={styles.mapBtnText}>Elegir en el mapa</Text>
+        </TouchableOpacity>
 
-          <AddressSearchInput
-            value={addr.query}
-            onChangeText={(text) =>
-              setAddr((p) => ({ ...p, query: text, selected: null }))
-            }
-            onSelect={handleSelect}
-            placeholder={isEdit ? "Buscar nueva direccion..." : "Buscar direccion..."}
-          />
+        <TextInput
+          style={[styles.fieldInput, { marginTop: 8 }]}
+          placeholder="Presupuesto Mensual (S/)"
+          placeholderTextColor={Colors.textMuted}
+          value={budget}
+          onChangeText={setBudget}
+          keyboardType="numeric"
+        />
 
-          {addr.selected && (
-            <View style={styles.selectedBadge}>
-              <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-              <Text style={styles.selectedBadgeText} numberOfLines={1}>
-                Ubicacion seleccionada
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.orDivider}>
-            <View style={styles.orLine} />
-            <Text style={styles.orText}>O</Text>
-            <View style={styles.orLine} />
-          </View>
-
-          <TouchableOpacity
-            style={styles.mapBtn}
-            onPress={() => setMapVisible(true)}
-          >
-            <Ionicons name="map-outline" size={20} color={Colors.primary} />
-            <Text style={styles.mapBtnText}>Elegir en el mapa</Text>
-          </TouchableOpacity>
-
-          <TextInput
-            style={[styles.fieldInput, { marginTop: 8 }]}
-            placeholder="Presupuesto Mensual (S/)"
-            placeholderTextColor={Colors.textMuted}
-            value={budget}
-            onChangeText={setBudget}
-            keyboardType="numeric"
-          />
-
-          <View style={styles.transportRow}>
-            {TRANSPORT_MODE_CONFIG.map((cfg) => (
-              <TouchableOpacity
-                key={cfg.id}
+        <View style={styles.transportRow}>
+          {TRANSPORT_MODE_CONFIG.map((cfg) => (
+            <TouchableOpacity
+              key={cfg.id}
+              style={[
+                styles.transportChip,
+                transport === cfg.id && styles.transportChipActive,
+              ]}
+              onPress={() => setTransport(cfg.id)}
+            >
+              <Ionicons
+                name={cfg.iconOutline}
+                size={18}
+                color={
+                  transport === cfg.id ? Colors.textOnPrimary : Colors.primary
+                }
+              />
+              <Text
                 style={[
-                  styles.transportChip,
-                  transport === cfg.id && styles.transportChipActive,
+                  styles.transportText,
+                  transport === cfg.id && styles.transportTextActive,
                 ]}
-                onPress={() => setTransport(cfg.id)}
               >
-                <Ionicons
-                  name={cfg.iconOutline}
-                  size={18}
-                  color={
-                    transport === cfg.id ? Colors.textOnPrimary : Colors.primary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.transportText,
-                    transport === cfg.id && styles.transportTextActive,
-                  ]}
-                >
-                  {cfg.labelFull}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                {cfg.labelFull}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-          <View style={{ marginTop: 12, marginBottom: 8 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: Colors.textSecondary }}>
-                Radio de busqueda
-              </Text>
-              <Text style={{ fontSize: 13, fontWeight: "800", color: Colors.primary }}>
-                {maxDistKm} km
-              </Text>
-            </View>
-            <Slider
-              style={{ width: "100%", height: 40 }}
-              minimumValue={1}
-              maximumValue={30}
-              step={1}
-              value={maxDistKm}
-              onValueChange={setMaxDistKm}
-              minimumTrackTintColor={Colors.primary}
-              maximumTrackTintColor={Colors.border}
-              thumbTintColor={Colors.primary}
-            />
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <Text style={{ fontSize: 11, color: Colors.textMuted }}>1 km</Text>
-              <Text style={{ fontSize: 11, color: Colors.textMuted }}>30 km</Text>
-            </View>
+        <View style={{ marginTop: 12, marginBottom: 8 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: "600", color: Colors.textSecondary }}>
+              Radio de busqueda
+            </Text>
+            <Text style={{ fontSize: 13, fontWeight: "800", color: Colors.primary }}>
+              {maxDistKm} km
+            </Text>
           </View>
-        </ScrollView>
-      </BottomSheet>
+          <Slider
+            style={{ width: "100%", height: 40 }}
+            minimumValue={1}
+            maximumValue={30}
+            step={1}
+            value={maxDistKm}
+            onValueChange={setMaxDistKm}
+            minimumTrackTintColor={Colors.primary}
+            maximumTrackTintColor={Colors.border}
+            thumbTintColor={Colors.primary}
+          />
+          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+            <Text style={{ fontSize: 11, color: Colors.textMuted }}>1 km</Text>
+            <Text style={{ fontSize: 11, color: Colors.textMuted }}>30 km</Text>
+          </View>
+        </View>
+      </ScrollView>
 
       <MapPickerModal
         visible={mapVisible}
@@ -416,7 +414,7 @@ export function WorkplaceSheet({
           setMapVisible(false);
         }}
       />
-    </>
+    </BottomSheet>
   );
 }
 

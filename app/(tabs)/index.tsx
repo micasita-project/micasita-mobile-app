@@ -170,12 +170,12 @@ export default function MapScreen() {
   );
   const activePreference = preferences[0];
 
-  const { data: authRecommendations = [], isLoading: isLoadingAuth } =
+  const { data: authRecommendations = null, isLoading: isLoadingAuth } =
     useLatestRecommendations(!isGuest ? (activeWorkplace?.id ?? null) : null);
 
   const recommendations = isGuest
-    ? (guestRecommendations ?? [])
-    : (authRecommendations ?? []);
+    ? (guestRecommendations?.results ?? [])
+    : (authRecommendations?.results ?? []);
   const isLoadingRecommendations = isGuest ? false : isLoadingAuth;
 
   const [selectedHousing, setSelectedHousing] = useState<Housing | null>(null);

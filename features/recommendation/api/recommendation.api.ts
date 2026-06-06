@@ -19,7 +19,6 @@ export interface GuestRecommendRequest {
   budget: number;
   preferred_transportation: string;
   max_distance_km?: number;
-  limit?: number;
   home_lat?: number;
   home_lon?: number;
 }
@@ -32,7 +31,23 @@ export interface RecommendationItem {
   time_saved_mins: number | null;
 }
 
-/** Respuesta cruda del backend (property tiene id numérico) */
+export interface RecommendationPageResponse {
+  results: RecommendationItem[];
+  total: number;
+  /** Mensaje explicativo cuando no hay resultados (ej. presupuesto insuficiente). */
+  message: string | null;
+  /** Precio mínimo disponible en el radio elegido cuando el presupuesto no alcanza. */
+  min_price_in_area: number | null;
+}
+
+/** Respuesta cruda de página del backend (property.id es numérico) */
+interface RawRecommendationPageResponse {
+  results: RawRecommendationItem[];
+  total: number;
+  message: string | null;
+  min_price_in_area: number | null;
+}
+
 interface RawRecommendationItem {
   property: {
     id: number;
@@ -58,6 +73,15 @@ interface RawRecommendationItem {
   match_score: number;
   predicted_time_min: number;
   time_saved_mins: number | null;
+}
+
+function toRecommendationPage(raw: RawRecommendationPageResponse): RecommendationPageResponse {
+  return {
+    results: raw.results.map(toRecommendationItem),
+    total: raw.total,
+    message: raw.message,
+    min_price_in_area: raw.min_price_in_area,
+  };
 }
 
 function toRecommendationItem(raw: RawRecommendationItem): RecommendationItem {
@@ -93,16 +117,16 @@ function toRecommendationItem(raw: RawRecommendationItem): RecommendationItem {
 
 export async function getGuestRecommendations(
   data: GuestRecommendRequest
-): Promise<RecommendationItem[]> {
+): Promise<RecommendationPageResponse> {
   console.log('[Recommend] POST /recommend/guest →', data);
   try {
-    const response = await apiClient.post<RawRecommendationItem[]>(
+    const response = await apiClient.post<RawRecommendationPageResponse>(
       '/recommend/guest',
       data,
       { timeout: RECOMMEND_TIMEOUT }
     );
-    console.log('[Recommend] /recommend/guest ← OK', response.data.length, 'resultados');
-    return response.data.map(toRecommendationItem);
+    console.log('[Recommend] /recommend/guest ← OK', response.data.total, 'resultados');
+    return toRecommendationPage(response.data);
   } catch (error: any) {
     console.error('[Recommend] /recommend/guest ← ERROR', error?.response?.status, error?.message);
     throw error;
@@ -111,16 +135,15 @@ export async function getGuestRecommendations(
 
 export interface GenerateOptions {
   max_distance_km?: number;
-  limit?: number;
 }
 
 export async function generateRecommendations(
   workplaceId: number,
   options?: GenerateOptions
-): Promise<RecommendationItem[]> {
+): Promise<RecommendationPageResponse> {
   console.log(`[Recommend] POST /recommend/workplaces/${workplaceId}/generate →`, options ?? {});
   try {
-    const response = await apiClient.post<RawRecommendationItem[]>(
+    const response = await apiClient.post<RawRecommendationPageResponse>(
       `/recommend/workplaces/${workplaceId}/generate`,
       undefined,
       {
@@ -128,8 +151,8 @@ export async function generateRecommendations(
         params: options,
       }
     );
-    console.log(`[Recommend] /recommend/workplaces/${workplaceId}/generate ← OK`, response.data.length, 'resultados');
-    return response.data.map(toRecommendationItem);
+    console.log(`[Recommend] /recommend/workplaces/${workplaceId}/generate ← OK`, response.data.total, 'resultados');
+    return toRecommendationPage(response.data);
   } catch (error: any) {
     console.error(`[Recommend] /recommend/workplaces/${workplaceId}/generate ← ERROR`, error?.response?.status, error?.message);
     throw error;
@@ -138,14 +161,14 @@ export async function generateRecommendations(
 
 export async function getLatestRecommendations(
   workplaceId: number
-): Promise<RecommendationItem[] | null> {
+): Promise<RecommendationPageResponse | null> {
   console.log(`[Recommend] GET /recommend/workplaces/${workplaceId}/latest`);
   try {
-    const response = await apiClient.get<RawRecommendationItem[]>(
+    const response = await apiClient.get<RawRecommendationPageResponse>(
       `/recommend/workplaces/${workplaceId}/latest`
     );
-    console.log(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← OK`, response.data.length, 'resultados');
-    return response.data.map(toRecommendationItem);
+    console.log(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← OK`, response.data.total, 'resultados');
+    return toRecommendationPage(response.data);
   } catch (error: any) {
     if (error?.response?.status === 404) {
       console.log(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← 404 (sin cache)`);
@@ -158,14 +181,14 @@ export async function getLatestRecommendations(
 
 export async function getWorkplaceRecommendations(
   workplaceId: number
-): Promise<RecommendationItem[]> {
+): Promise<RecommendationPageResponse> {
   console.log(`[Recommend] GET /recommend/workplaces/${workplaceId}`);
   try {
-    const response = await apiClient.get<RawRecommendationItem[]>(
+    const response = await apiClient.get<RawRecommendationPageResponse>(
       `/recommend/workplaces/${workplaceId}`
     );
-    console.log(`[Recommend] /recommend/workplaces/${workplaceId} ← OK`, response.data.length, 'resultados');
-    return response.data.map(toRecommendationItem);
+    console.log(`[Recommend] /recommend/workplaces/${workplaceId} ← OK`, response.data.total, 'resultados');
+    return toRecommendationPage(response.data);
   } catch (error: any) {
     console.error(`[Recommend] /recommend/workplaces/${workplaceId} ← ERROR`, error?.response?.status, error?.message);
     throw error;

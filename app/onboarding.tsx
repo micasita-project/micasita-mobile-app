@@ -7,6 +7,7 @@
  */
 
 import { useCreateWorkplace } from "@/entities/workplace/model/useWorkplaces";
+import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
 import { createPreference } from "@/entities/recommendation-preferences";
 import { useAuth } from "@/features/auth";
 import { useGenerateRecommendations } from "@/features/recommendation/model/useRecommendations";
@@ -247,6 +248,15 @@ export default function OnboardingScreen() {
         "Presupuesto inválido",
         "Ingresa un presupuesto mensual válido.",
       );
+      return;
+    }
+
+    if (!isWithinLima(homeAddress.latitude, homeAddress.longitude)) {
+      Alert.alert("Fuera de cobertura", LIMA_LOCATION_ERROR);
+      return;
+    }
+    if (!isWithinLima(workAddress.latitude, workAddress.longitude)) {
+      Alert.alert("Fuera de cobertura", LIMA_LOCATION_ERROR);
       return;
     }
 

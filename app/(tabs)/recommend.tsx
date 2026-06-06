@@ -112,7 +112,7 @@ export default function RecommendScreen() {
       setShowSetup(true);
       return;
     }
-    const hasExisting = guestRecommendations && guestRecommendations.length > 0;
+    const hasExisting = guestRecommendations && guestRecommendations.results.length > 0;
     const run = async () => {
       const items = await guestMutation.mutateAsync({
         work_lat: guestWorkplace.lat,
@@ -120,7 +120,6 @@ export default function RecommendScreen() {
         budget: guestWorkplace.budget,
         preferred_transportation: guestWorkplace.transport,
         max_distance_km: guestWorkplace.maxDistanceKm,
-        limit: guestWorkplace.limit,
         home_lat: guestHome?.lat,
         home_lon: guestHome?.lon,
       });
@@ -210,8 +209,8 @@ export default function RecommendScreen() {
   );
 
   const results: RecommendationItem[] = isAuthenticated
-    ? (cachedResults ?? [])
-    : (guestRecommendations ?? []);
+    ? (cachedResults?.results ?? [])
+    : (guestRecommendations?.results ?? []);
   const isLoadingResults = isAuthenticated
     ? loadingCached || generateRecs.isPending
     : guestMutation.isPending;
@@ -605,6 +604,31 @@ export default function RecommendScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+        {/* Empty state for guests — backend message explains why */}
+        {!isAuthenticated &&
+          !isLoadingResults &&
+          guestRecommendations !== null &&
+          results.length === 0 && (
+            <View style={styles.emptyResults}>
+              <Ionicons
+                name="home-outline"
+                size={48}
+                color={Colors.textMuted}
+              />
+              <Text style={styles.emptyResultsText}>
+                {guestRecommendations.message ?? "No encontramos viviendas con esos criterios."}
+              </Text>
+              {guestRecommendations.min_price_in_area !== null && (
+                <Text style={styles.emptyResultsHint}>
+                  Las más económicas en la zona parten desde{" "}
+                  <Text style={{ fontWeight: "700" }}>
+                    S/ {guestRecommendations.min_price_in_area.toLocaleString("es-PE")}
+                  </Text>
+                </Text>
+              )}
+            </View>
+          )}
       </ScrollView>
     </View>
   );
@@ -873,5 +897,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: Colors.textPrimary,
+    textAlign: "center",
+    paddingHorizontal: 24,
+  },
+  emptyResultsHint: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    textAlign: "center",
+    paddingHorizontal: 24,
   },
 });

@@ -15,6 +15,7 @@ import {
   useUpdateWorkplace,
 } from "@/entities/workplace/model/useWorkplaces";
 import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
+import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
 import { Colors } from "@/shared/config/colors";
 import { TRANSPORT_MODE_CONFIG } from "@/shared/config/transport";
 import type { TransportMode } from "@/shared/types";
@@ -153,6 +154,11 @@ export function WorkplaceSheet({
 
     if (!isEdit && !addr.selected) {
       Alert.alert("Direccion faltante", "Busca o selecciona una direccion.");
+      return;
+    }
+
+    if (addr.selected && !isWithinLima(addr.selected.latitude, addr.selected.longitude)) {
+      Alert.alert("Fuera de cobertura", LIMA_LOCATION_ERROR);
       return;
     }
 

@@ -27,11 +27,11 @@ import { Colors } from '@/shared/config/colors';
 import { TRANSPORT_MODE_CONFIG } from '@/shared/config/transport';
 import { useGuest, type GuestHome, type GuestWorkplace, type TransportOption } from '../model/GuestContext';
 import { useGuestRecommendations } from '@/features/recommendation/model/useRecommendations';
+import { isWithinLima, LIMA_LOCATION_ERROR } from '@/shared/utils/geo';
 
 const KM_MIN = 1;
 const KM_MAX = 30;
 const DEFAULT_KM = 10;
-const DEFAULT_LIMIT = 20;
 
 interface AddressField {
   query: string;
@@ -142,13 +142,22 @@ export function GuestSetupModal({ visible, onClose }: Props) {
     const budgetNum = parseFloat(budget);
     if (isNaN(budgetNum) || budgetNum <= 0) { Alert.alert('Presupuesto inválido', 'Ingresa un presupuesto mensual válido.'); return; }
 
+    if (home.selected && !isWithinLima(home.selected.latitude, home.selected.longitude)) {
+      Alert.alert('Fuera de cobertura', `Tu vivienda: ${LIMA_LOCATION_ERROR}`);
+      return;
+    }
+    if (!isWithinLima(work.selected.latitude, work.selected.longitude)) {
+      Alert.alert('Fuera de cobertura', `Tu trabajo: ${LIMA_LOCATION_ERROR}`);
+      return;
+    }
+
     setIsSaving(true);
     try {
       const homeData: GuestHome = { lat: home.selected!.latitude, lon: home.selected!.longitude, address: home.selected!.display_name };
       const workData: GuestWorkplace = {
         lat: work.selected!.latitude, lon: work.selected!.longitude,
         budget: budgetNum, transport, address: work.selected!.display_name,
-        maxDistanceKm, limit: DEFAULT_LIMIT,
+        maxDistanceKm,
       };
       await Promise.all([setGuestHome(homeData), setGuestWorkplace(workData)]);
 
@@ -159,7 +168,6 @@ export function GuestSetupModal({ visible, onClose }: Props) {
           budget: workData.budget,
           preferred_transportation: workData.transport,
           max_distance_km: workData.maxDistanceKm,
-          limit: workData.limit,
           home_lat: homeData.lat,
           home_lon: homeData.lon,
         });

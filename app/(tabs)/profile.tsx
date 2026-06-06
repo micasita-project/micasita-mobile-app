@@ -4,6 +4,7 @@
  */
 
 import type { Workplace } from "@/entities/workplace/api/workplace.api";
+import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import { updateProfile } from "@/features/auth/api/auth.service";
@@ -182,6 +183,10 @@ export default function ProfileScreen() {
   const handleSaveHome = async () => {
     if (!homeAddr.selected) {
       Alert.alert("Dirección faltante", "Busca o selecciona una dirección.");
+      return;
+    }
+    if (!isWithinLima(homeAddr.selected.latitude, homeAddr.selected.longitude)) {
+      Alert.alert("Fuera de cobertura", LIMA_LOCATION_ERROR);
       return;
     }
     setIsSavingHome(true);

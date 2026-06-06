@@ -8,7 +8,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { RecommendationItem } from '@/features/recommendation/api/recommendation.api';
+import type { RecommendationPageResponse } from '@/features/recommendation/api/recommendation.api';
 import type { TransportMode } from '@/shared/types';
 
 const GUEST_HOME_KEY = 'micasita_guest_home';
@@ -30,18 +30,17 @@ export interface GuestWorkplace {
   transport: TransportOption;
   address: string;
   maxDistanceKm: number;
-  limit: number;
 }
 
 interface GuestContextValue {
   guestHome: GuestHome | null;
   guestWorkplace: GuestWorkplace | null;
-  guestRecommendations: RecommendationItem[] | null;
+  guestRecommendations: RecommendationPageResponse | null;
   isInitialized: boolean;
   setGuestHome: (home: GuestHome) => Promise<void>;
   setGuestWorkplace: (workplace: GuestWorkplace) => Promise<void>;
   updateGuestRadius: (maxDistanceKm: number) => Promise<void>;
-  saveGuestRecommendations: (items: RecommendationItem[]) => Promise<void>;
+  saveGuestRecommendations: (page: RecommendationPageResponse) => Promise<void>;
   clearGuestData: () => Promise<void>;
 }
 
@@ -50,7 +49,7 @@ const GuestContext = createContext<GuestContextValue | undefined>(undefined);
 export function GuestProvider({ children }: { children: ReactNode }) {
   const [guestHome, setGuestHomeState] = useState<GuestHome | null>(null);
   const [guestWorkplace, setGuestWorkplaceState] = useState<GuestWorkplace | null>(null);
-  const [guestRecommendations, setGuestRecommendationsState] = useState<RecommendationItem[] | null>(null);
+  const [guestRecommendations, setGuestRecommendationsState] = useState<RecommendationPageResponse | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -88,9 +87,9 @@ export function GuestProvider({ children }: { children: ReactNode }) {
     ]);
   }, []);
 
-  const saveGuestRecommendations = useCallback(async (items: RecommendationItem[]) => {
-    setGuestRecommendationsState(items);
-    await AsyncStorage.setItem(GUEST_RECOMMENDATIONS_KEY, JSON.stringify(items));
+  const saveGuestRecommendations = useCallback(async (page: RecommendationPageResponse) => {
+    setGuestRecommendationsState(page);
+    await AsyncStorage.setItem(GUEST_RECOMMENDATIONS_KEY, JSON.stringify(page));
   }, []);
 
   const updateGuestRadius = useCallback(async (maxDistanceKm: number) => {

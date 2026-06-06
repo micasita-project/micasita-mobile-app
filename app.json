@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "micasita_app",
+    "name": "Mi Casita",
     "slug": "micasita_app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "pe.edu.upc.micasita"
     },
     "android": {
       "adaptiveIcon": {

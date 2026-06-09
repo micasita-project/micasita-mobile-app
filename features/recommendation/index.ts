@@ -12,6 +12,7 @@ export {
 export type {
   GuestRecommendRequest,
   RecommendationItem,
+  RecommendationPageResponse,
 } from "./api/recommendation.api";
 
 export {

@@ -10,6 +10,13 @@ import type { Coordinate, RouteSegment, MultiModeRoutes, TransportMode } from '@
 import { TRANSPORT_MODE_SPEEDS } from '@/shared/types';
 import { ENV } from '@/shared/config/env';
 
+const routeCache = new Map<string, RouteSegment>();
+
+function makeCacheKey(origin: Coordinate, destination: Coordinate, mode: TransportMode): string {
+  const r = (n: number) => Math.round(n * 10000) / 10000;
+  return `${mode}:${r(origin.latitude)},${r(origin.longitude)}->${r(destination.latitude)},${r(destination.longitude)}`;
+}
+
 
 /**
  * Haversine formula: straight-line distance between two coordinates (km).
@@ -45,6 +52,10 @@ export async function fetchModeRoute(
   destination: Coordinate,
   mode: TransportMode
 ): Promise<RouteSegment> {
+  const key = makeCacheKey(origin, destination, mode);
+  const cached = routeCache.get(key);
+  if (cached) return cached;
+
   try {
     let baseUrl = ENV.OSRM_DRIVING_URL;
     if (mode === 'cycling') baseUrl = ENV.OSRM_CYCLING_URL;
@@ -52,41 +63,37 @@ export async function fetchModeRoute(
 
     const url = `${baseUrl}/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&overview=full`;
 
-    const response = await Promise.race([
-      fetch(url),
-      new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
-    ]);
-    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    let response: Response;
+    try {
+      response = await fetch(url, { signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
     const data = await response.json();
 
     if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
-      console.warn(`OSRM ${mode} returned no routes, falling back to straight line`);
       return generateFallbackRoute(origin, destination, mode);
     }
 
     const route = data.routes[0];
-    const geometry = route.geometry;
-
-    const waypoints: Coordinate[] = geometry.coordinates.map(
-      ([lon, lat]: number[]) => ({
-        latitude: lat,
-        longitude: lon,
-      })
+    const waypoints: Coordinate[] = route.geometry.coordinates.map(
+      ([lon, lat]: number[]) => ({ latitude: lat, longitude: lon })
     );
 
-    const distanceMeters = route.distance || 0;
-    const timeSeconds = route.duration || 0;
-
-    const distanceKm = Math.round((distanceMeters / 1000) * 100) / 100;
-    const timeMinutes = Math.round(timeSeconds / 60);
-
-    return {
+    const result: RouteSegment = {
       origin,
       destination,
       waypoints,
-      distanceKm,
-      timeMinutes,
+      distanceKm: Math.round((route.distance / 1000) * 100) / 100,
+      timeMinutes: Math.round(route.duration / 60),
     };
+
+    routeCache.set(key, result);
+    return result;
   } catch (error) {
     console.warn(`OSRM fetch failed for ${mode}, falling back to straight line:`, error);
     return generateFallbackRoute(origin, destination, mode);

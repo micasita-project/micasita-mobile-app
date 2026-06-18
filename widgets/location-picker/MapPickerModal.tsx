@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Alert,
 } from 'react-native';
-import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import { AppMapView } from '@/shared/ui/map';
+import type { MapRegion } from '@/shared/ui/map';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/shared/config/colors';
 import { LIMA_REGION } from '@/shared/config/map';
@@ -18,7 +20,7 @@ interface MapPickerModalProps {
   visible: boolean;
   onClose: () => void;
   onConfirm: (suggestion: GeocodeSuggestion) => void;
-  initialRegion?: Region;
+  initialRegion?: MapRegion;
   title?: string;
   instruction?: string;
 }
@@ -32,7 +34,7 @@ export function MapPickerModal({
   instruction = "Mueve el mapa para ubicar el punto exacto",
 }: MapPickerModalProps) {
   const insets = useSafeAreaInsets();
-  const [mapRegion, setMapRegion] = useState<Region>(initialRegion || LIMA_REGION);
+  const [mapRegion, setMapRegion] = useState<MapRegion>(initialRegion || LIMA_REGION);
   const [isReversing, setIsReversing] = useState(false);
 
   const handleConfirm = async () => {
@@ -41,14 +43,11 @@ export function MapPickerModal({
       const suggestion = await reverseAddress(mapRegion.latitude, mapRegion.longitude);
       onConfirm(suggestion);
     } catch {
-      // Fallback si falla el reverse geocoding
-      onConfirm({
-        display_name: "Ubicación seleccionada en el mapa",
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude,
-        place_type: "manual",
-        district: "Lima"
-      });
+      Alert.alert(
+        "Error",
+        "No se pudo obtener la dirección. Intenta mover el mapa y vuelve a intentarlo.",
+        [{ text: "Entendido" }]
+      );
     } finally {
       setIsReversing(false);
     }
@@ -57,8 +56,7 @@ export function MapPickerModal({
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: Colors.background }}>
-        <MapView
-          provider={PROVIDER_DEFAULT}
+        <AppMapView
           style={{ flex: 1 }}
           initialRegion={initialRegion || LIMA_REGION}
           onRegionChangeComplete={setMapRegion}

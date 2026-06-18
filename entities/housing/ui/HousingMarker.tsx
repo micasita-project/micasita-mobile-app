@@ -10,7 +10,7 @@ import { formatPrice } from "@/shared/utils/currency";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Marker } from "react-native-maps";
+import { AppMarker } from "@/shared/ui/map";
 
 interface HousingMarkerProps {
   housing: Housing;
@@ -30,7 +30,7 @@ export function HousingMarker({
     : null;
 
   return (
-    <Marker
+    <AppMarker
       coordinate={{ latitude: housing.latitude, longitude: housing.longitude }}
       onPress={() => onPress?.(housing)}
       tracksViewChanges={false}
@@ -79,7 +79,7 @@ export function HousingMarker({
           ]}
         />
       </View>
-    </Marker>
+    </AppMarker>
   );
 }
 

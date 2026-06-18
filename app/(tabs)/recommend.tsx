@@ -585,8 +585,16 @@ export default function RecommendScreen() {
                 color={Colors.textMuted}
               />
               <Text style={styles.emptyResultsText}>
-                Sin recomendaciones guardadas
+                {generateRecs.data?.message ?? "Sin recomendaciones guardadas"}
               </Text>
+              {generateRecs.data?.min_price_in_area != null && (
+                <Text style={styles.emptyResultsHint}>
+                  Las más económicas en la zona parten desde{" "}
+                  <Text style={{ fontWeight: "700" }}>
+                    S/ {generateRecs.data.min_price_in_area.toLocaleString("es-PE")}
+                  </Text>
+                </Text>
+              )}
               <TouchableOpacity
                 style={styles.setupBtn}
                 onPress={() =>

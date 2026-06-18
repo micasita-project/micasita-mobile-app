@@ -4,10 +4,10 @@
  */
 
 import React from 'react';
-import { Polyline } from 'react-native-maps';
 import type { Coordinate } from '@/shared/types';
 import { Colors } from '@/shared/config/colors';
 import { ROUTE_POLYLINE_WIDTH } from '@/shared/config/map';
+import { AppPolyline } from '@/shared/ui/map';
 
 interface RoutePolylineProps {
   coordinates: Coordinate[];
@@ -22,10 +22,8 @@ export function RoutePolyline({
   width = ROUTE_POLYLINE_WIDTH,
   dashed = false,
 }: RoutePolylineProps) {
-  if (coordinates.length < 2) return null;
-
   return (
-    <Polyline
+    <AppPolyline
       coordinates={coordinates}
       strokeColor={color}
       strokeWidth={width}

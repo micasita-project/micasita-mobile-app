@@ -17,12 +17,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, {
-  Circle,
-  Marker,
-  PROVIDER_DEFAULT,
-  UrlTile,
-} from "react-native-maps";
+import { AppMapView, AppMarker, AppCircle, AppUrlTile } from "@/shared/ui/map";
+import type { AppMapViewHandle } from "@/shared/ui/map";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { usePreferences } from "@/entities/recommendation-preferences";
@@ -113,7 +109,7 @@ export default function MapScreen() {
   const { user, isInitialized } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<AppMapViewHandle>(null);
 
   const panelTranslateY = useRef(new Animated.Value(500)).current;
   const closePanelRef = useRef<() => void>(() => {});
@@ -334,10 +330,9 @@ export default function MapScreen() {
           </View>
         )}
 
-        <MapView
+        <AppMapView
           ref={mapRef}
           style={styles.map}
-          provider={PROVIDER_DEFAULT}
           initialRegion={LIMA_REGION}
           mapType="none"
           showsUserLocation={false}
@@ -345,30 +340,30 @@ export default function MapScreen() {
           showsCompass={false}
           toolbarEnabled={false}
         >
-          <UrlTile urlTemplate={OSM_TILE_URL} maximumZ={19} tileSize={256} />
+          <AppUrlTile urlTemplate={OSM_TILE_URL} maximumZ={19} tileSize={256} />
 
           {!isGuest && user?.home_lat && user?.home_lon && (
-            <Marker
+            <AppMarker
               coordinate={{ latitude: user.home_lat, longitude: user.home_lon }}
               title="Mi Casa Actual"
             >
               <View style={styles.homeMarker}>
                 <Ionicons name="home" size={20} color={Colors.textOnPrimary} />
               </View>
-            </Marker>
+            </AppMarker>
           )}
           {isGuest && guestHome && (
-            <Marker
+            <AppMarker
               coordinate={{ latitude: guestHome.lat, longitude: guestHome.lon }}
               title="Mi Casa Actual"
             >
               <View style={styles.homeMarker}>
                 <Ionicons name="home" size={20} color={Colors.textOnPrimary} />
               </View>
-            </Marker>
+            </AppMarker>
           )}
           {!isGuest && activeWorkplace?.work_lat && activeWorkplace?.work_lon && (
-            <Marker
+            <AppMarker
               coordinate={{
                 latitude: activeWorkplace.work_lat,
                 longitude: activeWorkplace.work_lon,
@@ -378,20 +373,20 @@ export default function MapScreen() {
               <View style={styles.workMarker}>
                 <Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} />
               </View>
-            </Marker>
+            </AppMarker>
           )}
           {isGuest && guestWorkplace && (
-            <Marker
+            <AppMarker
               coordinate={{ latitude: guestWorkplace.lat, longitude: guestWorkplace.lon }}
               title="Mi Trabajo"
             >
               <View style={styles.workMarker}>
                 <Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} />
               </View>
-            </Marker>
+            </AppMarker>
           )}
           {isGuest && guestWorkplace && (
-            <Circle
+            <AppCircle
               center={{ latitude: guestWorkplace.lat, longitude: guestWorkplace.lon }}
               radius={(guestWorkplace.maxDistanceKm ?? 10) * 1000}
               strokeColor={Colors.primary + "70"}
@@ -400,7 +395,7 @@ export default function MapScreen() {
             />
           )}
           {!isGuest && activeWorkplace?.work_lat && activeWorkplace?.work_lon && (
-            <Circle
+            <AppCircle
               center={{
                 latitude: activeWorkplace.work_lat,
                 longitude: activeWorkplace.work_lon,
@@ -425,7 +420,7 @@ export default function MapScreen() {
               color={getTransportConfig(selectedMode).color}
             />
           )}
-        </MapView>
+        </AppMapView>
 
         {selectedHousing && (
           <Animated.View
@@ -492,7 +487,7 @@ const styles = StyleSheet.create({
   transportChipActive: { backgroundColor: "#fff", borderColor: "transparent" },
   transportChipLabel: { fontSize: 12, fontWeight: "600", color: "#fff" },
   transportChipTime: { fontSize: 11, fontWeight: "500" },
-  mapContainer: { flex: 1 },
+  mapContainer: { flex: 1, overflow: 'hidden' },
   map: { ...StyleSheet.absoluteFillObject },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

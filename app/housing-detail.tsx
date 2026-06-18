@@ -41,6 +41,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -60,6 +61,7 @@ export default function HousingDetailScreen() {
     ? (activeWorkplace?.work_address ?? "")
     : (guestWorkplace?.address.split(",")[0] ?? "");
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const toggleFavorite = useToggleFavorite();
@@ -207,7 +209,7 @@ export default function HousingDetailScreen() {
 
           {/* Back button */}
           <TouchableOpacity
-            style={styles.backButton}
+            style={[styles.backButton, { top: 16 + insets.top }]}
             onPress={handleViewOnMap}
             activeOpacity={0.8}
           >
@@ -215,7 +217,7 @@ export default function HousingDetailScreen() {
           </TouchableOpacity>
 
           {/* Right overlay buttons */}
-          <View style={styles.galleryRightBtns}>
+          <View style={[styles.galleryRightBtns, { top: 16 + insets.top }]}>
             <TouchableOpacity style={styles.overlayBtn}>
               <Ionicons
                 name="share-outline"
@@ -236,7 +238,7 @@ export default function HousingDetailScreen() {
           </View>
 
           {/* Type badge */}
-          <View style={styles.typeBadge}>
+          <View style={[styles.typeBadge, { top: 66 + insets.top }]}>
             <Text style={styles.typeBadgeText}>{housing.property_type}</Text>
           </View>
 

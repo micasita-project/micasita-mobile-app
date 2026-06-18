@@ -13,7 +13,8 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { AppMapView, AppMarker } from '@/shared/ui/map';
+import type { AppMapViewHandle } from '@/shared/ui/map';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/shared/config/colors';
 import type { HousingDraft } from '@/shared/types';
@@ -37,7 +38,7 @@ interface Step1LocationProps {
 }
 
 export function Step1Location({ data, onChange, onOpenMapPicker }: Step1LocationProps) {
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<AppMapViewHandle>(null);
 
   useEffect(() => {
     if (data.latitude && data.longitude) {
@@ -97,9 +98,8 @@ export function Step1Location({ data, onChange, onOpenMapPicker }: Step1Location
           </Text>
 
           <View style={styles.mapContainer}>
-            <MapView
+            <AppMapView
               ref={mapRef}
-              provider={PROVIDER_DEFAULT}
               style={styles.map}
               initialRegion={{
                 latitude: data.latitude,
@@ -108,13 +108,13 @@ export function Step1Location({ data, onChange, onOpenMapPicker }: Step1Location
                 longitudeDelta: 0.02,
               }}
             >
-              <Marker
+              <AppMarker
                 coordinate={{
                   latitude: data.latitude,
                   longitude: data.longitude,
                 }}
               />
-            </MapView>
+            </AppMapView>
           </View>
 
           <View style={styles.infoBox}>

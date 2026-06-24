@@ -108,3 +108,69 @@ export async function updateProfile(data: UpdateProfileRequest): Promise<AuthUse
   const response = await apiClient.patch<AuthUser>('/auth/me', data);
   return response.data;
 }
+
+// ── Verificación de correo y recuperación de contraseña ──────────
+
+export interface MessageResponse {
+  message: string;
+}
+
+/**
+ * Verifica el correo del usuario con el OTP enviado al registrarse.
+ * POST /auth/verify-email
+ */
+export async function verifyEmail(email: string, otp: string): Promise<MessageResponse> {
+  const response = await apiClient.post<MessageResponse>('/auth/verify-email', { email, otp });
+  return response.data;
+}
+
+/**
+ * Reenvía el OTP de verificación de correo.
+ * POST /auth/resend-verification
+ */
+export async function resendVerification(email: string): Promise<MessageResponse> {
+  const response = await apiClient.post<MessageResponse>('/auth/resend-verification', { email });
+  return response.data;
+}
+
+/**
+ * Solicita un OTP para restablecer la contraseña.
+ * El backend responde siempre genérico (no revela si el email existe).
+ * POST /auth/forgot-password
+ */
+export async function forgotPassword(email: string): Promise<MessageResponse> {
+  const response = await apiClient.post<MessageResponse>('/auth/forgot-password', { email });
+  return response.data;
+}
+
+/**
+ * Restablece la contraseña usando el OTP recibido.
+ * POST /auth/reset-password
+ */
+export async function resetPassword(
+  email: string,
+  otp: string,
+  newPassword: string,
+): Promise<MessageResponse> {
+  const response = await apiClient.post<MessageResponse>('/auth/reset-password', {
+    email,
+    otp,
+    new_password: newPassword,
+  });
+  return response.data;
+}
+
+/**
+ * Cambia la contraseña con la sesión activa (verifica la contraseña actual).
+ * POST /auth/me/change-password
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<MessageResponse> {
+  const response = await apiClient.post<MessageResponse>('/auth/me/change-password', {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+  return response.data;
+}

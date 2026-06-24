@@ -7,7 +7,6 @@ import type { Workplace } from "@/entities/workplace/api/workplace.api";
 import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
-import { updateProfile } from "@/features/auth/api/auth.service";
 import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
 import { AddressSearchInput } from "@/shared/ui/AddressSearchInput";
 import { Colors } from "@/shared/config/colors";
@@ -23,7 +22,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -35,7 +33,7 @@ interface AddressState {
 const EMPTY_ADDR: AddressState = { query: "", selected: null };
 
 export default function ProfileScreen() {
-  const { user, logout, refreshUser, setHome } = useAuth();
+  const { user, logout, setHome } = useAuth();
   const router = useRouter();
   const { data: workplaces = [] } = useWorkplaces(!!user);
 
@@ -50,12 +48,6 @@ export default function ProfileScreen() {
   const [homeAddr, setHomeAddr] = useState<AddressState>(EMPTY_ADDR);
   const [homeMapVisible, setHomeMapVisible] = useState(false);
   const [isSavingHome, setIsSavingHome] = useState(false);
-
-  // ── Edit Profile ─────────────────────────────────────────────────
-  const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editLastName, setEditLastName] = useState("");
-  const [isEditingSaving, setIsEditingSaving] = useState(false);
 
   // ── Derived handlers ─────────────────────────────────────────────
   const handleHomeSearch = useCallback((text: string) => {
@@ -93,28 +85,6 @@ export default function ProfileScreen() {
     setIsEditHomeVisible(false);
     setHomeAddr(EMPTY_ADDR);
   }, []);
-
-  const openEditProfile = useCallback(() => {
-    setEditName(user?.name ?? "");
-    setEditLastName(user?.last_name ?? "");
-    setIsEditProfileVisible(true);
-  }, [user]);
-
-  const handleSaveProfile = useCallback(async () => {
-    setIsEditingSaving(true);
-    try {
-      await updateProfile({
-        name: editName.trim() || undefined,
-        last_name: editLastName.trim() || undefined,
-      });
-      await refreshUser();
-      setIsEditProfileVisible(false);
-    } catch {
-      Alert.alert("Error", "No se pudo actualizar el perfil.");
-    } finally {
-      setIsEditingSaving(false);
-    }
-  }, [editName, editLastName, refreshUser]);
 
   if (!user) {
     return (
@@ -267,7 +237,7 @@ export default function ProfileScreen() {
             </View>
             <TouchableOpacity
               style={styles.profileEditBtn}
-              onPress={openEditProfile}
+              onPress={() => router.push("/edit-profile")}
             >
               <Ionicons name="pencil" size={16} color={Colors.primary} />
             </TouchableOpacity>
@@ -470,54 +440,6 @@ export default function ProfileScreen() {
             setHomeMapVisible(false);
           }}
         />
-      </BottomSheet>
-
-      {/* ══ Edit Profile ═══════════════════════════════════════════ */}
-      <BottomSheet
-        visible={isEditProfileVisible}
-        onClose={() => setIsEditProfileVisible(false)}
-        maxHeightRatio={0.42}
-        footer={
-          <View style={styles.sheetActions}>
-            <TouchableOpacity
-              style={styles.sheetCancel}
-              onPress={() => setIsEditProfileVisible(false)}
-            >
-              <Text style={styles.sheetCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.sheetConfirm}
-              onPress={handleSaveProfile}
-              disabled={isEditingSaving}
-            >
-              {isEditingSaving ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.sheetConfirmText}>Guardar</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        }
-      >
-        <View style={{ paddingHorizontal: 24, paddingTop: 4 }}>
-          <Text style={styles.sheetTitle}>Editar Perfil</Text>
-          <TextInput
-            style={styles.fieldInput}
-            placeholder="Nombre"
-            placeholderTextColor={Colors.textMuted}
-            value={editName}
-            onChangeText={setEditName}
-            autoCapitalize="words"
-          />
-          <TextInput
-            style={[styles.fieldInput, { marginTop: 12 }]}
-            placeholder="Apellido"
-            placeholderTextColor={Colors.textMuted}
-            value={editLastName}
-            onChangeText={setEditLastName}
-            autoCapitalize="words"
-          />
-        </View>
       </BottomSheet>
     </View>
   );

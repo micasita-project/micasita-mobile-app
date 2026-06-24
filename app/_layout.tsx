@@ -31,6 +31,7 @@ function useProtectedRoute() {
     if (!isInitialized) return;
 
     const inLoginPage = segments[0] === 'login';
+    const inVerifyEmail = segments[0] === 'verify-email';
     const inOnboarding = segments[0] === 'onboarding';
     const inAdmin = segments[0] === '(admin)';
     const inHousingDetail = segments[0] === 'housing-detail';
@@ -76,8 +77,8 @@ function useProtectedRoute() {
         return;
       }
 
-      // Si todo está bien y está en login, mandarlo a tabs
-      if (inLoginPage) {
+      // Si todo está bien y viene de login o verificación, mandarlo a tabs
+      if (inLoginPage || inVerifyEmail) {
         router.replace('/(tabs)');
       }
       return;
@@ -103,6 +104,9 @@ function RootNavigator() {
       initialRouteName="(tabs)"
     >
       <Stack.Screen name="login" />
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="verify-email" />
+      <Stack.Screen name="edit-profile" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(admin)" />

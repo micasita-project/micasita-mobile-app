@@ -15,6 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/features/auth/model/AuthContext';
 import { useGuest } from '@/features/guest';
 import { Colors } from '@/shared/config/colors';
@@ -24,6 +25,7 @@ type AuthMode = 'login' | 'register';
 export function LoginForm() {
   const { login, register, isLoading } = useAuth();
   const { guestHome, guestWorkplace, clearGuestData } = useGuest();
+  const router = useRouter();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,7 +69,8 @@ export function LoginForm() {
         lastName.trim() || undefined,
       );
       if (result.success) {
-        await clearGuestData();
+        // No limpiamos los datos de invitado aún: se transfieren tras verificar.
+        router.push({ pathname: '/verify-email', params: { email: email.trim() } });
       } else {
         Alert.alert('Error al registrar', result.error ?? 'Intenta con otro email.');
       }
@@ -75,6 +78,12 @@ export function LoginForm() {
       const result = await login(email.trim(), password);
       if (result.success) {
         await clearGuestData();
+      } else if (result.needsVerification) {
+        Alert.alert(
+          'Verifica tu correo',
+          'Tu cuenta aún no está verificada. Ingresa el código que te enviamos.',
+        );
+        router.push({ pathname: '/verify-email', params: { email: email.trim() } });
       } else {
         Alert.alert('Error', result.error ?? 'Email o contraseña incorrectos.');
       }
@@ -193,6 +202,17 @@ export function LoginForm() {
             </>
           )}
         </TouchableOpacity>
+
+        {/* Forgot password (solo en login) */}
+        {mode === 'login' && (
+          <TouchableOpacity
+            onPress={() => router.push('/forgot-password')}
+            style={styles.forgotContainer}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Toggle mode */}
@@ -235,6 +255,15 @@ const styles = StyleSheet.create({
   submitButtonDisabled: { opacity: 0.7 },
   submitButtonText: {
     fontSize: 16, fontWeight: '700', color: Colors.primary,
+  },
+  forgotContainer: {
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  forgotText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
   },
   toggleContainer: {
     flexDirection: 'row',

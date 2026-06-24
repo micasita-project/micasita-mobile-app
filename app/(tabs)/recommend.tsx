@@ -399,6 +399,26 @@ export default function RecommendScreen() {
                     </>
                   )}
                 </TouchableOpacity>
+
+                {/* Inline empty-state message — visible without scrolling */}
+                {guestRecommendations !== null &&
+                  guestRecommendations.results.length === 0 &&
+                  !guestMutation.isPending && (
+                    <View style={styles.inlineEmptyState}>
+                      <Ionicons name="home-outline" size={32} color={Colors.textMuted} />
+                      <Text style={styles.inlineEmptyText}>
+                        {guestRecommendations.message ?? "No encontramos viviendas con esos criterios."}
+                      </Text>
+                      {guestRecommendations.min_price_in_area !== null && (
+                        <Text style={styles.inlineEmptyHint}>
+                          Las más económicas parten desde{" "}
+                          <Text style={{ fontWeight: "700" }}>
+                            S/ {guestRecommendations.min_price_in_area.toLocaleString("es-PE")}
+                          </Text>
+                        </Text>
+                      )}
+                    </View>
+                  )}
               </>
             ) : (
               <View style={styles.emptyWorkplaces}>
@@ -913,5 +933,26 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: "center",
     paddingHorizontal: 24,
+  },
+  inlineEmptyState: {
+    alignItems: "center",
+    gap: 8,
+    marginTop: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+  },
+  inlineEmptyText: {
+    fontSize: 14,
+    color: Colors.textPrimary,
+    textAlign: "center",
+    paddingHorizontal: 8,
+  },
+  inlineEmptyHint: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    textAlign: "center",
+    paddingHorizontal: 8,
   },
 });

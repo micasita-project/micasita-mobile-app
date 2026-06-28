@@ -605,13 +605,21 @@ export default function RecommendScreen() {
                 color={Colors.textMuted}
               />
               <Text style={styles.emptyResultsText}>
-                {generateRecs.data?.message ?? "Sin recomendaciones guardadas"}
+                {generateRecs.data?.message ??
+                  cachedResults?.message ??
+                  "Sin recomendaciones guardadas"}
               </Text>
-              {generateRecs.data?.min_price_in_area != null && (
+              {(generateRecs.data?.min_price_in_area ??
+                cachedResults?.min_price_in_area) != null && (
                 <Text style={styles.emptyResultsHint}>
                   Las más económicas en la zona parten desde{" "}
                   <Text style={{ fontWeight: "700" }}>
-                    S/ {generateRecs.data.min_price_in_area.toLocaleString("es-PE")}
+                    S/{" "}
+                    {(
+                      generateRecs.data?.min_price_in_area ??
+                      cachedResults?.min_price_in_area ??
+                      0
+                    ).toLocaleString("es-PE")}
                   </Text>
                 </Text>
               )}

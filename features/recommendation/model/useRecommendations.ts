@@ -4,6 +4,7 @@
  * Soporta generate (primera vez / refresh), latest (cache rápido), e invitados.
  */
 
+import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getGuestRecommendations,
@@ -65,4 +66,30 @@ export function useGenerateRecommendations() {
       qc.invalidateQueries({ queryKey: recommendKeys.latest(workplaceId) });
     },
   });
+}
+
+/**
+ * Regenera las recomendaciones de un workplace SOLO si ya tenía recomendaciones
+ * previas (no autogenera para uno que nunca se ha recomendado).
+ *
+ * Pensado para correr en segundo plano tras cambiar las preferencias de un
+ * workplace: usa las preferencias recién guardadas e invalida el cache `latest`.
+ * Devuelve true si regeneró. Nunca lanza (no debe romper el guardado).
+ */
+export function useRegenerateIfExists() {
+  const qc = useQueryClient();
+  return useCallback(
+    async (workplaceId: number): Promise<boolean> => {
+      try {
+        const existing = await getLatestRecommendations(workplaceId);
+        if (!existing) return false; // nunca tuvo recomendaciones → no autogenerar
+        await generateRecommendations(workplaceId); // usa las preferencias actualizadas
+        qc.invalidateQueries({ queryKey: recommendKeys.latest(workplaceId) });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [qc],
+  );
 }

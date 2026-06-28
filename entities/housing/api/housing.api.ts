@@ -34,6 +34,7 @@ export interface PropertyResponse {
   images: string[];
   features: string[];
   source_url: string | null;
+  phone: string | null;
   is_favorite: boolean;
 }
 
@@ -95,6 +96,7 @@ function toHousing(p: PropertyResponse): Housing {
     images: p.images ?? [],
     features: p.features ?? [],
     source_url: p.source_url ?? undefined,
+    phone: p.phone ?? undefined,
     isFavorite: p.is_favorite ?? false,
   };
 }

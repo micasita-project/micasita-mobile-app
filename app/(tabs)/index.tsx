@@ -110,6 +110,8 @@ export default function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<AppMapViewHandle>(null);
+  // Evita re-auto-seleccionar el mismo set de recomendaciones en cada render.
+  const autoFocusKeyRef = useRef<string | null>(null);
 
   const panelTranslateY = useRef(new Animated.Value(500)).current;
   const closePanelRef = useRef<() => void>(() => {});
@@ -230,6 +232,45 @@ export default function MapScreen() {
       }).start();
     }
   }, [selectedHousing, panelTranslateY]);
+
+  // Al entrar al mapa con recomendaciones listas, selecciona y hace zoom a la
+  // vivienda con mejor match_score (top 1). Se ejecuta una vez por cada set de
+  // recomendaciones (se vuelve a disparar si cambian, p. ej. tras regenerar).
+  useEffect(() => {
+    if (isLoadingRecommendations) return;
+    if (recommendations.length === 0) {
+      autoFocusKeyRef.current = null;
+      return;
+    }
+
+    const top = recommendations.reduce((best, r) =>
+      r.match_score > best.match_score ? r : best,
+    );
+    const setKey = `${isGuest ? "guest" : activeWorkplace?.id ?? "none"}:${top.property.id}`;
+    if (autoFocusKeyRef.current === setKey) return;
+    autoFocusKeyRef.current = setKey;
+
+    handleHousingSelect(top.property);
+    // Pequeño delay para asegurar que el mapa esté montado antes de animar.
+    const t = setTimeout(() => {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: top.property.latitude,
+          longitude: top.property.longitude,
+          latitudeDelta: 0.025,
+          longitudeDelta: 0.025,
+        },
+        700,
+      );
+    }, 350);
+    return () => clearTimeout(t);
+  }, [
+    recommendations,
+    isLoadingRecommendations,
+    isGuest,
+    activeWorkplace?.id,
+    handleHousingSelect,
+  ]);
 
   const handleViewDetail = useCallback(() => {
     if (selectedHousing) {

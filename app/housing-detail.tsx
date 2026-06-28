@@ -35,6 +35,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -152,6 +153,18 @@ export default function HousingDetailScreen() {
   }
 
   const handleViewOnMap = () => router.back();
+
+  const handleContactWhatsApp = () => {
+    if (!housing?.phone) return;
+    // Normaliza el número: solo dígitos; si son 9 (Perú) anteponer 51.
+    const digits = housing.phone.replace(/\D/g, "");
+    const normalized = digits.length === 9 ? `51${digits}` : digits;
+    const msg = `Hola, vi tu propiedad "${housing.title}" en MiCasita y me interesa. ¿Podríamos coordinar una visita?`;
+    const url = `https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert("WhatsApp no disponible", "No se pudo abrir WhatsApp en este dispositivo."),
+    );
+  };
 
   const handleFavoriteToggle = () => {
     if (!housing) return;
@@ -397,19 +410,7 @@ export default function HousingDetailScreen() {
           </View>
         )}
 
-        {/* ── Agente ──────────────────────────────────────── */}
-        <View style={styles.agentCard}>
-          <View style={styles.agentAvatar}>
-            <Ionicons name="person" size={20} color={Colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.agentName}>Propietario / Agente</Text>
-            <Text style={styles.agentMeta}>Responde en 24h</Text>
-          </View>
-          <TouchableOpacity style={styles.agentMsgBtn}>
-            <Text style={styles.agentMsgText}>Mensaje</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Sección de propietario/agente oculta a propósito */}
       </ScrollView>
 
       {lightboxIndex !== null && housing.images.length > 0 && (
@@ -422,14 +423,25 @@ export default function HousingDetailScreen() {
         />
       )}
 
-      {/* ── Sticky CTA ──────────────────────────────────── */}
+      {/* ── Sticky CTA: contacto por WhatsApp ───────────── */}
       <View style={styles.stickyCta}>
-        <TouchableOpacity style={styles.ctaPhone}>
-          <Ionicons name="call-outline" size={20} color={Colors.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.ctaBook} activeOpacity={0.88}>
-          <Text style={styles.ctaBookText}>Agendar visita</Text>
-        </TouchableOpacity>
+        {housing.phone ? (
+          <TouchableOpacity
+            style={styles.ctaWhatsapp}
+            activeOpacity={0.88}
+            onPress={handleContactWhatsApp}
+          >
+            <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+            <Text style={styles.ctaWhatsappText}>Contactar por WhatsApp</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.ctaDisabled}>
+            <Ionicons name="chatbubble-ellipses-outline" size={18} color={Colors.textMuted} />
+            <Text style={styles.ctaDisabledText}>
+              El anunciante no dejó un número de contacto
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -721,6 +733,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   ctaBookText: { fontSize: 15, fontWeight: "600", color: Colors.textOnPrimary },
+  ctaWhatsapp: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#25D366",
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  ctaWhatsappText: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  ctaDisabled: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+  ctaDisabledText: { fontSize: 13, fontWeight: "600", color: Colors.textMuted, flexShrink: 1 },
 
   // Route (kept for future use)
   routeCard: {

@@ -65,6 +65,8 @@ export interface Housing {
   features: string[];
   /** Original listing URL from the scraper */
   source_url?: string;
+  /** Contact phone of the publisher (optional) */
+  phone?: string;
   isFavorite?: boolean;
 }
 

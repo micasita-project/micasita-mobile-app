@@ -159,7 +159,7 @@ export default function HousingDetailScreen() {
     // Normaliza el número: solo dígitos; si son 9 (Perú) anteponer 51.
     const digits = housing.phone.replace(/\D/g, "");
     const normalized = digits.length === 9 ? `51${digits}` : digits;
-    const msg = `Hola, vi tu propiedad "${housing.title}" en MiCasita y me interesa. ¿Podríamos coordinar una visita?`;
+    const msg = `Hola, vi el anuncio de "${housing.title}" y estoy interesado(a). ¿Sigue disponible? Me gustaría coordinar una visita. ¡Gracias!`;
     const url = `https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`;
     Linking.openURL(url).catch(() =>
       Alert.alert("WhatsApp no disponible", "No se pudo abrir WhatsApp en este dispositivo."),

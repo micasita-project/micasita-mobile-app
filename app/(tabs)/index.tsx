@@ -6,7 +6,7 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -171,9 +171,13 @@ export default function MapScreen() {
   const { data: authRecommendations = null, isLoading: isLoadingAuth } =
     useLatestRecommendations(!isGuest ? (activeWorkplace?.id ?? null) : null);
 
-  const recommendations = isGuest
-    ? (guestRecommendations?.results ?? [])
-    : (authRecommendations?.results ?? []);
+  const recommendations = useMemo(
+    () =>
+      isGuest
+        ? (guestRecommendations?.results ?? [])
+        : (authRecommendations?.results ?? []),
+    [isGuest, guestRecommendations, authRecommendations],
+  );
   const isLoadingRecommendations = isGuest ? false : isLoadingAuth;
 
   const [selectedHousing, setSelectedHousing] = useState<Housing | null>(null);
@@ -240,6 +244,10 @@ export default function MapScreen() {
     if (isLoadingRecommendations) return;
     if (recommendations.length === 0) {
       autoFocusKeyRef.current = null;
+      // Sin resultados: limpia también la selección, la tarjeta flotante y la
+      // ruta del set anterior (los marcadores ya desaparecen al venir de la lista).
+      setSelectedHousing(null);
+      clearRoute();
       return;
     }
 
@@ -270,6 +278,7 @@ export default function MapScreen() {
     isGuest,
     activeWorkplace?.id,
     handleHousingSelect,
+    clearRoute,
   ]);
 
   const handleViewDetail = useCallback(() => {

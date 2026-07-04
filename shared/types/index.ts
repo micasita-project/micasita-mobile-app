@@ -157,6 +157,8 @@ export interface HousingDraft {
   parking: number;
   antiquity: number;
   description: string;
+  /** Teléfono de contacto sin prefijo +51 (9 dígitos) */
+  phone: string;
 
   // Paso 3 — Fotos (HU19)
   /** URIs locales seleccionadas antes de subir a Supabase */
@@ -196,4 +198,5 @@ export interface PublishedHousing {
   images: string[];
   features: string[];
   source_url?: string;
+  phone?: string;
 }

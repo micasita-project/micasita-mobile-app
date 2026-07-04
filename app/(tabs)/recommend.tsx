@@ -241,6 +241,14 @@ export default function RecommendScreen() {
           setShowWorkplaceSheet(false);
           setEditingWp(null);
         }}
+        onSuccess={(workplaceId) => {
+          setShowWorkplaceSheet(false);
+          setEditingWp(null);
+          // Auto-select the new workplace so results load immediately
+          if (workplaceId && !editingWp) {
+            setSelectedWorkplaceId(workplaceId);
+          }
+        }}
       />
 
       <ScrollView
@@ -296,9 +304,7 @@ export default function RecommendScreen() {
                     >
                       <TouchableOpacity
                         style={styles.wpSelectArea}
-                        onPress={() =>
-                          setSelectedWorkplaceId(isActive ? null : wp.id)
-                        }
+                        onPress={() => setSelectedWorkplaceId(wp.id)}
                         activeOpacity={0.7}
                       >
                         <Ionicons
@@ -682,6 +688,20 @@ export default function RecommendScreen() {
                     ).toLocaleString("es-PE")}
                   </Text>
                 </Text>
+              )}
+              {/* Generar solo cuando no hay historial (workplace nuevo) */}
+              {cachedResults === null && (
+                <TouchableOpacity
+                  style={styles.setupBtn}
+                  onPress={() =>
+                    selectedWorkplaceId &&
+                    generateRecs.mutate({ workplaceId: selectedWorkplaceId })
+                  }
+                  disabled={isAuthGenerating}
+                >
+                  <Ionicons name="sparkles" size={16} color={Colors.textOnPrimary} />
+                  <Text style={styles.setupBtnText}>Generar recomendaciones</Text>
+                </TouchableOpacity>
               )}
               <TouchableOpacity
                 style={styles.changeConfigBtn}

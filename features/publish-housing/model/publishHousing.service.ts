@@ -47,6 +47,7 @@ export async function submitHousingListing(
     description: draft.description,
     images: imageUrls,
     features: draft.features,
+    phone: draft.phone?.trim() || undefined,
   };
 
   // 3. Crear la propiedad en la base de datos
@@ -119,6 +120,7 @@ export async function updateHousingListing(
     description: draft.description,
     images: imageUrls,
     features: draft.features,
+    phone: draft.phone?.trim() || undefined,
   };
 
   const updated = await updateProperty(Number(propertyId), propertyData);
@@ -161,7 +163,9 @@ export async function getMyListings(userId: string): Promise<PublishedHousing[]>
     id: String(h.id),
     userId,
     userEmail: '',
-    status: h.status as 'pending' | 'approved' | 'rejected',
+    status: (['pending', 'approved', 'rejected'].includes(h.status)
+      ? h.status
+      : 'pending') as 'pending' | 'approved' | 'rejected',
     createdAt: h.createdAt ?? new Date().toISOString(),
     updatedAt: h.updatedAt ?? new Date().toISOString(),
     address: h.address,

@@ -48,7 +48,8 @@ interface WorkplaceSheetProps {
   visible: boolean;
   workplace?: Workplace | null;
   onClose: () => void;
-  onSuccess?: () => void;
+  /** Se llama con el ID del workplace afectado (nuevo en create, existente en edit/delete) */
+  onSuccess?: (workplaceId?: number) => void;
   allowDelete?: boolean;
 }
 
@@ -229,10 +230,15 @@ export function WorkplaceSheet({
           preferred_transportation: transport,
           max_distance_km: maxDistKm,
         });
+        // Generate recs in background for the new workplace
+        generateRecs.mutate({ workplaceId: wp.id }, { onError: () => {} });
+        handleClose();
+        onSuccess?.(wp.id);
+        return;
       }
 
       handleClose();
-      onSuccess?.();
+      onSuccess?.(workplace?.id);
     } catch {
       Alert.alert(
         "Error",
@@ -254,7 +260,7 @@ export function WorkplaceSheet({
           try {
             await deleteWorkplace.mutateAsync(workplace.id);
             handleClose();
-            onSuccess?.();
+            onSuccess?.(workplace.id);
           } catch {
             Alert.alert("Error", "No se pudo eliminar el lugar de trabajo.");
           }

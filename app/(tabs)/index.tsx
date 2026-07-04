@@ -294,12 +294,29 @@ export default function MapScreen() {
   // Al entrar al mapa con recomendaciones listas, selecciona y hace zoom a la
   // vivienda con mejor match_score (top 1). Se ejecuta una vez por cada set de
   // recomendaciones (se vuelve a disparar si cambian, p. ej. tras regenerar).
+  // Clear stale route and selection whenever loading starts (workplace switch,
+  // new generation, or guest generation). Avoids the old polyline hanging in
+  // the air while the new recommendations are being fetched.
+  useEffect(() => {
+    if (isLoadingRecommendations) {
+      setSelectedHousing(null);
+      clearRoute();
+      autoFocusKeyRef.current = null;
+    }
+  }, [isLoadingRecommendations, clearRoute]);
+
+  // Also clear immediately when the active workplace changes so cached results
+  // don't flash the old route for one frame before the auto-focus effect fires.
+  useEffect(() => {
+    setSelectedHousing(null);
+    clearRoute();
+    autoFocusKeyRef.current = null;
+  }, [activeWorkplace?.id, isGuest, clearRoute]);
+
   useEffect(() => {
     if (isLoadingRecommendations) return;
     if (recommendations.length === 0) {
       autoFocusKeyRef.current = null;
-      // Sin resultados: limpia también la selección, la tarjeta flotante y la
-      // ruta del set anterior (los marcadores ya desaparecen al venir de la lista).
       setSelectedHousing(null);
       clearRoute();
       return;

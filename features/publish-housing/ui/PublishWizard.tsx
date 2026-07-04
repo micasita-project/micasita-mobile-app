@@ -44,6 +44,8 @@ function validateStep(step: number, draft: ReturnType<typeof usePublishForm>['dr
       if (draft.price <= 0) return 'El precio debe ser mayor a 0.';
       if (draft.total_area_sqm <= 0) return 'El área total debe ser mayor a 0 m².';
       if (!draft.description.trim()) return 'Por favor agrega una descripción.';
+      if (draft.phone && draft.phone.trim().length > 0 && draft.phone.trim().length !== 9)
+        return 'El teléfono de contacto debe tener exactamente 9 dígitos.';
       return null;
     case 3:
       if (draft.localImageUris.length === 0)
@@ -185,6 +187,7 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
               parking: draft.parking,
               antiquity: draft.antiquity,
               description: draft.description,
+              phone: draft.phone,
             }}
             onChange={updateDraft}
           />

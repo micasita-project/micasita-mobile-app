@@ -140,6 +140,9 @@ export default function AdminUsersScreen() {
           <AdminUserCard user={item} onToggleStatus={handleToggleStatus} />
         )}
         contentContainerStyle={styles.list}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl 
             refreshing={isRefreshing} 
@@ -152,9 +155,15 @@ export default function AdminUsersScreen() {
         onEndReachedThreshold={0.3}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            {searchQuery ? 'No se encontraron resultados.' : 'No hay usuarios registrados.'}
-          </Text>
+          <View style={styles.emptyState}>
+            <Ionicons name={searchQuery ? 'search-outline' : 'people-outline'} size={52} color={Colors.textMuted} />
+            <Text style={styles.emptyTitle}>
+              {searchQuery ? 'Sin resultados' : 'Sin usuarios'}
+            </Text>
+            <Text style={styles.emptyText}>
+              {searchQuery ? 'No se encontraron usuarios que coincidan.' : 'No hay usuarios registrados aún.'}
+            </Text>
+          </View>
         }
       />
     </View>
@@ -200,10 +209,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textPrimary,
   },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
   emptyText: {
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
   },
 });

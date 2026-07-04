@@ -47,7 +47,7 @@ function ListingCard({
   listing: PublishedHousing;
   onEdit: (listing: PublishedHousing) => void;
 }) {
-  const status = STATUS_CONFIG[listing.status];
+  const status = STATUS_CONFIG[listing.status] ?? STATUS_CONFIG.pending;
   const mainImage = listing.images[0];
   const typeLabel = listing.property_type;
 

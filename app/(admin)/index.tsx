@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, RefreshControl, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Colors } from '@/shared/config/colors';
+import { Ionicons } from '@expo/vector-icons';
 import { getPendingProperties, updatePropertyStatus } from '@/features/admin/api/admin.api';
 import { AdminPropertyCard } from '@/features/admin/ui/AdminPropertyCard';
 import type { Housing } from '@/shared/types';
@@ -123,7 +124,11 @@ export default function AdminPendingPropertiesScreen() {
           />
         }
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No hay viviendas pendientes por revisar.</Text>
+          <View style={styles.emptyState}>
+            <Ionicons name="checkmark-circle-outline" size={52} color={Colors.textMuted} />
+            <Text style={styles.emptyTitle}>Todo al día</Text>
+            <Text style={styles.emptyText}>No hay viviendas pendientes por revisar.</Text>
+          </View>
         }
       />
 
@@ -192,11 +197,20 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
   },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
   emptyText: {
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
   },
   modalOverlay: {
     flex: 1,

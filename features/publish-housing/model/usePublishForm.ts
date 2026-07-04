@@ -26,6 +26,7 @@ const INITIAL_DRAFT: HousingDraft = {
   parking: 0,
   antiquity: 0,
   description: '',
+  phone: '',
   // Paso 3
   localImageUris: [],
   // Paso 4

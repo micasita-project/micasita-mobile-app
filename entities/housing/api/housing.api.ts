@@ -57,6 +57,7 @@ export interface CreatePropertyRequest {
   images?: string[];
   features?: string[];
   source_url?: string;
+  phone?: string;
 }
 export interface PaginatedPropertyResponse {
   items: PropertyResponse[];

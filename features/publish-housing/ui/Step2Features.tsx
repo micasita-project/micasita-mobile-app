@@ -26,7 +26,7 @@ interface Step2FeaturesProps {
     | 'title' | 'property_type' | 'currency' | 'price'
     | 'total_area_sqm' | 'covered_area_sqm'
     | 'bedrooms' | 'bathrooms' | 'parking' | 'antiquity'
-    | 'description'
+    | 'description' | 'phone'
   >;
   onChange: (partial: Partial<HousingDraft>) => void;
 }
@@ -62,6 +62,12 @@ function CounterField({
 }
 
 export function Step2Features({ data, onChange }: Step2FeaturesProps) {
+  const phone = data.phone ?? '';
+  const phoneError =
+    phone.length > 0 && phone.length < 9
+      ? 'Debe tener exactamente 9 dígitos'
+      : null;
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 
@@ -196,7 +202,28 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
           maxLength={1000}
         />
       </View>
-      <Text style={[styles.charCount, { marginBottom: 32 }]}>{data.description.length}/1000</Text>
+      <Text style={[styles.charCount, { marginBottom: 20 }]}>{data.description.length}/1000</Text>
+
+      {/* Teléfono de contacto */}
+      <Text style={[styles.sectionTitle, { marginTop: 4 }]}>Teléfono de contacto</Text>
+      <View style={[styles.inputWrapper, phoneError ? styles.inputWrapperError : null]}>
+        <Text style={styles.phonePrefix}>+51</Text>
+        <View style={styles.phoneDivider} />
+        <TextInput
+          style={styles.input}
+          placeholder="987654321"
+          placeholderTextColor={Colors.textMuted}
+          value={phone}
+          onChangeText={(v) => onChange({ phone: v.replace(/\D/g, '').slice(0, 9) })}
+          keyboardType="phone-pad"
+          maxLength={9}
+        />
+        {phone.length === 9 && (
+          <Ionicons name="checkmark-circle" size={18} color={Colors.success} />
+        )}
+      </View>
+      {phoneError && <Text style={styles.fieldError}>{phoneError}</Text>}
+      <Text style={[styles.charCount, { marginBottom: 32 }]}>{phone.length}/9 dígitos</Text>
     </ScrollView>
   );
 }
@@ -216,6 +243,10 @@ const styles = StyleSheet.create({
   charCount: { fontSize: 11, color: Colors.textMuted, textAlign: 'right', marginTop: 4 },
   currencyPrefix: { fontSize: 13, fontWeight: '700', color: Colors.primary, marginRight: 2 },
   currencySuffix: { fontSize: 12, color: Colors.textMuted, marginLeft: 4 },
+  inputWrapperError: { borderColor: Colors.error },
+  phonePrefix: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, marginRight: 0 },
+  phoneDivider: { width: 1, height: 20, backgroundColor: Colors.border, marginHorizontal: 10 },
+  fieldError: { fontSize: 11, color: Colors.error, marginTop: 4 },
   typeRow: { flexDirection: 'row', gap: 10 },
   typeCard: {
     flex: 1, backgroundColor: Colors.surface, borderRadius: 14,

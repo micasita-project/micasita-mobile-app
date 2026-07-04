@@ -38,27 +38,27 @@ export default function AdminLayout() {
           ),
         }}
       >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Pendientes',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="users"
-        options={{
-          title: 'Usuarios',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
-          ),
-        }}
-      />
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Pendientes',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'list' : 'list-outline'} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="users"
+          options={{
+            title: 'Usuarios',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={color} />
+            ),
+          }}
+        />
       </Tabs>
 
-      <BottomSheet visible={profileVisible} onClose={() => setProfileVisible(false)} maxHeightRatio={0.38}>
+      <BottomSheet visible={profileVisible} onClose={() => setProfileVisible(false)} maxHeightRatio={0.52}>
         <View style={styles.sheetContent}>
           <View style={styles.sheetHeader}>
             <View style={styles.largeAvatar}>
@@ -69,12 +69,15 @@ export default function AdminLayout() {
             </Text>
             <Text style={styles.sheetEmail}>{user?.email}</Text>
             <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>Rol: Admin</Text>
+              <Ionicons name="shield-checkmark" size={12} color={Colors.primary} />
+              <Text style={styles.roleText}>Administrador</Text>
             </View>
           </View>
 
+          <View style={styles.divider} />
+
           <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-            <Ionicons name="log-out-outline" size={24} color={Colors.error} />
+            <Ionicons name="log-out-outline" size={20} color={Colors.error} />
             <Text style={styles.logoutText}>Cerrar Sesión</Text>
           </TouchableOpacity>
         </View>
@@ -94,70 +97,86 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   headerAvatarText: {
     color: Colors.textOnPrimary,
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 15,
   },
   sheetContent: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 4,
+    paddingBottom: 28,
     alignItems: 'center',
   },
   sheetHeader: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
+    width: '100%',
   },
   largeAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.primaryLight + '30',
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: Colors.primaryLight + '20',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: Colors.primary + '30',
   },
   largeAvatarText: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '700',
     color: Colors.primary,
   },
   sheetName: {
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   sheetEmail: {
-    fontSize: 16,
+    fontSize: 13,
     color: Colors.textSecondary,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   roleBadge: {
-    backgroundColor: Colors.primary + '20',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: Colors.primary + '15',
     paddingVertical: 4,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 20,
   },
   roleText: {
     color: Colors.primary,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
+  },
+  divider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: Colors.border,
+    marginBottom: 16,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.error + '08',
     width: '100%',
-    padding: 16,
-    borderRadius: 16,
-    gap: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
+    gap: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.error + '25',
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: Colors.error,
   },

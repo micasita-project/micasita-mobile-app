@@ -63,9 +63,38 @@ export function AdminPropertyCard({
           <Text style={styles.priceUnit}>/mes</Text>
         </View>
 
-        <Text style={styles.publisherInfo}>
-          ID Publicador: {property.publisher_id}
-        </Text>
+        <View style={styles.statsRow}>
+          {property.bedrooms != null && (
+            <View style={styles.stat}>
+              <Ionicons name="bed-outline" size={13} color={Colors.textSecondary} />
+              <Text style={styles.statText}>{property.bedrooms} hab.</Text>
+            </View>
+          )}
+          {property.bathrooms != null && (
+            <View style={styles.stat}>
+              <Ionicons name="water-outline" size={13} color={Colors.textSecondary} />
+              <Text style={styles.statText}>{property.bathrooms} baño{property.bathrooms !== 1 ? 's' : ''}</Text>
+            </View>
+          )}
+          {property.total_area_sqm != null && (
+            <View style={styles.stat}>
+              <Ionicons name="resize-outline" size={13} color={Colors.textSecondary} />
+              <Text style={styles.statText}>{property.total_area_sqm} m²</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.publisherRow}>
+          <Ionicons name="person-outline" size={12} color={Colors.textMuted} />
+          <Text style={styles.publisherInfo}>Publicador #{property.publisher_id}</Text>
+          {property.phone && (
+            <>
+              <Text style={styles.publisherInfo}> · </Text>
+              <Ionicons name="call-outline" size={12} color={Colors.textMuted} />
+              <Text style={styles.publisherInfo}>+51 {property.phone}</Text>
+            </>
+          )}
+        </View>
 
         <View style={styles.actions}>
           <TouchableOpacity
@@ -143,10 +172,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   locationText: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
-  priceRow: { flexDirection: "row", alignItems: "baseline", marginBottom: 6 },
+  priceRow: { flexDirection: "row", alignItems: "baseline", marginBottom: 8 },
   priceValue: { fontSize: 20, fontWeight: "800", color: Colors.primary },
   priceUnit: { fontSize: 13, color: Colors.textSecondary, marginLeft: 2 },
-  publisherInfo: { fontSize: 12, color: Colors.textMuted, marginBottom: 16 },
+  statsRow: { flexDirection: "row", gap: 14, marginBottom: 8 },
+  stat: { flexDirection: "row", alignItems: "center", gap: 4 },
+  statText: { fontSize: 12, color: Colors.textSecondary },
+  publisherRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 14 },
+  publisherInfo: { fontSize: 12, color: Colors.textMuted },
   actions: { flexDirection: "row", gap: 12 },
   btn: {
     flex: 1,

@@ -24,6 +24,7 @@ function toHousing(p: PropertyResponse): Housing {
     images: p.images ?? [],
     features: p.features ?? [],
     source_url: p.source_url ?? undefined,
+    phone: p.phone ?? undefined,
   };
 }
 

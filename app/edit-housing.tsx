@@ -38,6 +38,7 @@ export default function EditHousingScreen() {
         description: parsed.description,
         localImageUris: parsed.images,
         features: parsed.features,
+        phone: parsed.phone ?? '',
       };
 
       return { id: parsed.id, status: parsed.status, draft };

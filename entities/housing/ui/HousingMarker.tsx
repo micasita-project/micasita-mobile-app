@@ -8,7 +8,7 @@ import { getTransportConfig } from "@/shared/config/transport";
 import type { Housing, TransportMode } from "@/shared/types";
 import { formatPrice } from "@/shared/utils/currency";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { AppMarker } from "@/shared/ui/map";
 
@@ -29,13 +29,26 @@ export function HousingMarker({
     ? getTransportConfig(priorityRecommendedMode)
     : null;
 
+  // Start tracking until the view has been laid out (prevents default native pin
+  // on iOS when the custom view hasn't rendered yet at snapshot time).
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+  const handleLayout = useCallback(() => setTracksViewChanges(false), []);
+
+  // Re-enable tracking briefly when selection state changes so the native
+  // layer captures the updated appearance (selected/deselected bubble).
+  useEffect(() => {
+    setTracksViewChanges(true);
+    const t = setTimeout(() => setTracksViewChanges(false), 200);
+    return () => clearTimeout(t);
+  }, [isSelected]);
+
   return (
     <AppMarker
       coordinate={{ latitude: housing.latitude, longitude: housing.longitude }}
       onPress={() => onPress?.(housing)}
-      tracksViewChanges={false}
+      tracksViewChanges={tracksViewChanges}
     >
-      <View style={styles.markerContainer}>
+      <View style={styles.markerContainer} onLayout={handleLayout}>
         {transportCfg && (
           <View
             style={[

@@ -170,11 +170,12 @@ export async function getLatestRecommendations(
     console.log(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← OK`, response.data.total, 'resultados');
     return toRecommendationPage(response.data);
   } catch (error: any) {
-    if (error?.response?.status === 404) {
-      console.log(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← 404 (sin cache)`);
+    const status = error?.response?.status;
+    if (status === 404 || status === 401) {
+      console.log(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← ${status} (sin cache)`);
       return null;
     }
-    console.error(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← ERROR`, error?.response?.status, error?.message);
+    console.error(`[Recommend] /recommend/workplaces/${workplaceId}/latest ← ERROR`, status, error?.message);
     throw error;
   }
 }

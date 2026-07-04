@@ -5,6 +5,10 @@
  */
 
 import { createPreference } from "@/entities/recommendation-preferences";
+import {
+  importGuestRecommendations,
+  type RecommendationPageResponse,
+} from "@/features/recommendation/api/recommendation.api";
 import { createWorkplace } from "@/entities/workplace/api/workplace.api";
 import { getAuthToken, queryClient } from "@/shared/api";
 import React, {
@@ -36,6 +40,7 @@ export interface GuestDataForTransfer {
     address: string;
     maxDistanceKm?: number;
   };
+  recommendations?: RecommendationPageResponse;
 }
 
 interface AuthState {
@@ -122,6 +127,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             preferred_transportation: guestData.workplace.transport,
             max_distance_km: guestData.workplace.maxDistanceKm,
           });
+          // Import existing guest recommendations directly — no need to re-run the model.
+          if (guestData.recommendations && guestData.recommendations.results.length > 0) {
+            importGuestRecommendations(wp.id, guestData.recommendations).catch(() => {});
+          }
         } catch {}
       }
       return userProfile;
@@ -130,9 +139,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const clearSession = useCallback(async () => {
-    setUser(null);
     await logoutUser();
     queryClient.clear();
+    setUser(null);
   }, []);
 
   // Al montar, verificar si hay un token guardado (sesión persistida)

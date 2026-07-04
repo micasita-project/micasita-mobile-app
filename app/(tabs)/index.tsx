@@ -25,7 +25,12 @@ import { usePreferences } from "@/entities/recommendation-preferences";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import { GuestSetupModal, useGuest } from "@/features/guest";
-import { useLatestRecommendations } from "@/features/recommendation/model/useRecommendations";
+import {
+  guestGenerateKey,
+  recommendKeys,
+  useLatestRecommendations,
+} from "@/features/recommendation/model/useRecommendations";
+import { useIsMutating } from "@tanstack/react-query";
 import { useRouteCalculation } from "@/features/route-calculation";
 import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
 
@@ -38,6 +43,16 @@ import { TRANSPORT_MODE_CONFIG, getTransportConfig } from "@/shared/config/trans
 import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
 import type { Housing, MultiModeRoutes, TransportMode } from "@/shared/types";
 import { formatPrice } from "@/shared/utils/currency";
+
+// Normaliza el valor de transporte (acepta TransportMode o etiquetas legacy).
+function normalizeTransportMode(value?: string | null): TransportMode {
+  if (value === "driving" || value === "cycling" || value === "walking")
+    return value;
+  if (value === "Auto") return "driving";
+  if (value === "Bicicleta") return "cycling";
+  if (value === "Caminando") return "walking";
+  return "driving";
+}
 
 // ── Local component: floating housing card ────────────────────────
 // Exclusive to this page — no need for a separate file.
@@ -178,7 +193,13 @@ export default function MapScreen() {
         : (authRecommendations?.results ?? []),
     [isGuest, guestRecommendations, authRecommendations],
   );
-  const isLoadingRecommendations = isGuest ? false : isLoadingAuth;
+  const isGeneratingRecs =
+    useIsMutating({ mutationKey: recommendKeys.generate }) > 0;
+  const isGuestGenerating =
+    useIsMutating({ mutationKey: guestGenerateKey }) > 0;
+  const isLoadingRecommendations = isGuest
+    ? isGuestGenerating
+    : isLoadingAuth || isGeneratingRecs;
 
   const [selectedHousing, setSelectedHousing] = useState<Housing | null>(null);
 
@@ -190,6 +211,39 @@ export default function MapScreen() {
     clearRoute,
     savings,
   } = useRouteCalculation();
+
+  // Inicializa el chip de transporte con la preferencia del workplace activo.
+  // Solo una vez por trabajo: si lo cambias a mano se conserva, y al cambiar a
+  // otro trabajo se vuelve a tomar la preferencia del nuevo.
+  const appliedModeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isGuest) {
+      if (!guestWorkplace) return;
+      // Include transport value in the key so we re-sync when the user
+      // explicitly changes their transport preference in GuestSetupModal.
+      const key = `guest:${guestWorkplace.transport}`;
+      if (appliedModeRef.current === key) return;
+      appliedModeRef.current = key;
+      setSelectedMode(normalizeTransportMode(guestWorkplace.transport));
+      return;
+    }
+    const wpId = activeWorkplace?.id ?? null;
+    if (wpId === null || !activePreference) return;
+    // Include transport in the key so editing preferences re-syncs the chip
+    // while still preserving manual overrides within the same (wp, transport) combo.
+    const key = `${wpId}:${activePreference.preferred_transportation}`;
+    if (appliedModeRef.current === key) return;
+    appliedModeRef.current = key;
+    setSelectedMode(
+      normalizeTransportMode(activePreference.preferred_transportation),
+    );
+  }, [
+    isGuest,
+    guestWorkplace,
+    activeWorkplace?.id,
+    activePreference,
+    setSelectedMode,
+  ]);
 
   const handleHousingSelect = useCallback(
     (h: Housing) => {
@@ -374,9 +428,10 @@ export default function MapScreen() {
 
       <View style={styles.mapContainer}>
         {isLoadingRecommendations && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>Cargando recomendaciones...</Text>
+          <View style={styles.loadingPill}>
+            <Ionicons name="sparkles" size={14} color={Colors.primary} />
+            <Text style={styles.loadingPillText}>Analizando viviendas...</Text>
+            <ActivityIndicator size="small" color={Colors.primary} />
           </View>
         )}
 
@@ -539,14 +594,29 @@ const styles = StyleSheet.create({
   transportChipTime: { fontSize: 11, fontWeight: "500" },
   mapContainer: { flex: 1, overflow: 'hidden' },
   map: { ...StyleSheet.absoluteFillObject },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.7)",
-    zIndex: 100,
-    justifyContent: "center",
+  loadingPill: {
+    position: "absolute",
+    top: 14,
+    alignSelf: "center",
+    flexDirection: "row",
     alignItems: "center",
+    gap: 7,
+    backgroundColor: "#fff",
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 50,
+    shadowColor: "#000",
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+    zIndex: 100,
   },
-  loadingText: { marginTop: 12, fontWeight: "600", color: Colors.primary },
+  loadingPillText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
   workMarker: {
     backgroundColor: Colors.markerWork,
     borderRadius: 22,

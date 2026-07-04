@@ -4,7 +4,6 @@
  * Soporta generate (primera vez / refresh), latest (cache rápido), e invitados.
  */
 
-import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getGuestRecommendations,
@@ -17,13 +16,17 @@ export const recommendKeys = {
   guest: (data: GuestRecommendRequest | null) =>
     ['recommendations', 'guest', data?.work_lat, data?.work_lon, data?.budget, data?.preferred_transportation] as const,
   latest: (id: number) => ['recommendations', 'latest', id] as const,
+  generate: ['recommendations', 'generate'] as const,
 };
 
 /**
  * Hook para obtener recomendaciones como invitado (manual/mutation).
  */
+export const guestGenerateKey = ['recommendations', 'guest-generate'] as const;
+
 export function useGuestRecommendations() {
   return useMutation({
+    mutationKey: guestGenerateKey,
     mutationFn: (data: GuestRecommendRequest) => getGuestRecommendations(data),
   });
 }
@@ -60,36 +63,11 @@ export function useLatestRecommendations(workplaceId: number | null) {
 export function useGenerateRecommendations() {
   const qc = useQueryClient();
   return useMutation({
+    mutationKey: recommendKeys.generate,
     mutationFn: ({ workplaceId, options }: { workplaceId: number; options?: GenerateOptions }) =>
       generateRecommendations(workplaceId, options),
     onSuccess: (_data, { workplaceId }) => {
       qc.invalidateQueries({ queryKey: recommendKeys.latest(workplaceId) });
     },
   });
-}
-
-/**
- * Regenera las recomendaciones de un workplace SOLO si ya tenía recomendaciones
- * previas (no autogenera para uno que nunca se ha recomendado).
- *
- * Pensado para correr en segundo plano tras cambiar las preferencias de un
- * workplace: usa las preferencias recién guardadas e invalida el cache `latest`.
- * Devuelve true si regeneró. Nunca lanza (no debe romper el guardado).
- */
-export function useRegenerateIfExists() {
-  const qc = useQueryClient();
-  return useCallback(
-    async (workplaceId: number): Promise<boolean> => {
-      try {
-        const existing = await getLatestRecommendations(workplaceId);
-        if (!existing) return false; // nunca tuvo recomendaciones → no autogenerar
-        await generateRecommendations(workplaceId); // usa las preferencias actualizadas
-        qc.invalidateQueries({ queryKey: recommendKeys.latest(workplaceId) });
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    [qc],
-  );
 }

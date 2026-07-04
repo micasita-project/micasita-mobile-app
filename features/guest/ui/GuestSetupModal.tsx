@@ -161,22 +161,19 @@ export function GuestSetupModal({ visible, onClose }: Props) {
       };
       await Promise.all([setGuestHome(homeData), setGuestWorkplace(workData)]);
 
-      try {
-        const items = await guestMutation.mutateAsync({
-          work_lat: workData.lat,
-          work_lon: workData.lon,
-          budget: workData.budget,
-          preferred_transportation: workData.transport,
-          max_distance_km: workData.maxDistanceKm,
-          home_lat: homeData.lat,
-          home_lon: homeData.lon,
-        });
-        await saveGuestRecommendations(items);
-      } catch {
-        // Si falla las recomendaciones igualmente cerramos — los datos ya fueron guardados
-      }
-
+      // Close immediately — the recommend screen will show its own loading state.
+      // The mutation continues in background; its shared mutationKey lets
+      // useIsMutating on recommend.tsx detect it and show the loading card.
       onClose();
+      guestMutation.mutateAsync({
+        work_lat: workData.lat,
+        work_lon: workData.lon,
+        budget: workData.budget,
+        preferred_transportation: workData.transport,
+        max_distance_km: workData.maxDistanceKm,
+        home_lat: homeData.lat,
+        home_lon: homeData.lon,
+      }).then(saveGuestRecommendations).catch(() => {});
     } catch {
       Alert.alert('Error', 'No se pudo guardar. Intenta de nuevo.');
     } finally {

@@ -179,6 +179,24 @@ export async function getLatestRecommendations(
   }
 }
 
+export async function importGuestRecommendations(
+  workplaceId: number,
+  data: RecommendationPageResponse
+): Promise<void> {
+  console.log(`[Recommend] POST /recommend/workplaces/${workplaceId}/import-results →`, data.total, 'resultados');
+  try {
+    await apiClient.post(
+      `/recommend/workplaces/${workplaceId}/import-results`,
+      data,
+      { timeout: RECOMMEND_TIMEOUT }
+    );
+    console.log(`[Recommend] /recommend/workplaces/${workplaceId}/import-results ← OK`);
+  } catch (error: any) {
+    console.error(`[Recommend] /recommend/workplaces/${workplaceId}/import-results ← ERROR`, error?.response?.status);
+    throw error;
+  }
+}
+
 export async function getWorkplaceRecommendations(
   workplaceId: number
 ): Promise<RecommendationPageResponse> {

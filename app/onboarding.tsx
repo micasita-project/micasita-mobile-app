@@ -192,11 +192,19 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const createWorkplace = useCreateWorkplace();
   const generateRecs = useGenerateRecommendations();
-  const { setHome } = useAuth();
+  const { setHome, user } = useAuth();
 
   // Steps
   type Step = "home" | "workplace" | "preferences" | "loading";
-  const [step, setStep] = useState<Step>("home");
+  // Si el usuario ya tiene casa registrada (p. ej. borró sus trabajos pero
+  // conserva la vivienda), saltamos el paso de casa y arrancamos en "workplace".
+  const hasExistingHome = !!user?.home_address;
+  const stepFlow: Exclude<Step, "loading">[] = hasExistingHome
+    ? ["workplace", "preferences"]
+    : ["home", "workplace", "preferences"];
+  const [step, setStep] = useState<Step>(
+    hasExistingHome ? "workplace" : "home",
+  );
 
   // Search State (shared between home/workplace)
   const [searchQuery, setSearchQuery] = useState("");
@@ -241,7 +249,8 @@ export default function OnboardingScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!homeAddress || !workAddress) return;
+    // La casa es obligatoria solo si el usuario aún no tiene una registrada.
+    if (!workAddress || (!hasExistingHome && !homeAddress)) return;
     const budgetNum = parseFloat(budget);
     if (!budget.trim() || isNaN(budgetNum) || budgetNum <= 0) {
       Alert.alert(
@@ -251,7 +260,7 @@ export default function OnboardingScreen() {
       return;
     }
 
-    if (!isWithinLima(homeAddress.latitude, homeAddress.longitude)) {
+    if (homeAddress && !isWithinLima(homeAddress.latitude, homeAddress.longitude)) {
       Alert.alert("Fuera de cobertura", LIMA_LOCATION_ERROR);
       return;
     }
@@ -263,12 +272,14 @@ export default function OnboardingScreen() {
     setStep("loading");
 
     try {
-      // 1. Guardar Casa
-      await setHome({
-        home_lat: homeAddress.latitude,
-        home_lon: homeAddress.longitude,
-        home_address: homeAddress.display_name,
-      });
+      // 1. Guardar Casa solo si se ingresó una nueva; si ya tenía, se conserva.
+      if (homeAddress) {
+        await setHome({
+          home_lat: homeAddress.latitude,
+          home_lon: homeAddress.longitude,
+          home_address: homeAddress.display_name,
+        });
+      }
 
       // 2. Crear Workplace (solo datos geográficos)
       const workplace = await createWorkplace.mutateAsync({
@@ -321,33 +332,24 @@ export default function OnboardingScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.stepIndicator}>
-            <View style={[styles.stepDot, styles.stepDotActive]} />
-            <View
-              style={[
-                styles.stepLine,
-                (step === "workplace" || step === "preferences") &&
-                  styles.stepLineActive,
-              ]}
-            />
-            <View
-              style={[
-                styles.stepDot,
-                (step === "workplace" || step === "preferences") &&
-                  styles.stepDotActive,
-              ]}
-            />
-            <View
-              style={[
-                styles.stepLine,
-                step === "preferences" && styles.stepLineActive,
-              ]}
-            />
-            <View
-              style={[
-                styles.stepDot,
-                step === "preferences" && styles.stepDotActive,
-              ]}
-            />
+            {stepFlow.map((s, i) => {
+              const currentIndex = stepFlow.indexOf(
+                step as Exclude<Step, "loading">,
+              );
+              const active = i <= currentIndex;
+              return (
+                <React.Fragment key={s}>
+                  {i > 0 && (
+                    <View
+                      style={[styles.stepLine, active && styles.stepLineActive]}
+                    />
+                  )}
+                  <View
+                    style={[styles.stepDot, active && styles.stepDotActive]}
+                  />
+                </React.Fragment>
+              );
+            })}
           </View>
           <Text style={styles.title}>
             {step === "home"
@@ -387,7 +389,7 @@ export default function OnboardingScreen() {
               <Text style={styles.mapBtnText}>Elegir en el mapa</Text>
             </TouchableOpacity>
 
-            {step === "workplace" && (
+            {step === "workplace" && !hasExistingHome && (
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => setStep("home")}

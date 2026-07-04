@@ -5,19 +5,25 @@
  * - Invitados: lee latest de AsyncStorage → genera/actualiza bajo demanda.
  */
 
+import type { Workplace } from "@/entities/workplace/api/workplace.api";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import { GuestSetupModal, useGuest } from "@/features/guest";
 import type { RecommendationItem } from "@/features/recommendation/api/recommendation.api";
+import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
+import { useIsMutating } from "@tanstack/react-query";
 import {
+  guestGenerateKey,
+  recommendKeys,
   useGenerateRecommendations,
   useGuestRecommendations,
   useLatestRecommendations,
 } from "@/features/recommendation/model/useRecommendations";
 import { useToggleFavorite } from "@/entities/housing/model/useProperties";
 import { Colors } from "@/shared/config/colors";
+import { getTransportConfig } from "@/shared/config/transport";
 import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
-import type { Housing } from "@/shared/types";
+import type { Housing, TransportMode } from "@/shared/types";
 import { formatPrice } from "@/shared/utils/currency";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -106,6 +112,9 @@ export default function RecommendScreen() {
 
   // Mutation (manual trigger only — preserves the "generate once, read many" pattern)
   const guestMutation = useGuestRecommendations();
+  const isGuestGenerating = useIsMutating({ mutationKey: guestGenerateKey }) > 0;
+  // Detects generation fired from ANY component (WorkplaceSheet, recommend screen, etc.)
+  const isAuthGenerating = useIsMutating({ mutationKey: recommendKeys.generate }) > 0;
 
   const handleGuestGenerate = useCallback(async () => {
     if (!guestWorkplace) {
@@ -146,18 +155,21 @@ export default function RecommendScreen() {
   ]);
 
   // ── Authenticated ───────────────────────────────────────────────
+  const [editingWp, setEditingWp] = useState<Workplace | null>(null);
+  const [showWorkplaceSheet, setShowWorkplaceSheet] = useState(false);
+
   const { data: workplaces = [], isLoading: loadingWorkplaces } =
     useWorkplaces(isAuthenticated);
   const { selectedWorkplaceId, setSelectedWorkplaceId } =
     useSelectedWorkplace();
 
-  // Auto-select first workplace if none selected
+  // Auto-selecciona el primer workplace si no hay ninguno seleccionado, o si el
+  // seleccionado ya no existe (p. ej. se borraron todos y se agregó otro → el
+  // contexto conserva un id obsoleto y ningún chip quedaría activo).
   useEffect(() => {
-    if (
-      isAuthenticated &&
-      workplaces.length > 0 &&
-      selectedWorkplaceId === null
-    ) {
+    if (!isAuthenticated || workplaces.length === 0) return;
+    const stillExists = workplaces.some((wp) => wp.id === selectedWorkplaceId);
+    if (!stillExists) {
       setSelectedWorkplaceId(workplaces[0].id);
     }
   }, [
@@ -212,14 +224,23 @@ export default function RecommendScreen() {
     ? (cachedResults?.results ?? [])
     : (guestRecommendations?.results ?? []);
   const isLoadingResults = isAuthenticated
-    ? loadingCached || generateRecs.isPending
-    : guestMutation.isPending;
+    ? loadingCached || isAuthGenerating
+    : isGuestGenerating;
 
   return (
     <View style={styles.container}>
       <GuestSetupModal
         visible={showSetup}
         onClose={() => setShowSetup(false)}
+      />
+      <WorkplaceSheet
+        visible={showWorkplaceSheet}
+        workplace={editingWp}
+        allowDelete={!!editingWp}
+        onClose={() => {
+          setShowWorkplaceSheet(false);
+          setEditingWp(null);
+        }}
       />
 
       <ScrollView
@@ -266,60 +287,75 @@ export default function RecommendScreen() {
               </View>
             ) : (
               <View style={styles.workplaceList}>
-                {workplaces.map((wp) => (
-                  <TouchableOpacity
-                    key={wp.id}
-                    style={[
-                      styles.workplaceChip,
-                      selectedWorkplaceId === wp.id &&
-                        styles.workplaceChipActive,
-                    ]}
-                    onPress={() =>
-                      setSelectedWorkplaceId(
-                        selectedWorkplaceId === wp.id ? null : wp.id,
-                      )
-                    }
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name="location"
-                      size={16}
-                      color={
-                        selectedWorkplaceId === wp.id
-                          ? Colors.textOnPrimary
-                          : Colors.primary
-                      }
-                    />
-                    <View style={styles.workplaceChipText}>
-                      <Text
-                        style={[
-                          styles.workplaceAlias,
-                          selectedWorkplaceId === wp.id &&
-                            styles.workplaceAliasActive,
-                        ]}
-                        numberOfLines={1}
+                {workplaces.map((wp) => {
+                  const isActive = selectedWorkplaceId === wp.id;
+                  return (
+                    <View
+                      key={wp.id}
+                      style={[styles.workplaceChip, isActive && styles.workplaceChipActive]}
+                    >
+                      <TouchableOpacity
+                        style={styles.wpSelectArea}
+                        onPress={() =>
+                          setSelectedWorkplaceId(isActive ? null : wp.id)
+                        }
+                        activeOpacity={0.7}
                       >
-                        {wp.work_address}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.workplaceMeta,
-                          selectedWorkplaceId === wp.id &&
-                            styles.workplaceMetaActive,
-                        ]}
+                        <Ionicons
+                          name="location"
+                          size={16}
+                          color={isActive ? Colors.textOnPrimary : Colors.primary}
+                        />
+                        <View style={styles.workplaceChipText}>
+                          <Text
+                            style={[styles.workplaceAlias, isActive && styles.workplaceAliasActive]}
+                            numberOfLines={1}
+                          >
+                            {wp.work_address}
+                          </Text>
+                          <Text style={[styles.workplaceMeta, isActive && styles.workplaceMetaActive]}>
+                            Lugar de trabajo
+                          </Text>
+                        </View>
+                        {isActive && (
+                          <Ionicons name="checkmark-circle" size={20} color={Colors.textOnPrimary} />
+                        )}
+                      </TouchableOpacity>
+                      <View style={[styles.wpDivider, isActive && styles.wpDividerActive]} />
+                      <TouchableOpacity
+                        style={styles.wpEditBtn}
+                        onPress={() => {
+                          setEditingWp(wp);
+                          setShowWorkplaceSheet(true);
+                        }}
+                        hitSlop={8}
                       >
-                        Lugar de trabajo
-                      </Text>
+                        <Ionicons
+                          name="pencil-outline"
+                          size={15}
+                          color={isActive ? "rgba(255,255,255,0.7)" : Colors.textMuted}
+                        />
+                      </TouchableOpacity>
                     </View>
-                    {selectedWorkplaceId === wp.id && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color={Colors.textOnPrimary}
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
+                  );
+                })}
+                <TouchableOpacity
+                  style={styles.addWpBtn}
+                  onPress={() => {
+                    setEditingWp(null);
+                    setShowWorkplaceSheet(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={16}
+                    color={Colors.primary}
+                  />
+                  <Text style={styles.addWpBtnText}>
+                    Agregar lugar de trabajo
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -364,11 +400,17 @@ export default function RecommendScreen() {
                   </View>
                   <View style={styles.searchCell}>
                     <Text style={styles.searchCellLabel}>MODO</Text>
-                    <Text
-                      style={[styles.searchCellValue, { color: Colors.accent }]}
-                    >
-                      {guestWorkplace.transport}
-                    </Text>
+                    {(() => {
+                      const cfg = getTransportConfig(guestWorkplace.transport as TransportMode);
+                      return (
+                        <View style={styles.transportBadge}>
+                          <Ionicons name={cfg.iconOutline} size={13} color={cfg.color} />
+                          <Text style={[styles.searchCellValue, { color: cfg.color }]}>
+                            {cfg.label}
+                          </Text>
+                        </View>
+                      );
+                    })()}
                   </View>
                 </View>
 
@@ -376,13 +418,13 @@ export default function RecommendScreen() {
                 <TouchableOpacity
                   style={[
                     styles.generateGuestBtn,
-                    guestMutation.isPending && styles.btnDisabled,
+                    isGuestGenerating && styles.btnDisabled,
                   ]}
                   onPress={handleGuestGenerate}
-                  disabled={guestMutation.isPending}
+                  disabled={isGuestGenerating}
                   activeOpacity={0.85}
                 >
-                  {guestMutation.isPending ? (
+                  {isGuestGenerating ? (
                     <ActivityIndicator color={Colors.textOnPrimary} />
                   ) : (
                     <>
@@ -403,7 +445,7 @@ export default function RecommendScreen() {
                 {/* Inline empty-state message — visible without scrolling */}
                 {guestRecommendations !== null &&
                   guestRecommendations.results.length === 0 &&
-                  !guestMutation.isPending && (
+                  !isGuestGenerating && (
                     <View style={styles.inlineEmptyState}>
                       <Ionicons name="home-outline" size={32} color={Colors.textMuted} />
                       <Text style={styles.inlineEmptyText}>
@@ -417,6 +459,14 @@ export default function RecommendScreen() {
                           </Text>
                         </Text>
                       )}
+                      <TouchableOpacity
+                        style={styles.changeConfigBtn}
+                        onPress={() => setShowSetup(true)}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="settings-outline" size={14} color={Colors.textOnPrimary} />
+                        <Text style={styles.changeConfigBtnText}>Cambiar configuración</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
               </>
@@ -449,9 +499,19 @@ export default function RecommendScreen() {
 
         {/* ── Loading ─────────────────────────────────────────── */}
         {isLoadingResults && (
-          <View style={styles.loadingResults}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>Analizando viviendas...</Text>
+          <View style={styles.loadingCard}>
+            <View style={styles.loadingIconBg}>
+              <Ionicons name="sparkles" size={24} color={Colors.textOnPrimary} />
+            </View>
+            <Text style={styles.loadingTitle}>Analizando viviendas...</Text>
+            <Text style={styles.loadingSubtitle}>
+              La IA está calculando el mejor match para ti
+            </Text>
+            <ActivityIndicator
+              size="small"
+              color={Colors.primary}
+              style={{ marginTop: 4 }}
+            />
           </View>
         )}
 
@@ -624,19 +684,16 @@ export default function RecommendScreen() {
                 </Text>
               )}
               <TouchableOpacity
-                style={styles.setupBtn}
-                onPress={() =>
-                  selectedWorkplaceId &&
-                  generateRecs.mutate({ workplaceId: selectedWorkplaceId })
-                }
-                disabled={generateRecs.isPending}
+                style={styles.changeConfigBtn}
+                onPress={() => {
+                  const wp = workplaces.find((w) => w.id === selectedWorkplaceId) ?? null;
+                  setEditingWp(wp);
+                  setShowWorkplaceSheet(true);
+                }}
+                activeOpacity={0.85}
               >
-                <Ionicons
-                  name="sparkles"
-                  size={16}
-                  color={Colors.textOnPrimary}
-                />
-                <Text style={styles.setupBtnText}>Generar recomendaciones</Text>
+                <Ionicons name="settings-outline" size={14} color={Colors.textOnPrimary} />
+                <Text style={styles.changeConfigBtnText}>Cambiar preferencias</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -663,6 +720,14 @@ export default function RecommendScreen() {
                   </Text>
                 </Text>
               )}
+              <TouchableOpacity
+                style={styles.changeConfigBtn}
+                onPress={() => setShowSetup(true)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="settings-outline" size={14} color={Colors.textOnPrimary} />
+                <Text style={styles.changeConfigBtnText}>Cambiar configuración</Text>
+              </TouchableOpacity>
             </View>
           )}
       </ScrollView>
@@ -729,13 +794,11 @@ const styles = StyleSheet.create({
   workplaceChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
     borderRadius: 14,
     backgroundColor: Colors.surfaceElevated,
     borderWidth: 1.5,
     borderColor: Colors.border,
+    overflow: "hidden",
   },
   workplaceChipActive: {
     backgroundColor: Colors.primary,
@@ -962,5 +1025,104 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: "center",
     paddingHorizontal: 8,
+  },
+
+  wpSelectArea: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+    paddingLeft: 16,
+    paddingRight: 8,
+  },
+  wpDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: Colors.border,
+  },
+  wpDividerActive: {
+    backgroundColor: "rgba(255,255,255,0.25)",
+  },
+  wpEditBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addWpBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: Colors.primary + "60",
+  },
+  addWpBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.primary,
+  },
+
+  // Loading card (replaces plain loadingResults)
+  loadingCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 28,
+    alignItems: "center",
+    gap: 8,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  loadingIconBg: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  loadingTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+  loadingSubtitle: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    textAlign: "center",
+    lineHeight: 19,
+  },
+
+  // Change-config CTA (secondary button style)
+  transportBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
+
+  changeConfigBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.accent,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    marginTop: 2,
+  },
+  changeConfigBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.textOnPrimary,
   },
 });

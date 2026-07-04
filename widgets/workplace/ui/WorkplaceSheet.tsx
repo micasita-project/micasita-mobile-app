@@ -14,7 +14,7 @@ import {
   useDeleteWorkplace,
   useUpdateWorkplace,
 } from "@/entities/workplace/model/useWorkplaces";
-import { useRegenerateIfExists } from "@/features/recommendation/model/useRecommendations";
+import { useGenerateRecommendations } from "@/features/recommendation/model/useRecommendations";
 import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
 import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
 import { Colors } from "@/shared/config/colors";
@@ -73,7 +73,7 @@ export function WorkplaceSheet({
   const deleteWorkplace = useDeleteWorkplace();
   const createPreferenceMutation = useCreatePreference();
   const updatePreferenceMutation = useUpdatePreference();
-  const regenerateIfExists = useRegenerateIfExists();
+  const generateRecs = useGenerateRecommendations();
 
   const isEdit = !!workplace;
 
@@ -204,9 +204,19 @@ export function WorkplaceSheet({
           });
         }
 
-        // Si este workplace ya tenía recomendaciones, regenerarlas en segundo
-        // plano con las nuevas preferencias (cambió lugar / presupuesto / radio).
-        void regenerateIfExists(workplace.id);
+        // Regenera las recomendaciones con las nuevas preferencias en segundo
+        // plano (cambió lugar / presupuesto / radio / transporte). Invalida el
+        // cache `latest` al terminar; el mapa muestra el spinner mientras corre.
+        generateRecs.mutate(
+          { workplaceId: workplace.id },
+          {
+            onError: () =>
+              Alert.alert(
+                "Recomendaciones",
+                "Guardamos tus preferencias, pero no se pudieron actualizar las recomendaciones. Vuelve a intentarlo desde la pestaña IA.",
+              ),
+          },
+        );
       } else {
         const wp = await createWorkplace.mutateAsync({
           work_address: addr.query.trim() || "Mi Trabajo",

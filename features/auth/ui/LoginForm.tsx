@@ -24,7 +24,7 @@ type AuthMode = 'login' | 'register';
 
 export function LoginForm() {
   const { login, register, isLoading } = useAuth();
-  const { guestHome, guestWorkplace, clearGuestData } = useGuest();
+  const { guestHome, guestWorkplace, guestRecommendations, clearGuestData } = useGuest();
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -54,16 +54,17 @@ export function LoginForm() {
         password,
         {
           home: guestHome ? { lat: guestHome.lat, lon: guestHome.lon, address: guestHome.address } : undefined,
-              workplace: guestWorkplace
-                ? {
-                    lat: guestWorkplace.lat,
-                    lon: guestWorkplace.lon,
-                    budget: guestWorkplace.budget,
-                    transport: guestWorkplace.transport,
-                    address: guestWorkplace.address,
-                    maxDistanceKm: guestWorkplace.maxDistanceKm,
-                  }
-                : undefined,
+          workplace: guestWorkplace
+            ? {
+                lat: guestWorkplace.lat,
+                lon: guestWorkplace.lon,
+                budget: guestWorkplace.budget,
+                transport: guestWorkplace.transport,
+                address: guestWorkplace.address,
+                maxDistanceKm: guestWorkplace.maxDistanceKm,
+              }
+            : undefined,
+          recommendations: guestRecommendations ?? undefined,
         },
         name.trim() || undefined,
         lastName.trim() || undefined,

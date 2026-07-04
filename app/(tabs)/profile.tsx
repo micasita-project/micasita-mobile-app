@@ -3,16 +3,13 @@
  * @description User profile page with current home, workplace info and mini-map.
  */
 
-import type { Workplace } from "@/entities/workplace/api/workplace.api";
 import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
-import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
 import { AddressSearchInput } from "@/shared/ui/AddressSearchInput";
 import { Colors } from "@/shared/config/colors";
 import { BottomSheet } from "@/shared/ui/BottomSheet";
 import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
-import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
@@ -35,13 +32,6 @@ const EMPTY_ADDR: AddressState = { query: "", selected: null };
 export default function ProfileScreen() {
   const { user, logout, setHome } = useAuth();
   const router = useRouter();
-  const { data: workplaces = [] } = useWorkplaces(!!user);
-
-  // ── Workplace Sheet ──────────────────────────────────────────────
-  const [isWorkplaceSheetVisible, setIsWorkplaceSheetVisible] = useState(false);
-
-  // ── Edit Workplace ───────────────────────────────────────────────
-  const [editingWp, setEditingWp] = useState<Workplace | null>(null);
 
   // ── Edit Home ────────────────────────────────────────────────────
   const [isEditHomeVisible, setIsEditHomeVisible] = useState(false);
@@ -56,21 +46,6 @@ export default function ProfileScreen() {
 
   const handleHomeSelect = useCallback((s: GeocodeSuggestion) => {
     setHomeAddr({ query: s.display_name.split(",")[0].trim(), selected: s });
-  }, []);
-
-  const closeWorkplaceSheet = useCallback(() => {
-    setIsWorkplaceSheetVisible(false);
-    setEditingWp(null);
-  }, []);
-
-  const openAddWorkplace = useCallback(() => {
-    setEditingWp(null);
-    setIsWorkplaceSheetVisible(true);
-  }, []);
-
-  const openEditWp = useCallback((wp: Workplace) => {
-    setEditingWp(wp);
-    setIsWorkplaceSheetVisible(true);
   }, []);
 
   const openEditHome = useCallback(() => {
@@ -269,83 +244,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Lugares de trabajo */}
-        <View style={styles.listSection}>
-          <View style={styles.listSectionHeader}>
-            <Text style={styles.listSectionLabel}>LUGARES DE TRABAJO</Text>
-            <TouchableOpacity
-              style={styles.listSectionAdd}
-              onPress={openAddWorkplace}
-            >
-              <Ionicons name="add" size={12} color={Colors.primary} />
-              <Text style={styles.listSectionAddText}>Añadir</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.listCard}>
-            {workplaces.length === 0 ? (
-              <View style={styles.listEmptyRow}>
-                <Text style={styles.listEmptyText}>
-                  Sin lugares de trabajo. Añade uno.
-                </Text>
-              </View>
-            ) : (
-              workplaces.map((wp, i) => (
-                <TouchableOpacity
-                  key={wp.id}
-                  style={[
-                    styles.listRow,
-                    i < workplaces.length - 1 && styles.listRowDivider,
-                  ]}
-                  onPress={() => openEditWp(wp)}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.listRowIcon,
-                      i === 0 && styles.listRowIconPrimary,
-                    ]}
-                  >
-                    <Ionicons
-                      name="briefcase"
-                      size={16}
-                      color={i === 0 ? Colors.textOnPrimary : Colors.primary}
-                    />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Text
-                        style={[styles.listRowTitle, { flexShrink: 1 }]}
-                        numberOfLines={1}
-                      >
-                        {wp.work_address}
-                      </Text>
-                      {i === 0 && (
-                        <View style={styles.primaryBadge}>
-                          <Text style={styles.primaryBadgeText}>Principal</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.listRowMeta} numberOfLines={1}>
-                      Toca para editar
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={14}
-                    color={Colors.textMuted}
-                  />
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
-        </View>
-
         {/* Mi vivienda actual */}
         <View style={styles.listSection}>
           <Text style={styles.listSectionLabel}>MI VIVIENDA ACTUAL</Text>
@@ -383,14 +281,6 @@ export default function ProfileScreen() {
         </TouchableOpacity>
         <Text style={styles.footerVersion}>MiCasita · v1.0.0</Text>
       </ScrollView>
-
-      {/* ══ Add Workplace ══════════════════════════════════════════ */}
-      <WorkplaceSheet
-        visible={isWorkplaceSheetVisible}
-        workplace={editingWp}
-        onClose={closeWorkplaceSheet}
-        allowDelete={!!editingWp}
-      />
 
       {/* ══ Edit Home ══════════════════════════════════════════════ */}
       <BottomSheet

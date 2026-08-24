@@ -185,5 +185,6 @@ export async function getMyListings(userId: string): Promise<PublishedHousing[]>
     description: h.description ?? '',
     images: h.images ?? [],
     features: h.features ?? [],
+    rejectionReason: h.rejection_reason ?? null,
   }));
 }

@@ -10,6 +10,7 @@ import {
   buildInsightTitle,
   scoreLabel,
 } from "@/features/recommendation/model/recommendationMessage";
+import { formatTravelTime } from "@/entities/route";
 import { Colors } from "@/shared/config/colors";
 import { formatPrice } from "@/shared/utils/currency";
 import { Ionicons } from "@expo/vector-icons";
@@ -186,7 +187,7 @@ export default function RecommendationInsightScreen() {
           <MetricRow
             icon="time-outline"
             label="Tiempo al trabajo"
-            value={`${Math.round(item.predicted_time_min)} min`}
+            value={formatTravelTime(Math.round(item.predicted_time_min))}
             valueColor={
               item.predicted_time_min <= 25
                 ? Colors.success
@@ -203,8 +204,8 @@ export default function RecommendationInsightScreen() {
               note="respecto a tu ubicación actual"
               value={
                 savedRounded >= 0
-                  ? `${savedRounded} min menos`
-                  : `${Math.abs(savedRounded)} min más`
+                  ? `${formatTravelTime(savedRounded)} menos`
+                  : `${formatTravelTime(Math.abs(savedRounded))} más`
               }
               valueColor={savedRounded >= 0 ? Colors.success : Colors.error}
             />
@@ -249,7 +250,14 @@ export default function RecommendationInsightScreen() {
           onPress={() =>
             router.push({
               pathname: "/housing-detail",
-              params: { id: item!.property.id, data: JSON.stringify(item!.property) },
+              params: {
+                id: item!.property.id,
+                data: JSON.stringify(item!.property),
+                reco: JSON.stringify({
+                  predicted_time_min: item!.predicted_time_min,
+                  time_saved_mins: item!.time_saved_mins,
+                }),
+              },
             })
           }
           activeOpacity={0.85}

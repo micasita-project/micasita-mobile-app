@@ -14,6 +14,7 @@ export interface PropertyResponse {
   id: number;
   publisher_id: number;
   status: string;
+  rejection_reason: string | null;
   createdAt?: string;
   updatedAt?: string;
   title: string;

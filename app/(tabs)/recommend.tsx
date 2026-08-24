@@ -201,10 +201,17 @@ export default function RecommendScreen() {
   }, [selectedWorkplaceId, generateRecs]);
 
   const handleHousingPress = useCallback(
-    (housing: Housing) => {
+    (item: RecommendationItem) => {
       router.push({
         pathname: "/housing-detail",
-        params: { id: housing.id, data: JSON.stringify(housing) },
+        params: {
+          id: item.property.id,
+          data: JSON.stringify(item.property),
+          reco: JSON.stringify({
+            predicted_time_min: item.predicted_time_min,
+            time_saved_mins: item.time_saved_mins,
+          }),
+        },
       });
     },
     [router],
@@ -560,7 +567,7 @@ export default function RecommendScreen() {
                   {/* Main area → housing detail */}
                   <TouchableOpacity
                     style={styles.cardMain}
-                    onPress={() => handleHousingPress(item.property)}
+                    onPress={() => handleHousingPress(item)}
                     activeOpacity={0.85}
                   >
                     {/* Thumbnail */}

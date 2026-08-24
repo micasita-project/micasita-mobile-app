@@ -4,5 +4,3 @@
  */
 
 export { useRouteCalculation } from './model/useRouteCalculation';
-export { RouteInfoPanel } from './ui/RouteInfoPanel';
-export { TransportModeSelector } from './ui/TransportModeSelector';

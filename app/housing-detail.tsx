@@ -6,22 +6,26 @@
  * - features/auth → useAuth
  * - features/guest → useGuest
  * - entities/workplace → useWorkplaces
- * - entities/route → calculateHaversineDistance, formatDistance, formatTravelTime, estimateTravelTime
+ * - entities/route → fetchModeRoute
+ *
+ * El tiempo/ahorro casi siempre llega ya calculado por el modelo (parámetro
+ * `reco`, enviado por quien navega acá desde una recomendación) — solo se
+ * pide una ruta nueva cuando se entra sin ese contexto (favoritos, listado
+ * de viviendas, admin), y en ese caso es UNA sola llamada, en el modo de
+ * transporte preferido del workplace activo (nunca los 3 modos a la vez).
  */
 
 import { fetchPropertyById } from "@/entities/housing/api/housing.api";
-import {
-  calculateHaversineDistance,
-  fetchMultiModeRoutes,
-} from "@/entities/route";
+import { fetchModeRoute, formatTravelTime } from "@/entities/route";
+import { usePreferences } from "@/entities/recommendation-preferences";
 import { useToggleFavorite } from "@/entities/housing/model/useProperties";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { useAuth } from "@/features/auth";
 import { useGuest } from "@/features/guest";
 import { Colors } from "@/shared/config/colors";
-import { TRANSPORT_MODE_CONFIG } from "@/shared/config/transport";
+import { getTransportConfig, normalizeTransportMode } from "@/shared/config/transport";
 import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
-import type { Housing, MultiModeRoutes } from "@/shared/types";
+import type { Housing } from "@/shared/types";
 import { ImageLightbox } from "@/shared/ui/ImageLightbox";
 import { getCurrencySymbol } from "@/shared/utils/currency";
 import { getImageSource } from "@/shared/utils/image";
@@ -48,7 +52,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function HousingDetailScreen() {
-  const { id, data } = useLocalSearchParams<{ id: string; data?: string }>();
+  const { id, data, reco } = useLocalSearchParams<{
+    id: string; data?: string; reco?: string;
+  }>();
   const { user } = useAuth();
   const { guestWorkplace } = useGuest();
   const { data: workplaces = [] } = useWorkplaces(!!user);
@@ -57,11 +63,18 @@ export default function HousingDetailScreen() {
     workplaces.find((wp) => wp.id === selectedWorkplaceId) ||
     workplaces[0] ||
     null;
+  const { data: preferences = [] } = usePreferences(
+    user ? (activeWorkplace?.id ?? null) : null,
+  );
+  const activePreference = preferences[0];
   const workLat = user ? activeWorkplace?.work_lat : guestWorkplace?.lat;
   const workLon = user ? activeWorkplace?.work_lon : guestWorkplace?.lon;
   const workName = user
     ? (activeWorkplace?.work_address ?? "")
     : (guestWorkplace?.address.split(",")[0] ?? "");
+  const mode = user
+    ? normalizeTransportMode(activePreference?.preferred_transportation)
+    : normalizeTransportMode(guestWorkplace?.transport);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const topOffset = Platform.OS === "android" ? insets.top : 0;
@@ -85,50 +98,44 @@ export default function HousingDetailScreen() {
     enabled: !!id,
   });
 
-  const routeInfo = useMemo(() => {
-    // TODO: Integrar Workplace del backend para calcular distancias
-    if (!housing) return null;
-    return null;
-  }, [housing]);
+  // Si venimos de una recomendación, el tiempo/ahorro ya está corregido por
+  // el modelo — no hace falta volver a pedirlo.
+  const knownReco = useMemo(() => {
+    if (!reco) return null;
+    try {
+      return JSON.parse(reco) as {
+        predicted_time_min: number;
+        time_saved_mins: number | null;
+      };
+    } catch {
+      return null;
+    }
+  }, [reco]);
 
-  const [realTravelTimes, setRealTravelTimes] =
-    useState<MultiModeRoutes | null>(null);
+  const [fetchedTimeMin, setFetchedTimeMin] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!housing || !workLat || !workLon) return;
-    const fetchRoutes = async () => {
-      try {
-        const routes = await fetchMultiModeRoutes(
-          { latitude: housing.latitude, longitude: housing.longitude },
-          { latitude: workLat, longitude: workLon },
-        );
-        setRealTravelTimes(routes);
-      } catch (err) {
-        console.warn("Failed to fetch real routes", err);
-      }
-    };
-    fetchRoutes();
-  }, [housing, workLat, workLon]);
-
-  const travelTimes = useMemo(() => {
-    if (realTravelTimes) {
-      return {
-        driving: realTravelTimes.driving.timeMinutes,
-        cycling: realTravelTimes.cycling.timeMinutes,
-        walking: realTravelTimes.walking.timeMinutes,
-      };
-    }
-    if (!housing || !workLat || !workLon) return null;
-    const dist = calculateHaversineDistance(
+    if (knownReco || !housing || !workLat || !workLon) return;
+    let cancelled = false;
+    fetchModeRoute(
       { latitude: housing.latitude, longitude: housing.longitude },
       { latitude: workLat, longitude: workLon },
-    );
-    return {
-      driving: Math.round((dist / 30) * 60), // ~30 km/h average in city
-      cycling: Math.round((dist / 15) * 60), // ~15 km/h cycling
-      walking: Math.round((dist / 5) * 60), // ~5 km/h walking
+      mode,
+    ).then((route) => {
+      if (!cancelled) setFetchedTimeMin(route.timeMinutes);
+    });
+    return () => {
+      cancelled = true;
     };
-  }, [housing, workLat, workLon, realTravelTimes]);
+  }, [knownReco, housing, workLat, workLon, mode]);
+
+  const timeMinutes = knownReco
+    ? Math.round(knownReco.predicted_time_min)
+    : fetchedTimeMin;
+  const savedMinutes =
+    knownReco?.time_saved_mins != null
+      ? Math.round(knownReco.time_saved_mins)
+      : null;
 
   if (isLoadingHousing) {
     return (
@@ -330,7 +337,7 @@ export default function HousingDetailScreen() {
         </View>
 
         {/* ── Tiempo a tu trabajo ────────────────────────── */}
-        {travelTimes && (
+        {workLat && workLon && (
           <View style={styles.travelSection}>
             <View style={styles.travelSectionHeader}>
               <Text style={styles.sectionTitle}>Tiempo a tu trabajo</Text>
@@ -341,20 +348,42 @@ export default function HousingDetailScreen() {
               ) : null}
             </View>
             <View style={styles.travelCards}>
-              {TRANSPORT_MODE_CONFIG.map((cfg) => (
-                <View key={cfg.id} style={styles.travelCard}>
+              <View style={styles.travelCard}>
+                <View
+                  style={[
+                    styles.travelIcon,
+                    { backgroundColor: getTransportConfig(mode).color },
+                  ]}
+                >
+                  <Ionicons name={getTransportConfig(mode).icon} size={16} color="#fff" />
+                </View>
+                <Text style={styles.travelMins}>
+                  {timeMinutes !== null ? formatTravelTime(timeMinutes) : "--"}
+                </Text>
+                <Text style={styles.travelLabel}>{getTransportConfig(mode).label}</Text>
+              </View>
+              {savedMinutes !== null && (
+                <View style={styles.travelCard}>
                   <View
-                    style={[styles.travelIcon, { backgroundColor: cfg.color }]}
+                    style={[
+                      styles.travelIcon,
+                      { backgroundColor: savedMinutes >= 0 ? Colors.success : Colors.error },
+                    ]}
                   >
-                    <Ionicons name={cfg.icon} size={16} color="#fff" />
+                    <Ionicons
+                      name={savedMinutes >= 0 ? "trending-down" : "trending-up"}
+                      size={16}
+                      color="#fff"
+                    />
                   </View>
                   <Text style={styles.travelMins}>
-                    {travelTimes[cfg.id]}
-                    <Text style={styles.travelUnit}> min</Text>
+                    {formatTravelTime(Math.abs(savedMinutes))}
                   </Text>
-                  <Text style={styles.travelLabel}>{cfg.label}</Text>
+                  <Text style={styles.travelLabel}>
+                    {savedMinutes >= 0 ? "vs tu casa actual" : "más que tu casa"}
+                  </Text>
                 </View>
-              ))}
+              )}
             </View>
           </View>
         )}

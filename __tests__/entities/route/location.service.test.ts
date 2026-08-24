@@ -1,50 +1,30 @@
-jest.mock('@/shared/config/env', () => ({
-  ENV: {
-    OSRM_DRIVING_URL: 'http://osrm-test/driving',
-    OSRM_CYCLING_URL: 'http://osrm-test/cycling',
-    OSRM_WALKING_URL: 'http://osrm-test/walking',
-    API_BASE_URL: 'http://api-test',
-    OSM_TILE_URL: 'http://tile-test/{z}/{x}/{y}.png',
-  },
+jest.mock('@/shared/api', () => ({
+  apiClient: { get: jest.fn() },
 }));
 
+import { apiClient } from '@/shared/api';
 import {
   calculateHaversineDistance,
   estimateTravelTime,
   formatDistance,
   formatTravelTime,
-  getOptimalMode,
   fetchModeRoute,
 } from '@/entities/route/api/location.service';
-import type { MultiModeRoutes } from '@/shared/types';
 
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
+const mockGet = apiClient.get as jest.Mock;
 
-function mockFetchSuccess(distanceM: number, durationS: number) {
-  mockFetch.mockResolvedValueOnce({
-    json: () =>
-      Promise.resolve({
-        code: 'Ok',
-        routes: [
-          {
-            distance: distanceM,
-            duration: durationS,
-            geometry: { coordinates: [[-77.042, -12.046], [-77.030, -12.120]] },
-          },
-        ],
-      }),
+function mockRouteSuccess(distanceKm: number, durationMin: number) {
+  mockGet.mockResolvedValueOnce({
+    data: {
+      distance_km: distanceKm,
+      duration_min: durationMin,
+      waypoints: [
+        { latitude: -12.046, longitude: -77.042 },
+        { latitude: -12.120, longitude: -77.030 },
+      ],
+      from_osrm: true,
+    },
   });
-}
-
-function makeRoute(timeMinutes: number) {
-  return {
-    origin: { latitude: 0, longitude: 0 },
-    destination: { latitude: 1, longitude: 1 },
-    waypoints: [],
-    distanceKm: 10,
-    timeMinutes,
-  };
 }
 
 // ── calculateHaversineDistance ────────────────────────────────────────────────
@@ -156,83 +136,39 @@ describe('formatTravelTime', () => {
   });
 });
 
-// ── getOptimalMode ────────────────────────────────────────────────────────────
-
-describe('getOptimalMode', () => {
-  it('returns the mode with the lowest timeMinutes', () => {
-    const routes: MultiModeRoutes = {
-      driving: makeRoute(20),
-      cycling: makeRoute(15),
-      walking: makeRoute(60),
-    };
-    expect(getOptimalMode(routes)).toBe('cycling');
-  });
-
-  it('returns driving when driving is fastest', () => {
-    const routes: MultiModeRoutes = {
-      driving: makeRoute(10),
-      cycling: makeRoute(30),
-      walking: makeRoute(90),
-    };
-    expect(getOptimalMode(routes)).toBe('driving');
-  });
-
-  it('returns walking when walking is fastest', () => {
-    const routes: MultiModeRoutes = {
-      driving: makeRoute(30),
-      cycling: makeRoute(20),
-      walking: makeRoute(5),
-    };
-    expect(getOptimalMode(routes)).toBe('walking');
-  });
-});
-
 // ── fetchModeRoute ────────────────────────────────────────────────────────────
 // Each test uses unique coordinates to avoid routeCache interference.
 
 describe('fetchModeRoute', () => {
   beforeEach(() => {
-    mockFetch.mockReset();
+    mockGet.mockReset();
   });
 
-  it('calls the driving URL for driving mode', async () => {
-    mockFetchSuccess(5000, 300);
-    await fetchModeRoute({ latitude: -12.01, longitude: -77.01 }, { latitude: -12.02, longitude: -77.02 }, 'driving');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('http://osrm-test/driving'),
-      expect.any(Object)
+  it('calls GET /route with the requested mode', async () => {
+    mockRouteSuccess(5, 5);
+    await fetchModeRoute({ latitude: -12.01, longitude: -77.01 }, { latitude: -12.02, longitude: -77.02 }, 'cycling');
+    expect(mockGet).toHaveBeenCalledWith(
+      '/route',
+      expect.objectContaining({ params: expect.objectContaining({ mode: 'cycling' }) })
     );
   });
 
-  it('calls the cycling URL for cycling mode', async () => {
-    mockFetchSuccess(5000, 1200);
-    await fetchModeRoute({ latitude: -12.10, longitude: -77.10 }, { latitude: -12.11, longitude: -77.11 }, 'cycling');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('http://osrm-test/cycling'),
-      expect.any(Object)
-    );
-  });
-
-  it('calls the walking URL for walking mode', async () => {
-    mockFetchSuccess(5000, 3600);
-    await fetchModeRoute({ latitude: -12.20, longitude: -77.20 }, { latitude: -12.21, longitude: -77.21 }, 'walking');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('http://osrm-test/walking'),
-      expect.any(Object)
-    );
-  });
-
-  it('passes coordinates as lon,lat in the URL', async () => {
-    mockFetchSuccess(5000, 300);
+  it('passes origin/destination coordinates as separate lat/lon params', async () => {
+    mockRouteSuccess(5, 5);
     await fetchModeRoute({ latitude: -12.30, longitude: -77.30 }, { latitude: -12.31, longitude: -77.31 }, 'driving');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('-77.3,-12.3'),
-      expect.any(Object)
+    expect(mockGet).toHaveBeenCalledWith(
+      '/route',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          origin_lat: -12.30, origin_lon: -77.30,
+          dest_lat: -12.31, dest_lon: -77.31,
+        }),
+      })
     );
   });
 
-  it('returns correct distanceKm and timeMinutes from OSRM', async () => {
-    mockFetchSuccess(10000, 1800); // 10 km, 30 min
+  it('returns correct distanceKm and timeMinutes from the backend', async () => {
+    mockRouteSuccess(10, 30); // 10 km, 30 min, already corrected by the traffic model
     const result = await fetchModeRoute(
       { latitude: -12.40, longitude: -77.40 },
       { latitude: -12.41, longitude: -77.41 },
@@ -242,8 +178,8 @@ describe('fetchModeRoute', () => {
     expect(result.timeMinutes).toBe(30);
   });
 
-  it('falls back to haversine when fetch throws', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+  it('falls back to haversine when the request throws', async () => {
+    mockGet.mockRejectedValueOnce(new Error('Network error'));
     const result = await fetchModeRoute(
       { latitude: -12.50, longitude: -77.50 },
       { latitude: -12.51, longitude: -77.51 },
@@ -254,25 +190,13 @@ describe('fetchModeRoute', () => {
     expect(result.waypoints).toHaveLength(2); // only origin + destination
   });
 
-  it('falls back when OSRM returns a non-Ok code', async () => {
-    mockFetch.mockResolvedValueOnce({
-      json: () => Promise.resolve({ code: 'NoSegment', routes: [] }),
-    });
-    const result = await fetchModeRoute(
-      { latitude: -11.60, longitude: -76.60 },
-      { latitude: -11.61, longitude: -76.61 },
-      'driving'
-    );
-    expect(result.waypoints).toHaveLength(2);
-  });
-
-  it('caches results and skips fetch on the second identical call', async () => {
-    mockFetchSuccess(3000, 600);
+  it('caches results and skips the request on the second identical call', async () => {
+    mockRouteSuccess(3, 10);
     const origin = { latitude: -11.70, longitude: -76.70 };
     const dest = { latitude: -11.71, longitude: -76.71 };
     const r1 = await fetchModeRoute(origin, dest, 'driving');
     const r2 = await fetchModeRoute(origin, dest, 'driving');
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockGet).toHaveBeenCalledTimes(1);
     expect(r1).toBe(r2); // same object reference from cache
   });
 });

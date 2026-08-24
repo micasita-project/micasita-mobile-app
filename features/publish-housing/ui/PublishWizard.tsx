@@ -30,33 +30,9 @@ import { PublishSuccessModal } from './PublishSuccessModal';
 import { Colors } from '@/shared/config/colors';
 import { useAuth } from '@/features/auth';
 import { getPublishDraft, savePublishDraft, clearPublishDraft } from '../model/publishDraft.storage';
+import { validateStep } from '../model/validateStep';
 
 const STEP_LABELS = ['Ubicación', 'Características', 'Fotos', 'Amenidades'];
-
-function validateStep(step: number, draft: ReturnType<typeof usePublishForm>['draft']): string | null {
-  switch (step) {
-    case 1:
-      if (!draft.address.trim()) return 'Por favor ingresa la dirección.';
-      if (!draft.district) return 'Por favor selecciona el distrito.';
-      return null;
-    case 2:
-      if (!draft.title.trim()) return 'Por favor ingresa el título del anuncio.';
-      if (draft.price <= 0) return 'El precio debe ser mayor a 0.';
-      if (draft.total_area_sqm <= 0) return 'El área total debe ser mayor a 0 m².';
-      if (!draft.description.trim()) return 'Por favor agrega una descripción.';
-      if (draft.phone && draft.phone.trim().length > 0 && draft.phone.trim().length !== 9)
-        return 'El teléfono de contacto debe tener exactamente 9 dígitos.';
-      return null;
-    case 3:
-      if (draft.localImageUris.length === 0)
-        return 'Por favor agrega al menos una foto de la propiedad.';
-      return null;
-    case 4:
-      return null; // Amenidades son opcionales
-    default:
-      return null;
-  }
-}
 
 export interface PublishWizardProps {
   initialDraft?: ReturnType<typeof usePublishForm>['draft'];

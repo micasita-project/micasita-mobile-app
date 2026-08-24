@@ -40,3 +40,13 @@ export const TRANSPORT_MODE_CONFIG: TransportModeConfig[] = [
 export function getTransportConfig(mode: TransportMode): TransportModeConfig {
   return TRANSPORT_MODE_CONFIG.find((c) => c.id === mode)!;
 }
+
+/** Normaliza el valor de transporte (acepta TransportMode o etiquetas legacy). */
+export function normalizeTransportMode(value?: string | null): TransportMode {
+  if (value === "driving" || value === "cycling" || value === "walking")
+    return value;
+  if (value === "Auto") return "driving";
+  if (value === "Bicicleta") return "cycling";
+  if (value === "Caminando") return "walking";
+  return "driving";
+}

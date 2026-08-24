@@ -5,12 +5,10 @@
 
 export {
   calculateHaversineDistance,
-  fetchRoute,
-  fetchMultiModeRoutes,
+  fetchModeRoute,
   estimateTravelTime,
   formatDistance,
   formatTravelTime,
-  getOptimalMode,
 } from './api/location.service';
 
 export { RoutePolyline } from './ui/RoutePolyline';

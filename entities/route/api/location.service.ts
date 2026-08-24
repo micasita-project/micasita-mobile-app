@@ -1,14 +1,16 @@
 /**
  * @layer entities/route/model
- * @description Location service with real road routing via OSRM.
+ * @description Location service with real road routing via the backend.
  *
- * Uses routing.openstreetmap.de which supports individual profiles
- * for car, bike, and foot, returning authentic geometries.
+ * The app never calls OSRM directly — GET /route on our own API resolves
+ * the route (time corrected by the traffic model, plus geometry for the
+ * map). Keeps the routing engine and its credentials server-side, and
+ * lets the backend apply the same time correction used in recommendations.
  */
 
-import type { Coordinate, RouteSegment, MultiModeRoutes, TransportMode } from '@/shared/types';
+import type { Coordinate, RouteSegment, TransportMode } from '@/shared/types';
 import { TRANSPORT_MODE_SPEEDS } from '@/shared/types';
-import { ENV } from '@/shared/config/env';
+import { apiClient } from '@/shared/api';
 
 const routeCache = new Map<string, RouteSegment>();
 
@@ -45,7 +47,7 @@ function toRadians(degrees: number): number {
 }
 
 /**
- * Fetches a real road-based route for a specific transport mode.
+ * Fetches a real road-based route for a specific transport mode via the backend.
  */
 export async function fetchModeRoute(
   origin: Coordinate,
@@ -57,74 +59,30 @@ export async function fetchModeRoute(
   if (cached) return cached;
 
   try {
-    let baseUrl = ENV.OSRM_DRIVING_URL;
-    if (mode === 'cycling') baseUrl = ENV.OSRM_CYCLING_URL;
-    if (mode === 'walking') baseUrl = ENV.OSRM_WALKING_URL;
-
-    const url = `${baseUrl}/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&overview=full`;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    let response: Response;
-    try {
-      response = await fetch(url, { signal: controller.signal });
-    } finally {
-      clearTimeout(timeoutId);
-    }
-
-    const data = await response.json();
-
-    if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
-      return generateFallbackRoute(origin, destination, mode);
-    }
-
-    const route = data.routes[0];
-    const waypoints: Coordinate[] = route.geometry.coordinates.map(
-      ([lon, lat]: number[]) => ({ latitude: lat, longitude: lon })
-    );
+    const { data } = await apiClient.get('/route', {
+      params: {
+        origin_lat: origin.latitude,
+        origin_lon: origin.longitude,
+        dest_lat: destination.latitude,
+        dest_lon: destination.longitude,
+        mode,
+      },
+    });
 
     const result: RouteSegment = {
       origin,
       destination,
-      waypoints,
-      distanceKm: Math.round((route.distance / 1000) * 100) / 100,
-      timeMinutes: Math.round(route.duration / 60),
+      waypoints: data.waypoints,
+      distanceKm: data.distance_km,
+      timeMinutes: Math.round(data.duration_min),
     };
 
     routeCache.set(key, result);
     return result;
   } catch (error) {
-    console.warn(`OSRM fetch failed for ${mode}, falling back to straight line:`, error);
+    console.warn(`/route fetch failed for ${mode}, falling back to straight line:`, error);
     return generateFallbackRoute(origin, destination, mode);
   }
-}
-
-/**
- * Legacy wrapper for driving only.
- */
-export async function fetchRoute(
-  origin: Coordinate,
-  destination: Coordinate
-): Promise<RouteSegment> {
-  return fetchModeRoute(origin, destination, 'driving');
-}
-
-/**
- * Calculates authentic routes for all 3 transport modes.
- * Uses real geometries and real duration for each mode.
- */
-export async function fetchMultiModeRoutes(
-  origin: Coordinate,
-  destination: Coordinate
-): Promise<MultiModeRoutes> {
-  const [driving, cycling, walking] = await Promise.all([
-    fetchModeRoute(origin, destination, 'driving'),
-    fetchModeRoute(origin, destination, 'cycling'),
-    fetchModeRoute(origin, destination, 'walking')
-  ]);
-
-  return { driving, cycling, walking };
 }
 
 /**
@@ -167,12 +125,4 @@ export function formatTravelTime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const remaining = minutes % 60;
   return remaining > 0 ? `${hours}h ${remaining}min` : `${hours}h`;
-}
-
-/** Finds the fastest transport mode */
-export function getOptimalMode(routes: MultiModeRoutes): TransportMode {
-  const modes: TransportMode[] = ['driving', 'cycling', 'walking'];
-  return modes.reduce((best, mode) =>
-    routes[mode].timeMinutes < routes[best].timeMinutes ? mode : best
-  );
 }

@@ -35,47 +35,35 @@ import { useRouteCalculation } from "@/features/route-calculation";
 import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
 
 import { HousingMarker } from "@/entities/housing";
-import { RoutePolyline } from "@/entities/route";
+import { RoutePolyline, formatTravelTime } from "@/entities/route";
 
 import { Colors } from "@/shared/config/colors";
 import { LIMA_REGION, OSM_TILE_URL } from "@/shared/config/map";
-import { TRANSPORT_MODE_CONFIG, getTransportConfig } from "@/shared/config/transport";
+import { getTransportConfig, normalizeTransportMode } from "@/shared/config/transport";
 import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
-import type { Housing, MultiModeRoutes, TransportMode } from "@/shared/types";
+import type { Housing, TransportMode } from "@/shared/types";
 import { formatPrice } from "@/shared/utils/currency";
-
-// Normaliza el valor de transporte (acepta TransportMode o etiquetas legacy).
-function normalizeTransportMode(value?: string | null): TransportMode {
-  if (value === "driving" || value === "cycling" || value === "walking")
-    return value;
-  if (value === "Auto") return "driving";
-  if (value === "Bicicleta") return "cycling";
-  if (value === "Caminando") return "walking";
-  return "driving";
-}
+import { spreadOverlappingMarkers } from "@/shared/utils/geo";
 
 // ── Local component: floating housing card ────────────────────────
 // Exclusive to this page — no need for a separate file.
 
 function HousingFloatingCard({
   housing,
-  routes,
   mode,
-  savings,
+  predictedTimeMin,
+  timeSavedMins,
   onPress,
 }: {
   housing: Housing;
-  routes: MultiModeRoutes | null;
-  mode: TransportMode | null;
-  savings: { savedMinutes: number } | null;
+  mode: TransportMode;
+  predictedTimeMin: number | null;
+  timeSavedMins: number | null;
   onPress: () => void;
 }) {
   const img = housing.images?.[0];
   const imgSrc = img ? { uri: img } : null;
-
-  const selectedRoute = routes?.[mode ?? "driving"];
-  const timeMinutes = selectedRoute?.timeMinutes;
-  const modeCfg = mode ? getTransportConfig(mode) : null;
+  const modeCfg = getTransportConfig(mode);
 
   return (
     <TouchableOpacity
@@ -100,18 +88,16 @@ function HousingFloatingCard({
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <View style={styles.cardTimePill}>
-            <Ionicons
-              name={modeCfg?.iconOutline ?? "car-outline"}
-              size={13}
-              color="#10B981"
-            />
-            <Text style={styles.cardTimeText}>{timeMinutes ?? "--"} min</Text>
+            <Ionicons name={modeCfg.iconOutline} size={13} color="#10B981" />
+            <Text style={styles.cardTimeText}>
+              {predictedTimeMin !== null ? formatTravelTime(predictedTimeMin) : "--"}
+            </Text>
             <Text style={styles.cardTimeSuffix}> al trabajo</Text>
           </View>
-          {savings && savings.savedMinutes > 0 && (
+          {timeSavedMins !== null && timeSavedMins > 0 && (
             <View style={styles.cardSavingsPill}>
               <Ionicons name="flash" size={12} color="#f59e0b" />
-              <Text style={styles.cardSavingsText}>-{savings.savedMinutes} min</Text>
+              <Text style={styles.cardSavingsText}>-{formatTravelTime(timeSavedMins)}</Text>
             </View>
           )}
         </View>
@@ -193,6 +179,20 @@ export default function MapScreen() {
         : (authRecommendations?.results ?? []),
     [isGuest, guestRecommendations, authRecommendations],
   );
+
+  // Algunas viviendas comparten coordenada exacta (geocoding sin número de
+  // puerta cae al centroide de la calle) — sin esto sus marcadores quedan
+  // superpuestos y seleccionar uno hace reaparecer al otro encima.
+  const markerDisplayCoordById = useMemo(() => {
+    const spread = spreadOverlappingMarkers(
+      recommendations.map((r) => ({
+        id: r.property.id,
+        latitude: r.property.latitude,
+        longitude: r.property.longitude,
+      })),
+    );
+    return new Map(spread.map((p) => [p.id, { latitude: p.latitude, longitude: p.longitude }]));
+  }, [recommendations]);
   const isGeneratingRecs =
     useIsMutating({ mutationKey: recommendKeys.generate }) > 0;
   const isGuestGenerating =
@@ -203,64 +203,35 @@ export default function MapScreen() {
 
   const [selectedHousing, setSelectedHousing] = useState<Housing | null>(null);
 
-  const {
-    newHomeRoutes,
-    selectedMode,
-    setSelectedMode,
-    calculateRoutes,
-    clearRoute,
-    savings,
-  } = useRouteCalculation();
+  const { route, calculateRoute, clearRoute } = useRouteCalculation();
 
-  // Inicializa el chip de transporte con la preferencia del workplace activo.
-  // Solo una vez por trabajo: si lo cambias a mano se conserva, y al cambiar a
-  // otro trabajo se vuelve a tomar la preferencia del nuevo.
-  const appliedModeRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (isGuest) {
-      if (!guestWorkplace) return;
-      // Include transport value in the key so we re-sync when the user
-      // explicitly changes their transport preference in GuestSetupModal.
-      const key = `guest:${guestWorkplace.transport}`;
-      if (appliedModeRef.current === key) return;
-      appliedModeRef.current = key;
-      setSelectedMode(normalizeTransportMode(guestWorkplace.transport));
-      return;
-    }
-    const wpId = activeWorkplace?.id ?? null;
-    if (wpId === null || !activePreference) return;
-    // Include transport in the key so editing preferences re-syncs the chip
-    // while still preserving manual overrides within the same (wp, transport) combo.
-    const key = `${wpId}:${activePreference.preferred_transportation}`;
-    if (appliedModeRef.current === key) return;
-    appliedModeRef.current = key;
-    setSelectedMode(
-      normalizeTransportMode(activePreference.preferred_transportation),
-    );
-  }, [
-    isGuest,
-    guestWorkplace,
-    activeWorkplace?.id,
-    activePreference,
-    setSelectedMode,
-  ]);
+  // El modo de transporte es el de las preferencias del workplace activo — ya
+  // no es un chip editable acá: para cambiarlo hay que editar preferencias,
+  // lo que dispara una nueva recomendación con ese modo.
+  const mode: TransportMode = isGuest
+    ? normalizeTransportMode(guestWorkplace?.transport)
+    : normalizeTransportMode(activePreference?.preferred_transportation);
+
+  // La recomendación seleccionada ya trae tiempo y ahorro corregidos por el
+  // modelo — no hace falta volver a pedirlos, solo la geometría del polyline.
+  const selectedRec = selectedHousing
+    ? recommendations.find((r) => r.property.id === selectedHousing.id) ?? null
+    : null;
 
   const handleHousingSelect = useCallback(
     (h: Housing) => {
       setSelectedHousing(h);
       const workLat = isGuest ? guestWorkplace?.lat : activeWorkplace?.work_lat;
       const workLon = isGuest ? guestWorkplace?.lon : activeWorkplace?.work_lon;
-      const homeLat = isGuest ? guestHome?.lat : user?.home_lat;
-      const homeLon = isGuest ? guestHome?.lon : user?.home_lon;
-      if (workLat && workLon && homeLat && homeLon) {
-        calculateRoutes(
+      if (workLat && workLon) {
+        calculateRoute(
           { latitude: h.latitude, longitude: h.longitude },
-          { latitude: homeLat, longitude: homeLon },
           { latitude: workLat, longitude: workLon },
+          mode,
         );
       }
     },
-    [isGuest, guestWorkplace, guestHome, activeWorkplace, user, calculateRoutes],
+    [isGuest, guestWorkplace, activeWorkplace, mode, calculateRoute],
   );
 
   const handleCloseDetail = useCallback(() => {
@@ -356,10 +327,19 @@ export default function MapScreen() {
     if (selectedHousing) {
       router.push({
         pathname: "/housing-detail",
-        params: { id: selectedHousing.id, data: JSON.stringify(selectedHousing) },
+        params: {
+          id: selectedHousing.id,
+          data: JSON.stringify(selectedHousing),
+          ...(selectedRec && {
+            reco: JSON.stringify({
+              predicted_time_min: selectedRec.predicted_time_min,
+              time_saved_mins: selectedRec.time_saved_mins,
+            }),
+          }),
+        },
       });
     }
-  }, [selectedHousing, router]);
+  }, [selectedHousing, selectedRec, router]);
 
   const workplaceLabel = isGuest
     ? (guestWorkplace?.address.split(",")[0] ?? "Tu trabajo")
@@ -397,50 +377,6 @@ export default function MapScreen() {
           </Text>
           <Ionicons name="pencil-outline" size={14} color="rgba(255,255,255,0.85)" />
         </TouchableOpacity>
-
-        <View style={styles.transportChipsRow}>
-          {TRANSPORT_MODE_CONFIG.map((cfg) => {
-            const isActive = (selectedMode ?? "cycling") === cfg.id;
-            const timeMin = newHomeRoutes
-              ? Math.round(newHomeRoutes[cfg.id].timeMinutes)
-              : null;
-            return (
-              <TouchableOpacity
-                key={cfg.id}
-                style={[
-                  styles.transportChip,
-                  isActive && styles.transportChipActive,
-                ]}
-                onPress={() => setSelectedMode(cfg.id)}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={cfg.icon}
-                  size={14}
-                  color={isActive ? cfg.color : "#fff"}
-                />
-                <Text
-                  style={[
-                    styles.transportChipLabel,
-                    isActive && { color: cfg.color },
-                  ]}
-                >
-                  {cfg.label}
-                </Text>
-                {isActive && timeMin !== null && (
-                  <Text
-                    style={[
-                      styles.transportChipTime,
-                      { color: cfg.color },
-                    ]}
-                  >
-                    · {timeMin}min
-                  </Text>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
       </View>
 
       <View style={styles.mapContainer}>
@@ -532,14 +468,15 @@ export default function MapScreen() {
             <HousingMarker
               key={rec.property.id}
               housing={rec.property}
+              displayCoordinate={markerDisplayCoordById.get(rec.property.id)}
               onPress={handleHousingSelect}
               isSelected={selectedHousing?.id === rec.property.id}
             />
           ))}
-          {newHomeRoutes && selectedMode && (
+          {route && (
             <RoutePolyline
-              coordinates={newHomeRoutes[selectedMode].waypoints}
-              color={getTransportConfig(selectedMode).color}
+              coordinates={route.waypoints}
+              color={getTransportConfig(mode).color}
             />
           )}
         </AppMapView>
@@ -554,9 +491,15 @@ export default function MapScreen() {
           >
             <HousingFloatingCard
               housing={selectedHousing}
-              routes={newHomeRoutes}
-              mode={selectedMode}
-              savings={savings}
+              mode={mode}
+              predictedTimeMin={
+                selectedRec ? Math.round(selectedRec.predicted_time_min) : null
+              }
+              timeSavedMins={
+                selectedRec?.time_saved_mins != null
+                  ? Math.round(selectedRec.time_saved_mins)
+                  : null
+              }
               onPress={handleViewDetail}
             />
           </Animated.View>
@@ -592,23 +535,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.18)",
   },
   searchBarText: { flex: 1, fontSize: 14, color: "rgba(255,255,255,0.85)" },
-  transportChipsRow: { flexDirection: "row", gap: 8 },
-  transportChip: {
-    flex: 1,
-    paddingVertical: 7,
-    paddingHorizontal: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-  transportChipActive: { backgroundColor: "#fff", borderColor: "transparent" },
-  transportChipLabel: { fontSize: 12, fontWeight: "600", color: "#fff" },
-  transportChipTime: { fontSize: 11, fontWeight: "500" },
   mapContainer: { flex: 1, overflow: 'hidden' },
   map: { ...StyleSheet.absoluteFillObject },
   loadingPill: {

@@ -143,7 +143,9 @@ function ListingCard({
               color={Colors.error}
             />
             <Text style={styles.rejectedNoteText}>
-              Tu anuncio fue rechazado. Contáctanos para más detalles.
+              {listing.rejectionReason?.trim()
+                ? `Motivo: ${listing.rejectionReason}`
+                : "Tu anuncio fue rechazado. Contáctanos para más detalles."}
             </Text>
           </View>
         )}

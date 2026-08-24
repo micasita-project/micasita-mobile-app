@@ -6,6 +6,7 @@
 import { Colors } from "@/shared/config/colors";
 import { getTransportConfig } from "@/shared/config/transport";
 import type { Housing, TransportMode } from "@/shared/types";
+import type { GeoPoint } from "@/shared/utils/geo";
 import { formatPrice } from "@/shared/utils/currency";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
@@ -17,6 +18,13 @@ interface HousingMarkerProps {
   onPress?: (housing: Housing) => void;
   isSelected?: boolean;
   priorityRecommendedMode?: TransportMode;
+  /**
+   * Posición visual del marcador cuando comparte coordenada exacta con otra
+   * vivienda (ver `spreadOverlappingMarkers`) — solo cambia dónde se dibuja
+   * el pin. `onPress` sigue entregando `housing` con su coordenada real, así
+   * que la ruta y el detalle nunca usan esta posición desplazada.
+   */
+  displayCoordinate?: GeoPoint;
 }
 
 export function HousingMarker({
@@ -24,6 +32,7 @@ export function HousingMarker({
   onPress,
   isSelected = false,
   priorityRecommendedMode,
+  displayCoordinate,
 }: HousingMarkerProps) {
   const transportCfg = priorityRecommendedMode
     ? getTransportConfig(priorityRecommendedMode)
@@ -44,7 +53,9 @@ export function HousingMarker({
 
   return (
     <AppMarker
-      coordinate={{ latitude: housing.latitude, longitude: housing.longitude }}
+      coordinate={
+        displayCoordinate ?? { latitude: housing.latitude, longitude: housing.longitude }
+      }
       onPress={() => onPress?.(housing)}
       tracksViewChanges={tracksViewChanges}
     >

@@ -87,23 +87,6 @@ export interface RouteSegment {
   timeMinutes: number;
 }
 
-/** Route info per transport mode */
-export interface MultiModeRoutes {
-  driving: RouteSegment;
-  cycling: RouteSegment;
-  walking: RouteSegment;
-}
-
-/** Comparison between current home → work vs new home → work */
-export interface RouteSavings {
-  currentRoute: RouteSegment;
-  newRoute: RouteSegment;
-  savedMinutes: number;
-  savedKm: number;
-  /** Positive = saves time, negative = takes longer */
-  savingsPercentage: number;
-}
-
 /** Colors for each transport mode polyline */
 export const TRANSPORT_MODE_COLORS: Record<TransportMode, string> = {
   driving: '#E74C3C',
@@ -199,4 +182,6 @@ export interface PublishedHousing {
   features: string[];
   source_url?: string;
   phone?: string;
+  /** Motivo indicado por el admin al rechazar (solo si status === 'rejected') */
+  rejectionReason?: string | null;
 }

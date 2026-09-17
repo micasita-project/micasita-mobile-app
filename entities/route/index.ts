@@ -6,9 +6,11 @@
 export {
   calculateHaversineDistance,
   fetchModeRoute,
+  fetchTimeByFranja,
   estimateTravelTime,
   formatDistance,
   formatTravelTime,
 } from './api/location.service';
+export type { TimeByFranja } from './api/location.service';
 
 export { RoutePolyline } from './ui/RoutePolyline';

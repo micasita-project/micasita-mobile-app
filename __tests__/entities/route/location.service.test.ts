@@ -9,6 +9,7 @@ import {
   formatDistance,
   formatTravelTime,
   fetchModeRoute,
+  fetchTimeByFranja,
 } from '@/entities/route/api/location.service';
 
 const mockGet = apiClient.get as jest.Mock;
@@ -198,5 +199,65 @@ describe('fetchModeRoute', () => {
     const r2 = await fetchModeRoute(origin, dest, 'driving');
     expect(mockGet).toHaveBeenCalledTimes(1);
     expect(r1).toBe(r2); // same object reference from cache
+  });
+});
+
+// ── fetchTimeByFranja ─────────────────────────────────────────────────────────
+
+describe('fetchTimeByFranja', () => {
+  beforeEach(() => {
+    mockGet.mockReset();
+  });
+
+  it('requests the franjas breakdown and returns it', async () => {
+    mockGet.mockResolvedValueOnce({
+      data: {
+        distance_km: 3.4,
+        duration_min: 12.3,
+        waypoints: [],
+        from_osrm: true,
+        franjas: { punta_manana: 12.3, valle: 13.8, punta_tarde: 16.8 },
+      },
+    });
+
+    const result = await fetchTimeByFranja(
+      { latitude: -12.01, longitude: -77.01 },
+      { latitude: -12.02, longitude: -77.02 },
+      'driving'
+    );
+
+    expect(mockGet).toHaveBeenCalledWith(
+      '/route',
+      expect.objectContaining({
+        params: expect.objectContaining({ mode: 'driving', franjas: true }),
+      })
+    );
+    expect(result).toEqual({ punta_manana: 12.3, valle: 13.8, punta_tarde: 16.8 });
+  });
+
+  it('returns null when the backend has no breakdown for this mode', async () => {
+    mockGet.mockResolvedValueOnce({
+      data: { distance_km: 2.8, duration_min: 40.5, waypoints: [], from_osrm: true, franjas: null },
+    });
+
+    const result = await fetchTimeByFranja(
+      { latitude: -12.01, longitude: -77.01 },
+      { latitude: -12.02, longitude: -77.02 },
+      'walking'
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null instead of throwing when the request fails', async () => {
+    mockGet.mockRejectedValueOnce(new Error('Network error'));
+
+    const result = await fetchTimeByFranja(
+      { latitude: -12.01, longitude: -77.01 },
+      { latitude: -12.02, longitude: -77.02 },
+      'driving'
+    );
+
+    expect(result).toBeNull();
   });
 });

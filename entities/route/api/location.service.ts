@@ -126,3 +126,39 @@ export function formatTravelTime(minutes: number): string {
   const remaining = minutes % 60;
   return remaining > 0 ? `${hours}h ${remaining}min` : `${hours}h`;
 }
+
+export interface TimeByFranja {
+  punta_manana: number;
+  valle: number;
+  punta_tarde: number;
+}
+
+/**
+ * Desglose del mismo trayecto corregido a las 3 franjas horarias de
+ * referencia (punta de la mañana, valle, punta de la tarde). Solo tiene
+ * datos reales en auto — bicicleta y caminata se entrenaron en una sola
+ * franja, así que el backend devuelve `null` para esos modos en vez de
+ * inventar variación que nunca validó.
+ */
+export async function fetchTimeByFranja(
+  origin: Coordinate,
+  destination: Coordinate,
+  mode: TransportMode
+): Promise<TimeByFranja | null> {
+  try {
+    const { data } = await apiClient.get('/route', {
+      params: {
+        origin_lat: origin.latitude,
+        origin_lon: origin.longitude,
+        dest_lat: destination.latitude,
+        dest_lon: destination.longitude,
+        mode,
+        franjas: true,
+      },
+    });
+    return data.franjas ?? null;
+  } catch (error) {
+    console.warn(`/route franjas fetch failed for ${mode}:`, error);
+    return null;
+  }
+}

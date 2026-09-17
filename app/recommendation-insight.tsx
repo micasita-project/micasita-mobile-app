@@ -10,13 +10,21 @@ import {
   buildInsightTitle,
   scoreLabel,
 } from "@/features/recommendation/model/recommendationMessage";
-import { formatTravelTime } from "@/entities/route";
+import { fetchTimeByFranja, formatTravelTime } from "@/entities/route";
+import type { TimeByFranja } from "@/entities/route";
+import { useAuth } from "@/features/auth";
+import { useGuest } from "@/features/guest";
+import { usePreferences } from "@/entities/recommendation-preferences";
+import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
 import { Colors } from "@/shared/config/colors";
+import { normalizeTransportMode } from "@/shared/config/transport";
+import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
 import { formatPrice } from "@/shared/utils/currency";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
@@ -26,6 +34,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
+
+const FRANJA_LABELS: Record<keyof TimeByFranja, { hora: string; nota: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  punta_manana: { hora: "7:00 a.m.", nota: "Hora punta", icon: "partly-sunny-outline" },
+  valle: { hora: "1:00 p.m.", nota: "Tráfico bajo", icon: "sunny-outline" },
+  punta_tarde: { hora: "6:00 p.m.", nota: "Hora punta", icon: "moon-outline" },
+};
+const FRANJA_ORDEN: (keyof TimeByFranja)[] = ["punta_manana", "valle", "punta_tarde"];
 
 function LargeMatchRing({ score }: { score: number }) {
   const size = 112;
@@ -108,6 +123,48 @@ export default function RecommendationInsightScreen() {
   try {
     if (rawData) item = JSON.parse(rawData) as RecommendationItem;
   } catch {}
+
+  // Mismo modo y workplace activo que el resto de la app (housing-detail,
+  // mapa): así este cálculo siempre coincide con el que ya se le mostró al
+  // usuario, sin depender de qué pantalla lo mandó para acá.
+  const { user } = useAuth();
+  const { guestWorkplace } = useGuest();
+  const { data: workplaces = [] } = useWorkplaces(!!user);
+  const { selectedWorkplaceId } = useSelectedWorkplace();
+  const activeWorkplace =
+    workplaces.find((wp) => wp.id === selectedWorkplaceId) || workplaces[0] || null;
+  const { data: preferences = [] } = usePreferences(
+    user ? (activeWorkplace?.id ?? null) : null,
+  );
+  const activePreference = preferences[0];
+  const workLat = user ? activeWorkplace?.work_lat : guestWorkplace?.lat;
+  const workLon = user ? activeWorkplace?.work_lon : guestWorkplace?.lon;
+  const mode = user
+    ? normalizeTransportMode(activePreference?.preferred_transportation)
+    : normalizeTransportMode(guestWorkplace?.transport);
+
+  const [franjas, setFranjas] = useState<TimeByFranja | null>(null);
+  const [loadingFranjas, setLoadingFranjas] = useState(false);
+
+  useEffect(() => {
+    if (!item || mode !== "driving" || !workLat || !workLon) return;
+    let cancelled = false;
+    setLoadingFranjas(true);
+    fetchTimeByFranja(
+      { latitude: workLat, longitude: workLon },
+      { latitude: item.property.latitude, longitude: item.property.longitude },
+      mode,
+    ).then((result) => {
+      if (!cancelled) {
+        setFranjas(result);
+        setLoadingFranjas(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.property.id, mode, workLat, workLon]);
 
   if (!item) return null;
 
@@ -243,6 +300,33 @@ export default function RecommendationInsightScreen() {
             />
           )}
         </View>
+
+        {/* Desglose por hora del día — solo en auto, es el único modo con
+            variación por franja horaria validada por el modelo. */}
+        {mode === "driving" && (loadingFranjas || franjas) && (
+          <View style={styles.franjasCard}>
+            <Text style={styles.metricsTitle}>¿Cómo cambia el tiempo según la hora?</Text>
+            {loadingFranjas && !franjas ? (
+              <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 12 }} />
+            ) : franjas ? (
+              <View style={styles.franjasRow}>
+                {FRANJA_ORDEN.map((clave) => {
+                  const info = FRANJA_LABELS[clave];
+                  return (
+                    <View key={clave} style={styles.franjaPill}>
+                      <Ionicons name={info.icon} size={18} color={Colors.primary} />
+                      <Text style={styles.franjaMinutos}>
+                        {Math.round(franjas[clave])} min
+                      </Text>
+                      <Text style={styles.franjaHora}>{info.hora}</Text>
+                      <Text style={styles.franjaNota}>{info.nota}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+        )}
 
         {/* CTA */}
         <TouchableOpacity
@@ -389,6 +473,31 @@ const styles = StyleSheet.create({
   metricLabel: { fontSize: 13, fontWeight: "600", color: Colors.textPrimary },
   metricNote: { fontSize: 11, color: Colors.textMuted, marginTop: 1 },
   metricValue: { fontSize: 14, fontWeight: "700", color: Colors.textPrimary },
+
+  // Desglose por franja horaria
+  franjasCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 18,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  franjasRow: { flexDirection: "row", gap: 8, marginTop: 6 },
+  franjaPill: {
+    flex: 1,
+    alignItems: "center",
+    gap: 3,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceElevated,
+  },
+  franjaMinutos: { fontSize: 16, fontWeight: "800", color: Colors.textPrimary, marginTop: 2 },
+  franjaHora: { fontSize: 12, fontWeight: "600", color: Colors.textSecondary },
+  franjaNota: { fontSize: 10, color: Colors.textMuted },
 
   // CTA
   ctaBtn: {

@@ -139,6 +139,10 @@ function RootNavigator() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="property-map"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }

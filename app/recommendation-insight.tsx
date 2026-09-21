@@ -340,6 +340,7 @@ export default function RecommendationInsightScreen() {
                 reco: JSON.stringify({
                   predicted_time_min: item!.predicted_time_min,
                   time_saved_mins: item!.time_saved_mins,
+                  franjas: item!.franjas,
                 }),
               },
             })

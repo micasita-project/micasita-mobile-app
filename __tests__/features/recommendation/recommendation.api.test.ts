@@ -46,6 +46,7 @@ function makeRawItem(propertyOverrides: Record<string, unknown> = {}, itemOverri
     match_score: 85.0,
     predicted_time_min: 20,
     time_saved_mins: null,
+    franjas: null,
     ...itemOverrides,
   };
 }
@@ -113,6 +114,19 @@ describe('toRecommendationItem mapper', () => {
     mockPost.mockResolvedValueOnce({ data: makeRawPage([makeRawItem({ description: null })]) });
     const result = await getGuestRecommendations(GUEST_REQUEST);
     expect(result.results[0].property.description).toBe('');
+  });
+
+  it('keeps franjas as null for non-driving modes', async () => {
+    mockPost.mockResolvedValueOnce({ data: makeRawPage([makeRawItem({}, { franjas: null })]) });
+    const result = await getGuestRecommendations(GUEST_REQUEST);
+    expect(result.results[0].franjas).toBeNull();
+  });
+
+  it('maps franjas when the backend sends the per-period breakdown (driving)', async () => {
+    const franjas = { punta_manana: 18.0, valle: 20.5, punta_tarde: 24.7 };
+    mockPost.mockResolvedValueOnce({ data: makeRawPage([makeRawItem({}, { franjas })]) });
+    const result = await getGuestRecommendations(GUEST_REQUEST);
+    expect(result.results[0].franjas).toEqual(franjas);
   });
 });
 

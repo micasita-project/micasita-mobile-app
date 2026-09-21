@@ -8,6 +8,7 @@
 
 import { apiClient } from '@/shared/api';
 import type { Housing } from '@/shared/types';
+import type { TimeByFranja } from '@/entities/route';
 
 const RECOMMEND_TIMEOUT = 60_000;
 
@@ -29,6 +30,8 @@ export interface RecommendationItem {
   predicted_time_min: number;
   /** Minutos ahorrados vs viaje actual. null si el usuario no tiene casa registrada. */
   time_saved_mins: number | null;
+  /** Mismo trayecto corregido a las 3 franjas horarias. Solo viene relleno en auto — ver TimeByFranja. */
+  franjas: TimeByFranja | null;
 }
 
 export interface RecommendationPageResponse {
@@ -73,6 +76,7 @@ interface RawRecommendationItem {
   match_score: number;
   predicted_time_min: number;
   time_saved_mins: number | null;
+  franjas: TimeByFranja | null;
 }
 
 function toRecommendationPage(raw: RawRecommendationPageResponse): RecommendationPageResponse {
@@ -89,6 +93,7 @@ function toRecommendationItem(raw: RawRecommendationItem): RecommendationItem {
     match_score: raw.match_score,
     predicted_time_min: raw.predicted_time_min,
     time_saved_mins: raw.time_saved_mins ?? null,
+    franjas: raw.franjas ?? null,
     property: {
       id: String(raw.property.id),
       title: raw.property.title,

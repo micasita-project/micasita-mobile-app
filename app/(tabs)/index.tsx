@@ -5,7 +5,7 @@
  */
 
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -33,6 +33,7 @@ import {
 import { useIsMutating } from "@tanstack/react-query";
 import { useRouteCalculation } from "@/features/route-calculation";
 import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
+import { HomeSheet } from "@/widgets/home/ui/HomeSheet";
 
 import { HousingMarker } from "@/entities/housing";
 import { RoutePolyline, formatTravelTime } from "@/entities/route";
@@ -109,6 +110,7 @@ function HousingFloatingCard({
 export default function MapScreen() {
   const { user, isInitialized } = useAuth();
   const router = useRouter();
+  const { focusPropertyId } = useLocalSearchParams<{ focusPropertyId?: string }>();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<AppMapViewHandle>(null);
   // Evita re-auto-seleccionar el mismo set de recomendaciones en cada render.
@@ -202,6 +204,7 @@ export default function MapScreen() {
     : isLoadingAuth || isGeneratingRecs;
 
   const [selectedHousing, setSelectedHousing] = useState<Housing | null>(null);
+  const [homeSheetVisible, setHomeSheetVisible] = useState(false);
 
   const { route, calculateRoute, clearRoute } = useRouteCalculation();
 
@@ -293,20 +296,26 @@ export default function MapScreen() {
       return;
     }
 
-    const top = recommendations.reduce((best, r) =>
-      r.match_score > best.match_score ? r : best,
-    );
-    const setKey = `${isGuest ? "guest" : activeWorkplace?.id ?? "none"}:${top.property.id}`;
+    // Si se entró desde el detalle de una vivienda recomendada (botón "ver
+    // en mapa"), se enfoca esa en vez de la top-1 automática.
+    const focused = focusPropertyId
+      ? recommendations.find((r) => String(r.property.id) === focusPropertyId)
+      : null;
+    const target =
+      focused ??
+      recommendations.reduce((best, r) => (r.match_score > best.match_score ? r : best));
+
+    const setKey = `${isGuest ? "guest" : activeWorkplace?.id ?? "none"}:${target.property.id}`;
     if (autoFocusKeyRef.current === setKey) return;
     autoFocusKeyRef.current = setKey;
 
-    handleHousingSelect(top.property);
+    handleHousingSelect(target.property);
     // Pequeño delay para asegurar que el mapa esté montado antes de animar.
     const t = setTimeout(() => {
       mapRef.current?.animateToRegion(
         {
-          latitude: top.property.latitude,
-          longitude: top.property.longitude,
+          latitude: target.property.latitude,
+          longitude: target.property.longitude,
           latitudeDelta: 0.025,
           longitudeDelta: 0.025,
         },
@@ -319,6 +328,7 @@ export default function MapScreen() {
     isLoadingRecommendations,
     isGuest,
     activeWorkplace?.id,
+    focusPropertyId,
     handleHousingSelect,
     clearRoute,
   ]);
@@ -334,6 +344,7 @@ export default function MapScreen() {
             reco: JSON.stringify({
               predicted_time_min: selectedRec.predicted_time_min,
               time_saved_mins: selectedRec.time_saved_mins,
+              franjas: selectedRec.franjas,
             }),
           }),
         },
@@ -362,6 +373,10 @@ export default function MapScreen() {
         visible={showWorkplaceSheet}
         workplace={activeWorkplace}
         onClose={() => setShowWorkplaceSheet(false)}
+      />
+      <HomeSheet
+        visible={homeSheetVisible}
+        onClose={() => setHomeSheetVisible(false)}
       />
 
       <View style={[styles.mapHeader, { paddingTop: insets.top + 12 }]}>
@@ -404,6 +419,7 @@ export default function MapScreen() {
             <AppMarker
               coordinate={{ latitude: user.home_lat, longitude: user.home_lon }}
               title="Mi Casa Actual"
+              onPress={() => setHomeSheetVisible(true)}
             >
               <View style={styles.homeMarker}>
                 <Ionicons name="home" size={20} color={Colors.textOnPrimary} />
@@ -414,6 +430,7 @@ export default function MapScreen() {
             <AppMarker
               coordinate={{ latitude: guestHome.lat, longitude: guestHome.lon }}
               title="Mi Casa Actual"
+              onPress={() => setHomeSheetVisible(true)}
             >
               <View style={styles.homeMarker}>
                 <Ionicons name="home" size={20} color={Colors.textOnPrimary} />
@@ -427,6 +444,7 @@ export default function MapScreen() {
                 longitude: activeWorkplace.work_lon,
               }}
               title={activeWorkplace.work_address}
+              onPress={handleEditWorkplace}
             >
               <View style={styles.workMarker}>
                 <Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} />
@@ -437,6 +455,7 @@ export default function MapScreen() {
             <AppMarker
               coordinate={{ latitude: guestWorkplace.lat, longitude: guestWorkplace.lon }}
               title="Mi Trabajo"
+              onPress={handleEditWorkplace}
             >
               <View style={styles.workMarker}>
                 <Ionicons name="briefcase" size={20} color={Colors.textOnPrimary} />

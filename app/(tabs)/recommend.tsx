@@ -7,6 +7,7 @@
 
 import type { Workplace } from "@/entities/workplace/api/workplace.api";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
+import type { TimeByFranja } from "@/entities/route";
 import { useAuth } from "@/features/auth";
 import { GuestSetupModal, useGuest } from "@/features/guest";
 import type { RecommendationItem } from "@/features/recommendation/api/recommendation.api";
@@ -39,6 +40,15 @@ import {
   View,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+
+// Mismo orden y horas de referencia que el desglose por franja del backend
+// (ver MODOS_CON_DESGLOSE_HORARIO). Solo auto trae `franjas`; en bici/caminata
+// item.franjas es null y esta fila no se muestra.
+const FRANJA_MINI: { key: keyof TimeByFranja; hora: string }[] = [
+  { key: "punta_manana", hora: "7am" },
+  { key: "valle", hora: "1pm" },
+  { key: "punta_tarde", hora: "6pm" },
+];
 
 function MatchRing({ score }: { score: number }) {
   const size = 64;
@@ -210,6 +220,7 @@ export default function RecommendScreen() {
           reco: JSON.stringify({
             predicted_time_min: item.predicted_time_min,
             time_saved_mins: item.time_saved_mins,
+            franjas: item.franjas,
           }),
         },
       });
@@ -648,6 +659,18 @@ export default function RecommendScreen() {
                             </Text>
                           </View>
                         )}
+                      {item.franjas && (
+                        <View style={styles.franjasMiniRow}>
+                          {FRANJA_MINI.map(({ key, hora }) => (
+                            <View key={key} style={styles.franjaMiniPill}>
+                              <Text style={styles.franjaMiniHora}>{hora}</Text>
+                              <Text style={styles.franjaMiniMin}>
+                                {Math.round(item.franjas![key])}m
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
                     </View>
                   </TouchableOpacity>
                   {/* Match ring → insight screen */}
@@ -1018,6 +1041,18 @@ const styles = StyleSheet.create({
   timeSavedText: { fontSize: 11, fontWeight: "600" },
   timeSavedTextPos: { color: Colors.success },
   timeSavedTextNeg: { color: Colors.error },
+  franjasMiniRow: { flexDirection: "row", gap: 4, marginTop: 5 },
+  franjaMiniPill: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 3,
+    backgroundColor: Colors.surfaceElevated,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 999,
+  },
+  franjaMiniHora: { fontSize: 9, color: Colors.textMuted },
+  franjaMiniMin: { fontSize: 10, fontWeight: "600", color: Colors.textSecondary },
   emptyResults: { alignItems: "center", paddingVertical: 40, gap: 12 },
   emptyResultsText: {
     fontSize: 16,

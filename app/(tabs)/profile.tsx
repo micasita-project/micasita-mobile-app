@@ -3,19 +3,13 @@
  * @description User profile page with current home, workplace info and mini-map.
  */
 
-import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
 import { useAuth } from "@/features/auth";
-import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
-import { AddressSearchInput } from "@/shared/ui/AddressSearchInput";
 import { Colors } from "@/shared/config/colors";
-import { BottomSheet } from "@/shared/ui/BottomSheet";
-import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
+import { HomeSheet } from "@/widgets/home/ui/HomeSheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,43 +17,14 @@ import {
   View,
 } from "react-native";
 
-interface AddressState {
-  query: string;
-  selected: GeocodeSuggestion | null;
-}
-const EMPTY_ADDR: AddressState = { query: "", selected: null };
-
 export default function ProfileScreen() {
-  const { user, logout, setHome } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
 
   // ── Edit Home ────────────────────────────────────────────────────
   const [isEditHomeVisible, setIsEditHomeVisible] = useState(false);
-  const [homeAddr, setHomeAddr] = useState<AddressState>(EMPTY_ADDR);
-  const [homeMapVisible, setHomeMapVisible] = useState(false);
-  const [isSavingHome, setIsSavingHome] = useState(false);
-
-  // ── Derived handlers ─────────────────────────────────────────────
-  const handleHomeSearch = useCallback((text: string) => {
-    setHomeAddr((p) => ({ ...p, query: text, selected: null }));
-  }, []);
-
-  const handleHomeSelect = useCallback((s: GeocodeSuggestion) => {
-    setHomeAddr({ query: s.display_name.split(",")[0].trim(), selected: s });
-  }, []);
-
-  const openEditHome = useCallback(() => {
-    // Pre-fill with the short form of the current address
-    const shortAddr =
-      user?.home_address?.split(",").slice(0, 2).join(",").trim() ?? "";
-    setHomeAddr({ ...EMPTY_ADDR, query: shortAddr });
-    setIsEditHomeVisible(true);
-  }, [user]);
-
-  const closeEditHome = useCallback(() => {
-    setIsEditHomeVisible(false);
-    setHomeAddr(EMPTY_ADDR);
-  }, []);
+  const openEditHome = useCallback(() => setIsEditHomeVisible(true), []);
+  const closeEditHome = useCallback(() => setIsEditHomeVisible(false), []);
 
   if (!user) {
     return (
@@ -122,67 +87,6 @@ export default function ProfileScreen() {
       </View>
     );
   }
-
-  // ── Handlers that need `user` ────────────────────────────────────
-
-  const handleSaveHome = async () => {
-    if (!homeAddr.selected) {
-      Alert.alert("Dirección faltante", "Busca o selecciona una dirección.");
-      return;
-    }
-    if (!isWithinLima(homeAddr.selected.latitude, homeAddr.selected.longitude)) {
-      Alert.alert("Fuera de cobertura", LIMA_LOCATION_ERROR);
-      return;
-    }
-    setIsSavingHome(true);
-    try {
-      await setHome({
-        home_lat: homeAddr.selected.latitude,
-        home_lon: homeAddr.selected.longitude,
-        home_address: homeAddr.selected.display_name,
-      });
-      closeEditHome();
-    } catch {
-      Alert.alert("Error", "No se pudo actualizar la vivienda.");
-    } finally {
-      setIsSavingHome(false);
-    }
-  };
-
-  // ── Address field renderer ────────────────────────────────────────
-  const renderAddressField = (
-    state: AddressState,
-    onSearch: (t: string) => void,
-    onSelect: (s: GeocodeSuggestion) => void,
-    onMapOpen: () => void,
-    placeholder = "Buscar dirección...",
-  ) => (
-    <>
-      <AddressSearchInput
-        value={state.query}
-        onChangeText={onSearch}
-        onSelect={onSelect}
-        placeholder={placeholder}
-      />
-      {state.selected && (
-        <View style={styles.selectedBadge}>
-          <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-          <Text style={styles.selectedBadgeText} numberOfLines={1}>
-            Ubicación seleccionada
-          </Text>
-        </View>
-      )}
-      <View style={styles.orDivider}>
-        <View style={styles.orLine} />
-        <Text style={styles.orText}>O</Text>
-        <View style={styles.orLine} />
-      </View>
-      <TouchableOpacity style={styles.mapBtn} onPress={onMapOpen}>
-        <Ionicons name="map-outline" size={20} color={Colors.primary} />
-        <Text style={styles.mapBtnText}>Elegir en el mapa</Text>
-      </TouchableOpacity>
-    </>
-  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -283,54 +187,7 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* ══ Edit Home ══════════════════════════════════════════════ */}
-      <BottomSheet
-        visible={isEditHomeVisible}
-        onClose={closeEditHome}
-        maxHeightRatio={0.42}
-        footer={
-          <View style={styles.sheetActions}>
-            <TouchableOpacity style={styles.sheetCancel} onPress={closeEditHome}>
-              <Text style={styles.sheetCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.sheetConfirm}
-              onPress={handleSaveHome}
-              disabled={isSavingHome}
-            >
-              {isSavingHome ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.sheetConfirmText}>Guardar</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        }
-      >
-        <ScrollView
-          style={{ paddingHorizontal: 24 }}
-          contentContainerStyle={{ paddingBottom: 16 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.sheetTitle}>Mi Vivienda Actual</Text>
-          {renderAddressField(
-            homeAddr,
-            handleHomeSearch,
-            handleHomeSelect,
-            () => setHomeMapVisible(true),
-          )}
-        </ScrollView>
-
-        <MapPickerModal
-          visible={homeMapVisible}
-          onClose={() => setHomeMapVisible(false)}
-          title="Ubicación de tu casa"
-          instruction="Ubica tu vivienda actual en el mapa"
-          onConfirm={(s) => {
-            handleHomeSelect(s);
-            setHomeMapVisible(false);
-          }}
-        />
-      </BottomSheet>
+      <HomeSheet visible={isEditHomeVisible} onClose={closeEditHome} />
     </View>
   );
 }
@@ -582,187 +439,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.textMuted,
     marginBottom: 20,
-  },
-
-  // BottomSheet shared
-  sheetTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: Colors.textPrimary,
-    marginBottom: 20,
-  },
-  sectionSublabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: Colors.textMuted,
-    letterSpacing: 0.8,
-    marginBottom: 10,
-    marginTop: 4,
-  },
-  sheetActions: { flexDirection: "row", gap: 12 },
-  sheetCancel: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  sheetCancelText: {
-    color: Colors.textSecondary,
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  sheetConfirm: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    backgroundColor: Colors.primary,
-  },
-  sheetConfirmText: {
-    color: Colors.textOnPrimary,
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  // Search
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    fontSize: 15,
-    color: Colors.textPrimary,
-  },
-  suggestionsContainer: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 10,
-    marginTop: -4,
-    overflow: "hidden",
-  },
-  suggestionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  suggestionText: { flex: 1, fontSize: 13, color: Colors.textPrimary },
-  selectedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: Colors.success + "15",
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 10,
-    marginTop: -4,
-    alignSelf: "flex-start",
-  },
-  selectedBadgeText: { fontSize: 12, color: Colors.success, fontWeight: "600" },
-  orDivider: { flexDirection: "row", alignItems: "center", marginVertical: 12 },
-  orLine: { flex: 1, height: 1, backgroundColor: Colors.border },
-  orText: {
-    marginHorizontal: 14,
-    color: Colors.textMuted,
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  mapBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: Colors.primary + "15",
-    paddingVertical: 13,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.primary + "30",
-    marginBottom: 16,
-  },
-  mapBtnText: { color: Colors.primary, fontWeight: "700", fontSize: 14 },
-
-  // Form fields
-  fieldInput: {
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
-    color: Colors.textPrimary,
-    marginBottom: 12,
-  },
-
-  // Map Picker
-  mapPin: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    marginLeft: -22,
-    marginTop: -44,
-  },
-  mapBottomCard: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.surface,
-    padding: 24,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  mapInstruction: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Colors.textPrimary,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  mapActions: { flexDirection: "row", gap: 12 },
-  mapCancelBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  mapCancelText: {
-    color: Colors.textSecondary,
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  mapConfirmBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    backgroundColor: Colors.primary,
-  },
-  mapConfirmText: {
-    color: Colors.textOnPrimary,
-    fontWeight: "700",
-    fontSize: 15,
   },
 });

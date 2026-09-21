@@ -17,6 +17,7 @@
 
 import { fetchPropertyById } from "@/entities/housing/api/housing.api";
 import { fetchModeRoute, formatTravelTime } from "@/entities/route";
+import type { TimeByFranja } from "@/entities/route";
 import { usePreferences } from "@/entities/recommendation-preferences";
 import { useToggleFavorite } from "@/entities/housing/model/useProperties";
 import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
@@ -50,6 +51,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+// Mismo orden y horas de referencia que el desglose por franja del backend
+// (ver MODOS_CON_DESGLOSE_HORARIO). Solo auto trae `franjas`.
+const FRANJA_MINI: { key: keyof TimeByFranja; hora: string }[] = [
+  { key: "punta_manana", hora: "7am" },
+  { key: "valle", hora: "1pm" },
+  { key: "punta_tarde", hora: "6pm" },
+];
 
 export default function HousingDetailScreen() {
   const { id, data, reco } = useLocalSearchParams<{
@@ -106,6 +115,7 @@ export default function HousingDetailScreen() {
       return JSON.parse(reco) as {
         predicted_time_min: number;
         time_saved_mins: number | null;
+        franjas?: TimeByFranja | null;
       };
     } catch {
       return null;
@@ -136,6 +146,7 @@ export default function HousingDetailScreen() {
     knownReco?.time_saved_mins != null
       ? Math.round(knownReco.time_saved_mins)
       : null;
+  const franjas = knownReco?.franjas ?? null;
 
   if (isLoadingHousing) {
     return (
@@ -159,7 +170,32 @@ export default function HousingDetailScreen() {
     );
   }
 
-  const handleViewOnMap = () => router.back();
+  const handleViewOnMap = () => {
+    if (!housing) return;
+    if (knownReco) {
+      // La vivienda es una recomendación actual: ya tiene marcador en el
+      // mapa principal (junto a casa/trabajo/las demás candidatas). Con
+      // dismissTo se vuelve a ESA pantalla ya montada (la pestaña Mapa
+      // sigue debajo en el stack sin importar desde dónde se entró al
+      // detalle), en vez de apilar una instancia nueva encima con push.
+      router.dismissTo({
+        pathname: "/(tabs)",
+        params: { focusPropertyId: housing.id },
+      });
+      return;
+    }
+    // Vivienda fuera del set recomendado actual (favoritos, listado,
+    // admin): no tiene marcador en el mapa principal, así que se muestra
+    // un mapa simple con un solo pin.
+    router.push({
+      pathname: "/property-map",
+      params: {
+        lat: String(housing.latitude),
+        lon: String(housing.longitude),
+        title: housing.title,
+      },
+    });
+  };
 
   const handleContactWhatsApp = () => {
     if (!housing?.phone) return;
@@ -232,7 +268,7 @@ export default function HousingDetailScreen() {
           {/* Back button */}
           <TouchableOpacity
             style={[styles.backButton, { top: 16 + topOffset }]}
-            onPress={handleViewOnMap}
+            onPress={() => router.back()}
             activeOpacity={0.8}
           >
             <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
@@ -240,9 +276,9 @@ export default function HousingDetailScreen() {
 
           {/* Right overlay buttons */}
           <View style={[styles.galleryRightBtns, { top: 16 + topOffset }]}>
-            <TouchableOpacity style={styles.overlayBtn}>
+            <TouchableOpacity style={styles.overlayBtn} onPress={handleViewOnMap}>
               <Ionicons
-                name="share-outline"
+                name="map-outline"
                 size={18}
                 color={Colors.textPrimary}
               />
@@ -385,6 +421,19 @@ export default function HousingDetailScreen() {
                 </View>
               )}
             </View>
+
+            {mode === "driving" && franjas && (
+              <View style={styles.franjasMiniRow}>
+                {FRANJA_MINI.map(({ key, hora }) => (
+                  <View key={key} style={styles.franjaMiniPill}>
+                    <Text style={styles.franjaMiniHora}>{hora}</Text>
+                    <Text style={styles.franjaMiniMin}>
+                      {Math.round(franjas[key])}m
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -608,7 +657,7 @@ const styles = StyleSheet.create({
   statDivider: { width: 1, height: 36, backgroundColor: Colors.borderLight },
 
   // Travel times
-  travelSection: { marginHorizontal: 16, marginBottom: 12 },
+  travelSection: { marginHorizontal: 16, marginTop: 16, marginBottom: 12 },
   travelSectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -652,15 +701,37 @@ const styles = StyleSheet.create({
   travelUnit: { fontSize: 11, fontWeight: "500", color: Colors.textSecondary },
   travelLabel: { fontSize: 11, color: Colors.textMuted },
 
-  // Chips
+  // Franjas horarias (solo auto)
+  franjasMiniRow: { flexDirection: "row", gap: 6, marginTop: 8 },
+  franjaMiniPill: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "center",
+    gap: 4,
+    backgroundColor: Colors.surfaceElevated,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  franjaMiniHora: { fontSize: 10, color: Colors.textMuted },
+  franjaMiniMin: { fontSize: 12, fontWeight: "700", color: Colors.textSecondary },
+
+  // Chips — misma tarjeta que sectionCard, para no chocar visualmente con
+  // las tarjetas con sombra de "Tiempo a tu trabajo" justo arriba.
   chipsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: Colors.surface,
+    marginHorizontal: 16,
     marginBottom: 12,
+    padding: 14,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 2,
   },
   chip: {
     flexDirection: "row",

@@ -4,6 +4,7 @@ jest.mock('@/shared/api', () => ({
     get: jest.fn(),
     put: jest.fn(),
     patch: jest.fn(),
+    delete: jest.fn(),
   },
   saveAuthToken: jest.fn(),
   removeAuthToken: jest.fn(),
@@ -17,12 +18,15 @@ import {
   getMe,
   updateHome,
   updateProfile,
+  deleteAccount,
+  acceptPrivacyPolicy,
 } from '@/features/auth/api/auth.service';
 
 const mockPost = apiClient.post as jest.Mock;
 const mockGet = apiClient.get as jest.Mock;
 const mockPut = apiClient.put as jest.Mock;
 const mockPatch = apiClient.patch as jest.Mock;
+const mockDelete = apiClient.delete as jest.Mock;
 const mockSaveToken = saveAuthToken as jest.Mock;
 const mockRemoveToken = removeAuthToken as jest.Mock;
 
@@ -33,16 +37,16 @@ describe('registerUser', () => {
     const response = { id: 1, email: 'user@test.com', role: 'user' };
     mockPost.mockResolvedValueOnce({ data: response });
 
-    const result = await registerUser({ email: 'user@test.com', password: 'secret' });
+    const result = await registerUser({ email: 'user@test.com', password: 'secret', accepted_terms: true });
 
-    expect(mockPost).toHaveBeenCalledWith('/auth/register', { email: 'user@test.com', password: 'secret' });
+    expect(mockPost).toHaveBeenCalledWith('/auth/register', { email: 'user@test.com', password: 'secret', accepted_terms: true });
     expect(result).toEqual(response);
   });
 
   it('includes optional name fields when provided', async () => {
     mockPost.mockResolvedValueOnce({ data: { id: 2, email: 'u@t.com', role: 'user' } });
 
-    await registerUser({ email: 'u@t.com', password: 'pass', name: 'Juan', last_name: 'Pérez' });
+    await registerUser({ email: 'u@t.com', password: 'pass', name: 'Juan', last_name: 'Pérez', accepted_terms: true });
 
     expect(mockPost).toHaveBeenCalledWith('/auth/register', expect.objectContaining({
       name: 'Juan',
@@ -151,5 +155,39 @@ describe('updateProfile', () => {
     expect(mockPatch).toHaveBeenCalledWith('/auth/me', { name: 'Juan', last_name: 'Pérez' });
     expect(result.name).toBe('Juan');
     expect(result.last_name).toBe('Pérez');
+  });
+});
+
+// ── deleteAccount ─────────────────────────────────────────────────────────────
+
+describe('deleteAccount', () => {
+  it('sends DELETE /auth/me with the password in the request body', async () => {
+    mockDelete.mockResolvedValueOnce({ data: { message: 'Cuenta eliminada correctamente.' } });
+
+    const result = await deleteAccount('clave12345');
+
+    expect(mockDelete).toHaveBeenCalledWith('/auth/me', { data: { password: 'clave12345' } });
+    expect(result).toEqual({ message: 'Cuenta eliminada correctamente.' });
+  });
+
+  it('propagates the API error so the UI can show the reason', async () => {
+    const error = { response: { status: 400, data: { detail: 'La contraseña es incorrecta.' } } };
+    mockDelete.mockRejectedValueOnce(error);
+
+    await expect(deleteAccount('mala')).rejects.toBe(error);
+  });
+});
+
+// ── acceptPrivacyPolicy ───────────────────────────────────────────────────────
+
+describe('acceptPrivacyPolicy', () => {
+  it('posts to /auth/me/consent and returns the updated user', async () => {
+    const user = { id: 1, email: 'u@test.com', role: 'user', consent_accepted_at: '2026-09-28T15:00:00', consent_version: '1.0' };
+    mockPost.mockResolvedValueOnce({ data: user });
+
+    const result = await acceptPrivacyPolicy();
+
+    expect(mockPost).toHaveBeenCalledWith('/auth/me/consent');
+    expect(result).toEqual(user);
   });
 });

@@ -22,13 +22,13 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/features/auth";
-import { updateProfile, changePassword } from "@/features/auth/api/auth.service";
+import { updateProfile, changePassword, deleteAccount } from "@/features/auth/api/auth.service";
 import { Colors } from "@/shared/config/colors";
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
 
   // ── Datos personales ─────────────────────────────────────────────
   const [name, setName] = useState(user?.name ?? "");
@@ -42,6 +42,10 @@ export default function EditProfileScreen() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+
+  // ── Eliminar cuenta ──────────────────────────────────────────────
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
@@ -85,6 +89,36 @@ export default function EditProfileScreen() {
       Alert.alert("Error", message);
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    if (!deletePassword) {
+      Alert.alert("Campo requerido", "Ingresa tu contraseña para confirmar.");
+      return;
+    }
+    Alert.alert(
+      "Eliminar cuenta",
+      "Se borrarán de forma permanente tu cuenta, tus lugares de trabajo, preferencias, favoritos, historial de recomendaciones y las viviendas que hayas publicado. Esta acción no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Eliminar", style: "destructive", onPress: handleDeleteAccount },
+      ],
+    );
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await deleteAccount(deletePassword);
+      await logout();
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.detail ?? "No se pudo eliminar la cuenta.";
+      Alert.alert("Error", message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -234,6 +268,41 @@ export default function EditProfileScreen() {
               )}
             </TouchableOpacity>
           </View>
+
+          {/* ── Eliminar cuenta ─────────────────────────────────── */}
+          {user?.role !== "admin" && (
+            <>
+              <Text style={[styles.sectionLabel, { marginTop: 20 }]}>ZONA DE RIESGO</Text>
+              <View style={styles.card}>
+                <Text style={styles.dangerText}>
+                  Al eliminar tu cuenta se borran de forma permanente tus datos personales,
+                  ubicaciones, favoritos, historial de recomendaciones y las viviendas que
+                  hayas publicado.
+                </Text>
+                <Text style={styles.fieldLabel}>Contraseña</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="Ingresa tu contraseña para confirmar"
+                  placeholderTextColor={Colors.textMuted}
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  secureTextEntry
+                />
+                <TouchableOpacity
+                  style={[styles.dangerBtn, deleting && styles.btnDisabled]}
+                  onPress={confirmDeleteAccount}
+                  disabled={deleting}
+                  activeOpacity={0.85}
+                >
+                  {deleting ? (
+                    <ActivityIndicator color={Colors.textOnPrimary} />
+                  ) : (
+                    <Text style={styles.primaryBtnText}>Eliminar mi cuenta</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -320,4 +389,18 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { fontSize: 15, fontWeight: "700", color: Colors.textOnPrimary },
   btnDisabled: { opacity: 0.7 },
+  dangerText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: Colors.textSecondary,
+    marginBottom: 14,
+  },
+  dangerBtn: {
+    backgroundColor: Colors.error,
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
 });

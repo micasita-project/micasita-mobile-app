@@ -61,6 +61,7 @@ interface AuthContextValue extends AuthState {
     guestData?: GuestDataForTransfer,
     name?: string,
     lastName?: string,
+    acceptedTerms?: boolean,
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setHome: (data: UserHomeUpdate) => Promise<boolean>;
@@ -222,10 +223,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       guestData?: GuestDataForTransfer,
       name?: string,
       lastName?: string,
+      acceptedTerms: boolean = false,
     ): Promise<{ success: boolean; error?: string }> => {
       setIsLoading(true);
       try {
-        await registerUser({ email, password, name, last_name: lastName });
+        await registerUser({ email, password, name, last_name: lastName, accepted_terms: acceptedTerms });
         // El backend crea la cuenta sin verificar y envía un OTP por correo.
         // Guardamos los datos para completar login + transferencia tras verificar.
         setPendingVerification({ email, password, guestData });

@@ -33,6 +33,7 @@ export function LoginForm() {
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -47,6 +48,10 @@ export function LoginForm() {
       }
       if (password !== confirmPassword) {
         Alert.alert('Error', 'Las contraseñas no coinciden.');
+        return;
+      }
+      if (!acceptedTerms) {
+        Alert.alert('Política de Privacidad', 'Debes aceptar la Política de Privacidad para crear tu cuenta.');
         return;
       }
       const result = await register(
@@ -68,6 +73,7 @@ export function LoginForm() {
         },
         name.trim() || undefined,
         lastName.trim() || undefined,
+        acceptedTerms,
       );
       if (result.success) {
         // No limpiamos los datos de invitado aún: se transfieren tras verificar.
@@ -96,6 +102,7 @@ export function LoginForm() {
     setConfirmPassword('');
     setName('');
     setLastName('');
+    setAcceptedTerms(false);
   };
 
   return (
@@ -181,6 +188,31 @@ export function LoginForm() {
           </View>
         )}
 
+        {/* Consentimiento (solo en registro) */}
+        {mode === 'register' && (
+          <View style={styles.consentRow}>
+            <TouchableOpacity
+              onPress={() => setAcceptedTerms((v) => !v)}
+              hitSlop={8}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: acceptedTerms }}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={acceptedTerms ? 'checkbox' : 'square-outline'}
+                size={24}
+                color={acceptedTerms ? '#FFFFFF' : 'rgba(255,255,255,0.6)'}
+              />
+            </TouchableOpacity>
+            <Text style={styles.consentText}>
+              Acepto la{' '}
+              <Text style={styles.consentLink} onPress={() => router.push('/privacy-policy')}>
+                Política de Privacidad
+              </Text>
+            </Text>
+          </View>
+        )}
+
         {/* Submit button */}
         <TouchableOpacity
           style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
@@ -246,6 +278,9 @@ const styles = StyleSheet.create({
     fontSize: 15, color: '#FFFFFF',
   },
   eyeButton: { paddingRight: 16, paddingVertical: 16 },
+  consentRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  consentText: { flex: 1, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+  consentLink: { color: '#FFFFFF', fontWeight: '700', textDecorationLine: 'underline' },
   submitButton: {
     backgroundColor: '#FFFFFF', borderRadius: 14,
     paddingVertical: 16, alignItems: 'center', justifyContent: 'center',

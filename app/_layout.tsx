@@ -10,7 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { QueryClientProvider } from '@tanstack/react-query';
 
-import { AuthProvider, useAuth } from '@/features/auth';
+import { AuthProvider, useAuth, ConsentModal } from '@/features/auth';
 import { GuestProvider } from '@/features/guest';
 import { SelectedWorkplaceProvider } from '@/shared/model/SelectedWorkplaceContext';
 import { queryClient } from '@/shared/api';
@@ -99,6 +99,7 @@ function RootNavigator() {
   const router = useRouter();
 
   return (
+    <>
     <Stack
       screenOptions={{ headerShown: false }}
       initialRouteName="(tabs)"
@@ -143,7 +144,13 @@ function RootNavigator() {
         name="property-map"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="privacy-policy"
+        options={{ headerShown: false }}
+      />
     </Stack>
+    <ConsentModal />
+    </>
   );
 }
 

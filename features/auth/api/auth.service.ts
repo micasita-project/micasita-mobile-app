@@ -13,6 +13,7 @@ export interface RegisterRequest {
   password: string;
   name?: string;
   last_name?: string;
+  accepted_terms: boolean;
 }
 
 export interface RegisterResponse {
@@ -41,6 +42,8 @@ export interface AuthUser {
   home_lat: number | null;
   home_lon: number | null;
   home_address: string | null;
+  consent_accepted_at?: string | null;
+  consent_version?: string | null;
 }
 
 // ── API Calls ───────────────────────────────────────────────────
@@ -172,5 +175,25 @@ export async function changePassword(
     current_password: currentPassword,
     new_password: newPassword,
   });
+  return response.data;
+}
+
+/**
+ * Elimina la cuenta y todos los datos personales del usuario (exige la contraseña).
+ * DELETE /auth/me
+ */
+export async function deleteAccount(password: string): Promise<MessageResponse> {
+  const response = await apiClient.delete<MessageResponse>('/auth/me', {
+    data: { password },
+  });
+  return response.data;
+}
+
+/**
+ * Registra que el usuario acepta la Política de Privacidad vigente.
+ * POST /auth/me/consent
+ */
+export async function acceptPrivacyPolicy(): Promise<AuthUser> {
+  const response = await apiClient.post<AuthUser>('/auth/me/consent');
   return response.data;
 }

@@ -4,6 +4,7 @@
  * Muestra las viviendas publicadas por el usuario con sus estados.
  */
 
+import { useDeleteProperty } from "@/entities/housing/model/useProperties";
 import { useAuth } from "@/features/auth";
 import { Colors } from "@/shared/config/colors";
 import type { ListingStatus, PublishedHousing } from "@/shared/types";
@@ -13,6 +14,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   RefreshControl,
@@ -43,9 +45,13 @@ const STATUS_CONFIG: Record<
 function ListingCard({
   listing,
   onEdit,
+  onDelete,
+  isDeleting,
 }: {
   listing: PublishedHousing;
   onEdit: (listing: PublishedHousing) => void;
+  onDelete: (listing: PublishedHousing) => void;
+  isDeleting: boolean;
 }) {
   const status = STATUS_CONFIG[listing.status] ?? STATUS_CONFIG.pending;
   const mainImage = listing.images[0];
@@ -152,8 +158,23 @@ function ListingCard({
 
         <View style={styles.actionsRow}>
           <TouchableOpacity
+            style={[styles.deleteBtn, isDeleting && styles.deleteBtnDisabled]}
+            onPress={() => onDelete(listing)}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <ActivityIndicator size="small" color={Colors.error} />
+            ) : (
+              <>
+                <Ionicons name="trash-outline" size={16} color={Colors.error} />
+                <Text style={styles.deleteBtnText}>Eliminar</Text>
+              </>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.editBtn}
             onPress={() => onEdit(listing)}
+            disabled={isDeleting}
           >
             <Ionicons name="pencil-outline" size={16} color={Colors.primary} />
             <Text style={styles.editBtnText}>Editar</Text>
@@ -174,6 +195,8 @@ export function MyListingsPanel() {
   const [statusFilter, setStatusFilter] = useState<ListingStatus | "all">(
     "all",
   );
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const deleteProperty = useDeleteProperty();
 
   const fetchListings = useCallback(
     async (refresh = false) => {
@@ -211,6 +234,34 @@ export function MyListingsPanel() {
     [router],
   );
 
+  const handleDelete = useCallback(
+    (listing: PublishedHousing) => {
+      Alert.alert(
+        "Eliminar publicación",
+        `¿Eliminar "${listing.title}"? Esta acción no se puede deshacer.`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Eliminar",
+            style: "destructive",
+            onPress: async () => {
+              setDeletingId(listing.id);
+              try {
+                await deleteProperty.mutateAsync(Number(listing.id));
+                setListings((prev) => prev.filter((l) => l.id !== listing.id));
+              } catch {
+                Alert.alert("Error", "No se pudo eliminar la publicación.");
+              } finally {
+                setDeletingId(null);
+              }
+            },
+          },
+        ],
+      );
+    },
+    [deleteProperty],
+  );
+
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -244,7 +295,12 @@ export function MyListingsPanel() {
       data={filteredListings}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <ListingCard listing={item} onEdit={handleEdit} />
+        <ListingCard
+          listing={item}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          isDeleting={deletingId === item.id}
+        />
       )}
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
@@ -441,10 +497,26 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
+    gap: 10,
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: Colors.borderLight,
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: Colors.error + "15",
+  },
+  deleteBtnDisabled: { opacity: 0.6 },
+  deleteBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.error,
   },
   editBtn: {
     flexDirection: "row",

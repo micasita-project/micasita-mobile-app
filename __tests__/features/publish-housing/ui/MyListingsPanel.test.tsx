@@ -1,4 +1,5 @@
 import React from 'react';
+import { Alert } from 'react-native';
 import { render, fireEvent, screen, act } from '@testing-library/react-native';
 import { MyListingsPanel } from '@/features/publish-housing/ui/MyListingsPanel';
 import { getMyListings } from '@/features/publish-housing/model/publishHousing.service';
@@ -11,6 +12,11 @@ jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('@/features/auth', () => ({ useAuth: () => mockAuth }));
 jest.mock('@/features/publish-housing/model/publishHousing.service', () => ({
   getMyListings: jest.fn(),
+}));
+
+const mockDeleteAsync = jest.fn();
+jest.mock('@/entities/housing/model/useProperties', () => ({
+  useDeleteProperty: () => ({ mutateAsync: (...a: any[]) => mockDeleteAsync(...a) }),
 }));
 
 const getMock = getMyListings as jest.Mock;
@@ -44,9 +50,17 @@ const PENDING = listing({ id: '1', title: 'Depa pendiente', status: 'pending' })
 const APPROVED = listing({ id: '2', title: 'Casa aprobada', status: 'approved', property_type: 'Casa' });
 const REJECTED = listing({ id: '3', title: 'Cuarto rechazado', status: 'rejected', rejectionReason: 'Fotos borrosas' });
 
+let alertSpy: jest.SpyInstance;
+
 beforeEach(() => {
   mockAuth.user = { id: 7, email: 'ana@mail.com' };
   getMock.mockResolvedValue([PENDING, APPROVED, REJECTED]);
+  mockDeleteAsync.mockResolvedValue(undefined);
+  alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  alertSpy.mockRestore();
 });
 
 // La cabecera se pinta antes que las tarjetas: el primer texto con la etiqueta es la pestaña del filtro.
@@ -260,5 +274,91 @@ describe('MyListingsPanel actualizar', () => {
     expect(screen.getByText('Casa aprobada')).toBeTruthy();
     expect(screen.queryByText('Depa pendiente')).toBeNull();
     expect(getMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('MyListingsPanel eliminar publicación', () => {
+  const confirmButtons = () => alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2] as any[];
+  const pressConfirm = async () => {
+    await act(async () => {
+      await confirmButtons().find((b) => b.text === 'Eliminar').onPress();
+    });
+  };
+
+  it('cada tarjeta tiene su botón Eliminar', async () => {
+    await render(<MyListingsPanel />);
+    expect(screen.getAllByText('Eliminar')).toHaveLength(3);
+  });
+
+  it('pide confirmación con el título y no elimina todavía', async () => {
+    await render(<MyListingsPanel />);
+    await fireEvent.press(screen.getAllByText('Eliminar')[0]);
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    expect(alertSpy.mock.calls[0][0]).toBe('Eliminar publicación');
+    expect(alertSpy.mock.calls[0][1]).toContain('Depa pendiente');
+    expect(mockDeleteAsync).not.toHaveBeenCalled();
+  });
+
+  it('Cancelar no elimina nada', async () => {
+    await render(<MyListingsPanel />);
+    await fireEvent.press(screen.getAllByText('Eliminar')[0]);
+    const cancel = confirmButtons().find((b) => b.text === 'Cancelar');
+    expect(cancel.style).toBe('cancel');
+    expect(cancel.onPress).toBeUndefined();
+    expect(mockDeleteAsync).not.toHaveBeenCalled();
+    expect(screen.getByText('3 propiedades')).toBeTruthy();
+  });
+
+  it('confirmar elimina la publicación elegida con su id numérico y la quita de la lista', async () => {
+    await render(<MyListingsPanel />);
+    await fireEvent.press(screen.getAllByText('Eliminar')[1]);
+    await pressConfirm();
+    expect(mockDeleteAsync).toHaveBeenCalledTimes(1);
+    expect(mockDeleteAsync).toHaveBeenCalledWith(2);
+    expect(screen.queryByText('Casa aprobada')).toBeNull();
+    expect(screen.getByText('Depa pendiente')).toBeTruthy();
+    expect(screen.getByText('Cuarto rechazado')).toBeTruthy();
+    expect(screen.getByText('2 propiedades')).toBeTruthy();
+  });
+
+  it('si el servidor falla avisa del error y conserva la publicación', async () => {
+    mockDeleteAsync.mockRejectedValue(new Error('403'));
+    await render(<MyListingsPanel />);
+    await fireEvent.press(screen.getAllByText('Eliminar')[1]);
+    await pressConfirm();
+    expect(alertSpy).toHaveBeenLastCalledWith('Error', 'No se pudo eliminar la publicación.');
+    expect(screen.getByText('Casa aprobada')).toBeTruthy();
+    expect(screen.getByText('3 propiedades')).toBeTruthy();
+    expect(screen.getAllByText('Eliminar')).toHaveLength(3);
+  });
+
+  it('mientras elimina deshabilita el botón de esa tarjeta y muestra el indicador', async () => {
+    let release!: () => void;
+    mockDeleteAsync.mockReturnValue(new Promise<void>((r) => (release = r)));
+    await render(<MyListingsPanel />);
+    await fireEvent.press(screen.getAllByText('Eliminar')[0]);
+    let pending!: Promise<void>;
+    await act(async () => {
+      pending = confirmButtons().find((b) => b.text === 'Eliminar').onPress();
+    });
+    expect(screen.getAllByText('Eliminar')).toHaveLength(2);
+    const disabled = screen.container.queryAll((n) => n.props.accessibilityState?.disabled === true);
+    // Eliminar y Editar de la tarjeta en curso quedan deshabilitados.
+    expect(disabled).toHaveLength(2);
+    await act(async () => {
+      release();
+      await pending;
+    });
+    expect(screen.queryByText('Depa pendiente')).toBeNull();
+  });
+
+  it('la publicación se puede eliminar en cualquier estado (pendiente, aprobada o rechazada)', async () => {
+    await render(<MyListingsPanel />);
+    for (const [i, id] of [[0, 1], [0, 2], [0, 3]] as const) {
+      await fireEvent.press(screen.getAllByText('Eliminar')[i]);
+      await pressConfirm();
+      expect(mockDeleteAsync).toHaveBeenLastCalledWith(id);
+    }
+    expect(screen.queryByText('Eliminar')).toBeNull();
   });
 });

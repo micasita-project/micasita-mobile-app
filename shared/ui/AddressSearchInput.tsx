@@ -44,30 +44,34 @@ export function AddressSearchInput({
   const [searched, setSearched] = useState(false);
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestId = useRef(0);
 
   const handleTextChange = useCallback(
     (text: string) => {
       onChangeText(text);
       if (timer.current) clearTimeout(timer.current);
+      // Cada cambio invalida las respuestas de búsquedas anteriores.
+      const id = ++requestId.current;
       if (text.trim().length < 3) {
         setSuggestions([]);
         setSearched(false);
         setOpen(false);
+        setIsSearching(false);
         return;
       }
       setOpen(true);
       setIsSearching(true);
       timer.current = setTimeout(async () => {
+        let results: GeocodeSuggestion[] = [];
         try {
-          const results = await searchAddress(text);
-          setSuggestions(results);
-          setSearched(true);
+          results = await searchAddress(text);
         } catch {
-          setSuggestions([]);
-          setSearched(true);
-        } finally {
-          setIsSearching(false);
+          results = [];
         }
+        if (id !== requestId.current) return;
+        setSuggestions(results);
+        setSearched(true);
+        setIsSearching(false);
       }, 400);
     },
     [onChangeText],

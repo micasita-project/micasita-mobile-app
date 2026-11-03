@@ -52,9 +52,17 @@ export function Step1Location({ data, onChange, onOpenMapPicker }: Step1Location
   }, [data.latitude, data.longitude]);
 
   const extractDistrict = useCallback((displayName: string) => {
-    return LIMA_DISTRICTS.find((d) =>
-      displayName.toLowerCase().includes(d.toLowerCase())
-    );
+    const text = displayName.toLowerCase();
+    return LIMA_DISTRICTS.find((d) => {
+      const name = d.toLowerCase();
+      for (let at = text.indexOf(name); at !== -1; at = text.indexOf(name, at + 1)) {
+        const before = text[at - 1];
+        const after = text[at + name.length];
+        const isLetter = (c?: string) => !!c && c.toLowerCase() !== c.toUpperCase();
+        if (!isLetter(before) && !isLetter(after)) return true;
+      }
+      return false;
+    });
   }, []);
 
   const handleSelect = useCallback((item: GeocodeSuggestion) => {

@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/features/auth";
 import { updateProfile, changePassword, deleteAccount } from "@/features/auth/api/auth.service";
+import { deleteAccountAndLeave } from "@/features/auth/model/deleteAccountFlow";
 import { Colors } from "@/shared/config/colors";
 
 export default function EditProfileScreen() {
@@ -110,9 +111,7 @@ export default function EditProfileScreen() {
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
-      await deleteAccount(deletePassword);
-      await logout();
-      router.replace("/(tabs)");
+      await deleteAccountAndLeave({ password: deletePassword, deleteAccount, logout, router });
     } catch (error: any) {
       const message =
         error?.response?.data?.detail ?? "No se pudo eliminar la cuenta.";

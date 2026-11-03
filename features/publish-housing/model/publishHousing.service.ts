@@ -3,7 +3,7 @@
  * @description Servicio para publicar viviendas conectado al backend real.
  */
 
-import { createProperty, uploadPropertyImage, updateProperty } from '@/entities/housing/api/housing.api';
+import { createProperty, uploadPropertyImage, updateProperty, fetchMyProperties } from '@/entities/housing/api/housing.api';
 import type { CreatePropertyRequest } from '@/entities/housing/api/housing.api';
 import type { HousingDraft, PublishedHousing } from '@/shared/types';
 
@@ -156,7 +156,6 @@ export async function updateHousingListing(
  * Obtiene las publicaciones del usuario desde el backend.
  */
 export async function getMyListings(userId: string): Promise<PublishedHousing[]> {
-  const { fetchMyProperties } = await import('@/entities/housing/api/housing.api');
   const all = await fetchMyProperties();
 
   return all.map((h) => ({

@@ -152,9 +152,17 @@ export default function MapScreen() {
   const [showSetup, setShowSetup] = useState(false);
   const [showWorkplaceSheet, setShowWorkplaceSheet] = useState(false);
 
+  // El asistente se ofrece una sola vez por sesión de invitado.
+  const setupOfferedRef = useRef(false);
   useEffect(() => {
-    if (!isInitialized || !isGuest || !guestInitialized) return;
+    if (!isInitialized || !guestInitialized) return;
+    if (!isGuest) {
+      setupOfferedRef.current = false;
+      return;
+    }
+    if (setupOfferedRef.current) return;
     if (!guestHome || !guestWorkplace) {
+      setupOfferedRef.current = true;
       setShowSetup(true);
     }
   }, [isInitialized, isGuest, guestInitialized, guestHome, guestWorkplace]);

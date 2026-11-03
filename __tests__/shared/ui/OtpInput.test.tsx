@@ -1,254 +1,176 @@
 import React, { useState } from 'react';
 import { render, fireEvent, act } from '@testing-library/react-native';
-import { OtpInput } from '@/shared/ui/OtpInput';
+import { OtpInput, normalizeOtp } from '@/shared/ui/OtpInput';
 
-/**
- * Controlled harness: OtpInput is controlled, so a wrapper holds real state.
- * This lets us assert how the value is distributed across the boxes after typing/pasting.
- */
+/** OtpInput es controlado: el arnés guarda el estado real para ver cómo se reparten los dígitos. */
 function Harness({
   length = 6,
   onComplete,
+  initial = '',
 }: {
   length?: number;
   onComplete?: (v: string) => void;
+  initial?: string;
 }) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(initial);
   return (
-    <OtpInput
-      length={length}
-      value={value}
-      onChange={setValue}
-      onComplete={onComplete}
-      autoFocus={false}
-    />
+    <OtpInput length={length} value={value} onChange={setValue} onComplete={onComplete} autoFocus={false} />
   );
 }
 
-// RNTL 14 + React 19: `render` is async, and state updates must be flushed inside act().
-async function setup(props?: { length?: number; onComplete?: (v: string) => void }) {
+async function setup(props?: { length?: number; onComplete?: (v: string) => void; initial?: string }) {
   const utils = await render(<Harness {...props} />);
-  const boxes = () => utils.getAllByTestId('otp-box');
-  const values = () => boxes().map((b) => b.props.value);
-  return { ...utils, boxes, values };
+  const digits = () => utils.getAllByTestId('otp-digit').map((d) => d.props.children);
+  const input = () => utils.getByTestId('otp-input');
+  return { ...utils, digits, input };
 }
 
-// Type/paste into box `i` (the whole string lands in one box's onChangeText, as a real paste does).
-async function change(boxes: () => any[], i: number, text: string) {
+// Lo que escribe o pega el usuario llega entero a onChangeText del único campo.
+async function enter(input: () => any, text: string) {
   await act(async () => {
-    fireEvent.changeText(boxes()[i], text);
+    fireEvent.changeText(input(), text);
   });
 }
-
-// Simulate a physical Backspace key on box `i`.
-async function backspace(boxes: () => any[], i: number) {
-  await act(async () => {
-    fireEvent(boxes()[i], 'keyPress', { nativeEvent: { key: 'Backspace' } });
-  });
-}
-
-// ── Rendering ─────────────────────────────────────────────────────────────────
 
 describe('OtpInput rendering', () => {
-  it('renders `length` separate boxes (default 6)', async () => {
-    const { boxes } = await setup();
-    expect(boxes()).toHaveLength(6);
+  it('muestra `length` casillas (6 por defecto)', async () => {
+    const { getAllByTestId } = await setup();
+    expect(getAllByTestId('otp-box')).toHaveLength(6);
   });
 
-  it('renders a custom number of boxes', async () => {
-    const { boxes } = await setup({ length: 4 });
-    expect(boxes()).toHaveLength(4);
+  it('muestra un número personalizado de casillas', async () => {
+    const { getAllByTestId } = await setup({ length: 4 });
+    expect(getAllByTestId('otp-box')).toHaveLength(4);
   });
 
-  it('starts with all boxes empty', async () => {
-    const { values } = await setup();
-    expect(values()).toEqual(['', '', '', '', '', '']);
+  it('empieza con todas las casillas vacías', async () => {
+    const { digits } = await setup();
+    expect(digits()).toEqual(['', '', '', '', '', '']);
   });
 
-  it('each box accepts only the number-pad keyboard', async () => {
-    const { boxes } = await setup();
-    boxes().forEach((box) => expect(box.props.keyboardType).toBe('number-pad'));
+  it('el campo que recibe el código es invisible para no mostrar el texto pegado sobre las casillas', async () => {
+    const { input } = await setup({ initial: '528301' });
+    const style = Object.assign({}, ...[input().props.style].flat());
+    expect(style.opacity).toBe(0);
+    expect(style.color).toBe('transparent');
+    expect(input().props.caretHidden).toBe(true);
+  });
+
+  it('usa el teclado numérico', async () => {
+    const { input } = await setup();
+    expect(input().props.keyboardType).toBe('number-pad');
   });
 });
 
-// ── Sequential typing (auto-advance) ──────────────────────────────────────────
-
-describe('OtpInput sequential typing', () => {
-  it('places each typed digit in its own box', async () => {
-    const { boxes, values } = await setup();
-
-    await change(boxes, 0, '1');
-    await change(boxes, 1, '2');
-    await change(boxes, 2, '3');
-
-    expect(values()).toEqual(['1', '2', '3', '', '', '']);
+describe('OtpInput escritura', () => {
+  it('reparte cada dígito en su casilla', async () => {
+    const { input, digits } = await setup();
+    await enter(input, '1');
+    await enter(input, '12');
+    await enter(input, '123');
+    expect(digits()).toEqual(['1', '2', '3', '', '', '']);
   });
 
-  it('ignores non-numeric characters', async () => {
-    const { boxes, values } = await setup();
-
-    await change(boxes, 0, 'a');
-
-    expect(values()).toEqual(['', '', '', '', '', '']);
+  it('ignora los caracteres que no son dígitos', async () => {
+    const { input, digits } = await setup();
+    await enter(input, 'a');
+    expect(digits()).toEqual(['', '', '', '', '', '']);
   });
 
-  it('calls onComplete when the last digit fills the final box', async () => {
+  it('llama a onComplete al llenar la última casilla', async () => {
     const onComplete = jest.fn();
-    const { boxes } = await setup({ length: 4, onComplete });
-
-    await change(boxes, 0, '1');
-    await change(boxes, 1, '2');
-    await change(boxes, 2, '3');
-    await change(boxes, 3, '4');
-
+    const { input } = await setup({ length: 4, onComplete });
+    await enter(input, '123');
+    expect(onComplete).not.toHaveBeenCalled();
+    await enter(input, '1234');
     expect(onComplete).toHaveBeenCalledWith('1234');
   });
 
-  it('does not call onComplete before all boxes are filled', async () => {
+  it('no vuelve a llamar a onComplete si el código completo no cambió', async () => {
     const onComplete = jest.fn();
-    const { boxes } = await setup({ length: 4, onComplete });
-
-    await change(boxes, 0, '1');
-    await change(boxes, 1, '2');
-
+    const { input } = await setup({ initial: '528301', onComplete });
+    await enter(input, '528301');
     expect(onComplete).not.toHaveBeenCalled();
   });
+
+  it('borrar quita el último dígito', async () => {
+    const { input, digits } = await setup({ initial: '123' });
+    await enter(input, '12');
+    expect(digits()).toEqual(['1', '2', '', '', '', '']);
+  });
+
+  it('borrar todo vacía las casillas', async () => {
+    const { input, digits } = await setup({ initial: '12' });
+    await enter(input, '');
+    expect(digits()).toEqual(['', '', '', '', '', '']);
+  });
 });
 
-// ── Paste (distribute full code) ──────────────────────────────────────────────
-
-describe('OtpInput paste', () => {
-  it('distributes a full pasted code across all boxes', async () => {
-    const { boxes, values } = await setup();
-
-    // Pasting delivers the whole string to the first box's onChangeText
-    await change(boxes, 0, '123456');
-
-    expect(values()).toEqual(['1', '2', '3', '4', '5', '6']);
+describe('OtpInput pegado', () => {
+  it('reparte un código completo entre todas las casillas', async () => {
+    const { input, digits } = await setup();
+    await enter(input, '528301');
+    expect(digits()).toEqual(['5', '2', '8', '3', '0', '1']);
   });
 
-  it('calls onComplete after a full paste', async () => {
+  it('llama a onComplete tras pegar el código completo', async () => {
     const onComplete = jest.fn();
-    const { boxes } = await setup({ onComplete });
-
-    await change(boxes, 0, '123456');
-
-    expect(onComplete).toHaveBeenCalledWith('123456');
+    const { input } = await setup({ onComplete });
+    await enter(input, '528301');
+    expect(onComplete).toHaveBeenCalledWith('528301');
   });
 
-  it('strips non-digits and separators when pasting', async () => {
-    const { boxes, values } = await setup();
-
-    await change(boxes, 0, '12-34 56');
-
-    expect(values()).toEqual(['1', '2', '3', '4', '5', '6']);
+  it('quita espacios y guiones al pegar', async () => {
+    const { input, digits } = await setup();
+    await enter(input, '528 301');
+    expect(digits()).toEqual(['5', '2', '8', '3', '0', '1']);
+    await enter(input, '528-301');
+    expect(digits()).toEqual(['5', '2', '8', '3', '0', '1']);
   });
 
-  it('truncates a paste longer than the box count', async () => {
+  it('recorta un pegado más largo que las casillas', async () => {
     const onComplete = jest.fn();
-    const { boxes, values } = await setup({ onComplete });
-
-    await change(boxes, 0, '12345678');
-
-    expect(onComplete).toHaveBeenCalledWith('123456');
-    expect(values()).toEqual(['1', '2', '3', '4', '5', '6']);
+    const { input, digits } = await setup({ onComplete });
+    await enter(input, '52830199');
+    expect(digits()).toEqual(['5', '2', '8', '3', '0', '1']);
+    expect(onComplete).toHaveBeenCalledWith('528301');
   });
 
-  it('fills only the first boxes on a partial paste without completing', async () => {
+  it('un pegado parcial llena las primeras casillas sin completar', async () => {
     const onComplete = jest.fn();
-    const { boxes, values } = await setup({ onComplete });
-
-    await change(boxes, 0, '123');
-
-    expect(values()).toEqual(['1', '2', '3', '', '', '']);
+    const { input, digits } = await setup({ onComplete });
+    await enter(input, '528');
+    expect(digits()).toEqual(['5', '2', '8', '', '', '']);
     expect(onComplete).not.toHaveBeenCalled();
   });
-});
 
-// ── Paste / typing over a box that already holds a digit ─────────────────────
-
-describe('OtpInput paste over a filled box', () => {
-  it('lets a box hold its own digit plus a full pasted code', async () => {
-    const { boxes } = await setup();
-
-    boxes().forEach((box) => expect(box.props.maxLength).toBeGreaterThanOrEqual(7));
+  it('pegar el código completo detrás de un dígito ya escrito lo reemplaza', async () => {
+    const { input, digits } = await setup({ initial: '5' });
+    // El campo conserva el "5" y añade lo pegado.
+    await enter(input, '5528301');
+    expect(digits()).toEqual(['5', '2', '8', '3', '0', '1']);
   });
 
-  it('distributes a full code pasted after the digit already in the first box', async () => {
-    const onComplete = jest.fn();
-    const { boxes, values } = await setup({ onComplete });
-
-    await change(boxes, 0, '9');
-    // The native input delivers the kept digit followed by the pasted text.
-    await change(boxes, 0, '9123456');
-
-    expect(values()).toEqual(['1', '2', '3', '4', '5', '6']);
-    expect(onComplete).toHaveBeenCalledWith('123456');
+  it('pegar un código distinto detrás de dígitos escritos usa solo el pegado', async () => {
+    const { input, digits } = await setup({ initial: '12' });
+    await enter(input, '12987654');
+    expect(digits()).toEqual(['9', '8', '7', '6', '5', '4']);
   });
 
-  it('keeps a full code that replaces the selected digit of the first box', async () => {
-    const { boxes, values } = await setup();
-
-    await change(boxes, 0, '1');
-    // Selection replaced: the box receives only the pasted code, which starts with the old digit.
-    await change(boxes, 0, '123456');
-
-    expect(values()).toEqual(['1', '2', '3', '4', '5', '6']);
-  });
-
-  it('distributes a full code pasted into a later empty box', async () => {
-    const { boxes, values } = await setup();
-
-    await change(boxes, 0, '1');
-    await change(boxes, 1, '2');
-    await change(boxes, 2, '654321');
-
-    expect(values()).toEqual(['6', '5', '4', '3', '2', '1']);
-  });
-
-  it('replaces one digit without wiping the rest when typing over a filled box', async () => {
-    const { boxes, values } = await setup();
-
-    await change(boxes, 0, '123456');
-    // Cursor after the existing "2": the box receives "27".
-    await change(boxes, 1, '27');
-
-    expect(values()).toEqual(['1', '7', '3', '4', '5', '6']);
+  it('pegar sobre una selección completa sustituye todo el código', async () => {
+    const { input, digits } = await setup({ initial: '111111' });
+    await enter(input, '528301');
+    expect(digits()).toEqual(['5', '2', '8', '3', '0', '1']);
   });
 });
 
-// ── Backspace / deletion ──────────────────────────────────────────────────────
-
-describe('OtpInput deletion', () => {
-  it('removes the last digit when backspace is pressed on the empty active box', async () => {
-    const { boxes, values } = await setup();
-
-    await change(boxes, 0, '1');
-    await change(boxes, 1, '2');
-
-    // Backspace on the first empty box (index 2) removes the previous digit
-    await backspace(boxes, 2);
-
-    expect(values()).toEqual(['1', '', '', '', '', '']);
+describe('normalizeOtp', () => {
+  it('deja solo dígitos y recorta a la longitud', () => {
+    expect(normalizeOtp('a1b2c3', '', 6)).toBe('123');
+    expect(normalizeOtp('1234567', '', 6)).toBe('123456');
   });
 
-  it('clears a box when its content is deleted', async () => {
-    const { boxes, values } = await setup();
-
-    await change(boxes, 0, '1');
-    await change(boxes, 1, '2');
-
-    // Delete content of box 1
-    await change(boxes, 1, '');
-
-    expect(values()).toEqual(['1', '', '', '', '', '']);
-  });
-
-  it('does nothing when backspacing with an empty code', async () => {
-    const { boxes, values } = await setup();
-
-    await backspace(boxes, 0);
-
-    expect(values()).toEqual(['', '', '', '', '', '']);
+  it('con prefijo ya escrito, un añadido más corto que el código se conserva', () => {
+    expect(normalizeOtp('1234', '123', 6)).toBe('1234');
   });
 });

@@ -101,10 +101,10 @@ export function usePublishForm(initialDraft?: HousingDraft, propertyId?: string)
   );
 
   const reset = useCallback(() => {
-    setDraft(INITIAL_DRAFT);
+    setDraft(initialDraft || INITIAL_DRAFT);
     setCurrentStep(1);
     setError(null);
-  }, []);
+  }, [initialDraft]);
 
   return { currentStep, draft, isSubmitting, error, updateDraft, nextStep, prevStep, submit, update, reset };
 }

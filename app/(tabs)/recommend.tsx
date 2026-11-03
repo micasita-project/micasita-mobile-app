@@ -22,7 +22,7 @@ import {
 } from "@/features/recommendation/model/useRecommendations";
 import { useToggleFavorite } from "@/entities/housing/model/useProperties";
 import { Colors } from "@/shared/config/colors";
-import { getTransportConfig } from "@/shared/config/transport";
+import { getTransportConfig, normalizeTransportMode } from "@/shared/config/transport";
 import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
 import type { Housing, TransportMode } from "@/shared/types";
 import { formatPrice } from "@/shared/utils/currency";
@@ -190,7 +190,7 @@ export default function RecommendScreen() {
   ]);
 
   const { data: cachedResults, isLoading: loadingCached } =
-    useLatestRecommendations(selectedWorkplaceId);
+    useLatestRecommendations(isAuthenticated ? selectedWorkplaceId : null);
   const generateRecs = useGenerateRecommendations();
   const toggleFavorite = useToggleFavorite();
 
@@ -425,7 +425,7 @@ export default function RecommendScreen() {
                   <View style={styles.searchCell}>
                     <Text style={styles.searchCellLabel}>MODO</Text>
                     {(() => {
-                      const cfg = getTransportConfig(guestWorkplace.transport as TransportMode);
+                      const cfg = getTransportConfig(normalizeTransportMode(guestWorkplace.transport));
                       return (
                         <View style={styles.transportBadge}>
                           <Ionicons name={cfg.iconOutline} size={13} color={cfg.color} />

@@ -97,7 +97,11 @@ export function HomeSheet({ visible, onClose, onSaved }: HomeSheetProps) {
     setIsSaving(true);
     try {
       if (user) {
-        await setHome({ home_lat, home_lon, home_address });
+        const saved = await setHome({ home_lat, home_lon, home_address });
+        if (saved === false) {
+          Alert.alert("Error", "No se pudo actualizar la vivienda.");
+          return;
+        }
         if (activeWorkplace) {
           // Fire-and-forget: no bloquea el cierre del sheet, invalida el
           // cache de "latest" al terminar (ver useGenerateRecommendations).

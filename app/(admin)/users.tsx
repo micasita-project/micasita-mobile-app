@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, RefreshControl, TextInput } from 'react-native';
 import { Colors } from '@/shared/config/colors';
 import { getAllUsers, updateUserStatus } from '@/features/admin/api/admin.api';
@@ -53,9 +53,13 @@ export default function AdminUsersScreen() {
     }, [])
   );
 
+  // La primera carga la hace useFocusEffect; esto solo reacciona al texto del buscador.
+  const searchMounted = useRef(false);
   useEffect(() => {
-    // Cuando el usuario escribe en el buscador, hacemos un reset.
-    // Podríamos usar un debounce aquí, pero simplificaremos reiniciando la carga al cambiar el texto.
+    if (!searchMounted.current) {
+      searchMounted.current = true;
+      return;
+    }
     const delayDebounceFn = setTimeout(() => {
       fetchUsers(true, searchQuery);
     }, 500);

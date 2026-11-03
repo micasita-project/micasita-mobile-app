@@ -19,7 +19,7 @@ interface AppMarkerProps {
 export function AppMarker({ coordinate, onPress, children }: AppMarkerProps) {
   const idRef = useRef(`marker-${++_idCounter}`);
 
-  if (!coordinate?.latitude || !coordinate?.longitude) return null;
+  if (!Number.isFinite(coordinate?.latitude) || !Number.isFinite(coordinate?.longitude)) return null;
 
   return (
     <Marker

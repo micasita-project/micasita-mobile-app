@@ -1,20 +1,13 @@
 /**
  * @layer shared/ui
  * @description Input de código OTP con casillas separadas.
- * - Escribes un dígito y salta automáticamente a la siguiente casilla.
- * - Backspace en una casilla vacía retrocede y borra la anterior.
- * - Al pegar el código completo se distribuye entre todas las casillas.
+ * Un único campo de texto invisible recibe lo que se escribe o se pega y las
+ * casillas solo lo muestran, así que un código pegado se reparte siempre
+ * entre todas las casillas.
  */
 
-import React, { useRef } from "react";
-import {
-  View,
-  TextInput,
-  StyleSheet,
-  Keyboard,
-  type NativeSyntheticEvent,
-  type TextInputKeyPressEventData,
-} from "react-native";
+import React, { useRef, useState } from "react";
+import { Keyboard, StyleSheet, Text, TextInput, View } from "react-native";
 
 interface OtpInputProps {
   length?: number;
@@ -25,6 +18,16 @@ interface OtpInputProps {
   disabled?: boolean;
 }
 
+/** Deja solo los dígitos; si se pegó un código completo detrás de lo ya escrito, usa el pegado. */
+export function normalizeOtp(text: string, current: string, length: number): string {
+  const digits = text.replace(/\D/g, "");
+  if (current && digits.startsWith(current)) {
+    const inserted = digits.slice(current.length);
+    if (inserted.length >= length) return inserted.slice(0, length);
+  }
+  return digits.slice(0, length);
+}
+
 export function OtpInput({
   length = 6,
   value,
@@ -33,107 +36,68 @@ export function OtpInput({
   autoFocus = true,
   disabled = false,
 }: OtpInputProps) {
-  const inputs = useRef<Array<TextInput | null>>([]);
+  const inputRef = useRef<TextInput>(null);
+  const [focused, setFocused] = useState(false);
 
-  const focusBox = (index: number) => {
-    const i = Math.max(0, Math.min(index, length - 1));
-    inputs.current[i]?.focus();
-  };
-
-  const handleChange = (text: string, index: number) => {
-    let digits = text.replace(/\D/g, "");
-
-    // La casilla conserva su dígito: se descarta para quedarse con lo nuevo.
-    const previous = value[index] ?? "";
-    if (previous && digits.length > 1 && digits.length !== length) {
-      if (digits.startsWith(previous)) digits = digits.slice(previous.length);
-      else if (digits.endsWith(previous)) digits = digits.slice(0, -previous.length);
-    }
-
-    // ── Pegado / multi-dígito: distribuir desde el inicio ──────────
-    if (digits.length > 1) {
-      const next = digits.slice(0, length);
-      onChange(next);
-      if (next.length >= length) {
-        Keyboard.dismiss();
-        onComplete?.(next);
-      } else {
-        focusBox(next.length);
-      }
-      return;
-    }
-
-    // ── Un solo dígito ─────────────────────────────────────────────
-    if (digits.length === 1) {
-      const next =
-        index >= value.length
-          ? (value + digits).slice(0, length)
-          : (value.slice(0, index) + digits + value.slice(index + 1)).slice(
-              0,
-              length,
-            );
-      onChange(next);
-
-      if (index < length - 1) {
-        focusBox(index + 1);
-      } else {
-        inputs.current[index]?.blur();
-      }
-
-      if (next.length === length) {
-        Keyboard.dismiss();
-        onComplete?.(next);
-      }
-      return;
-    }
-
-    // ── Borrado dentro de la casilla actual ────────────────────────
-    if (index < value.length) {
-      onChange(value.slice(0, index) + value.slice(index + 1));
+  const handleChange = (text: string) => {
+    const next = normalizeOtp(text, value, length);
+    onChange(next);
+    if (next.length === length && next !== value) {
+      Keyboard.dismiss();
+      onComplete?.(next);
     }
   };
 
-  const handleKeyPress = (
-    e: NativeSyntheticEvent<TextInputKeyPressEventData>,
-    index: number,
-  ) => {
-    if (e.nativeEvent.key === "Backspace" && !value[index] && value.length > 0) {
-      onChange(value.slice(0, -1));
-      focusBox(Math.max(0, value.length - 1));
-    }
-  };
+  const activeIndex = Math.min(value.length, length - 1);
 
   return (
-    <View style={styles.row}>
-      {Array.from({ length }).map((_, i) => (
-        <TextInput
-          key={i}
-          testID="otp-box"
-          ref={(el) => {
-            inputs.current[i] = el;
-          }}
-          style={[
-            styles.box,
-            value[i] ? styles.boxFilled : null,
-            disabled && styles.boxDisabled,
-          ]}
-          value={value[i] ?? ""}
-          onChangeText={(t) => handleChange(t, i)}
-          onKeyPress={(e) => handleKeyPress(e, i)}
-          keyboardType="number-pad"
-          maxLength={length + 1}
-          autoFocus={autoFocus && i === 0}
-          editable={!disabled}
-          selectTextOnFocus
-          textContentType="oneTimeCode"
-          returnKeyType="done"
-        />
-      ))}
+    <View style={styles.wrapper}>
+      <View style={styles.row} pointerEvents="none">
+        {Array.from({ length }).map((_, i) => (
+          <View
+            key={i}
+            testID="otp-box"
+            style={[
+              styles.box,
+              value[i] ? styles.boxFilled : null,
+              focused && i === activeIndex ? styles.boxActive : null,
+              disabled && styles.boxDisabled,
+            ]}
+          >
+            <Text testID="otp-digit" style={styles.digit}>
+              {value[i] ?? ""}
+            </Text>
+          </View>
+        ))}
+      </View>
+      <TextInput
+        ref={inputRef}
+        testID="otp-input"
+        style={styles.input}
+        value={value}
+        onChangeText={handleChange}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        keyboardType="number-pad"
+        maxLength={32}
+        autoFocus={autoFocus}
+        editable={!disabled}
+        caretHidden
+        selectionColor="transparent"
+        cursorColor="transparent"
+        underlineColorAndroid="transparent"
+        contextMenuHidden={false}
+        textContentType="oneTimeCode"
+        autoComplete="sms-otp"
+        importantForAutofill="yes"
+        returnKeyType="done"
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: { position: "relative" },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -147,16 +111,29 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.12)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.15)",
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "700",
-    textAlign: "center",
+    alignItems: "center",
+    justifyContent: "center",
   },
   boxFilled: {
     borderColor: "rgba(255,255,255,0.6)",
     backgroundColor: "rgba(255,255,255,0.20)",
   },
+  boxActive: {
+    borderColor: "#FFFFFF",
+    borderWidth: 2,
+  },
   boxDisabled: {
     opacity: 0.5,
+  },
+  digit: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  input: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0,
+    color: "transparent",
+    backgroundColor: "transparent",
   },
 });

@@ -121,10 +121,12 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
       if (!propertyId) {
         await clearPublishDraft();
       }
-    } else {
-      Alert.alert(propertyId ? 'Error al actualizar' : 'Error al publicar', error ?? 'Intenta de nuevo más tarde.');
     }
   };
+
+  useEffect(() => {
+    if (error) Alert.alert(propertyId ? 'Error al actualizar' : 'Error al publicar', error);
+  }, [error, propertyId]);
 
   const handleViewMyListings = () => {
     setShowSuccess(false);

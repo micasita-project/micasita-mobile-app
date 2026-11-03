@@ -39,9 +39,9 @@ export function buildRecommendationMessage(item: RecommendationItem): string {
   }
 
   const minutes = Math.round(item.predicted_time_min);
-  if (item.predicted_time_min <= 20)
+  if (minutes <= 20)
     return `A solo ${minutes} min de tu trabajo — excelente ubicación.`;
-  if (item.predicted_time_min <= 40)
+  if (minutes <= 40)
     return `Trayecto cómodo de ${minutes} min al trabajo.`;
 
   const highlight = buildHighlights(item) || "buenas características";

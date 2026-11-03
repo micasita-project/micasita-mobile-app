@@ -10,13 +10,13 @@
 import { searchAddress, type GeocodeSuggestion } from '@/shared/api/geocode.service';
 import { Colors } from '@/shared/config/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { SheetTextInput } from '@/shared/ui/SheetTextInput';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -103,7 +103,7 @@ export function AddressSearchInput({
     <View style={styles.wrapper}>
       <View style={styles.inputRow}>
         <Ionicons name="search" size={18} color={Colors.textMuted} style={styles.icon} />
-        <TextInput
+        <SheetTextInput
           style={styles.input}
           placeholder={placeholder}
           placeholderTextColor={Colors.textMuted}

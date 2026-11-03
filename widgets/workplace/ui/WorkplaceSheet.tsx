@@ -20,19 +20,18 @@ import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
 import { Colors } from "@/shared/config/colors";
 import { TRANSPORT_MODE_CONFIG } from "@/shared/config/transport";
 import type { TransportMode } from "@/shared/types";
+import { SheetTextInput } from '@/shared/ui/SheetTextInput';
 import { BottomSheet } from "@/shared/ui/BottomSheet";
 import { AddressSearchInput } from "@/shared/ui/AddressSearchInput";
 import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
-import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -308,15 +307,11 @@ export function WorkplaceSheet({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      maxHeightRatio={isEdit ? 0.56 : 0.55}
-      expandable
+      maxHeightRatio={0.85}
+      contentPanning={false}
       footer={footer}
     >
-      <ScrollView
-        style={{ paddingHorizontal: 24 }}
-        contentContainerStyle={{ paddingBottom: 16 }}
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
         <Text style={styles.sheetTitle}>
           {isEdit ? "Editar Lugar de Trabajo" : "Nuevo Lugar de Trabajo"}
         </Text>
@@ -353,7 +348,7 @@ export function WorkplaceSheet({
           <Text style={styles.mapBtnText}>Elegir en el mapa</Text>
         </TouchableOpacity>
 
-        <TextInput
+        <SheetTextInput
           style={[styles.fieldInput, { marginTop: 8 }]}
           placeholder="Presupuesto Mensual (S/)"
           placeholderTextColor={Colors.textMuted}
@@ -416,7 +411,7 @@ export function WorkplaceSheet({
             <Text style={{ fontSize: 11, color: Colors.textMuted }}>30 km</Text>
           </View>
         </View>
-      </ScrollView>
+      </View>
 
       <MapPickerModal
         visible={mapVisible}

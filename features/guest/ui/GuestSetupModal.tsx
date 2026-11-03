@@ -10,16 +10,17 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  ScrollView,
   Alert,
+  Keyboard,
+  LayoutAnimation,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
 import { MapPickerModal } from '@/widgets/location-picker/MapPickerModal';
+import { SheetTextInput } from '@/shared/ui/SheetTextInput';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { type GeocodeSuggestion } from '@/shared/api/geocode.service';
 import { AddressSearchInput } from '@/shared/ui/AddressSearchInput';
@@ -28,6 +29,14 @@ import { TRANSPORT_MODE_CONFIG } from '@/shared/config/transport';
 import { useGuest, type GuestHome, type GuestWorkplace, type TransportOption } from '../model/GuestContext';
 import { useGuestRecommendations } from '@/features/recommendation/model/useRecommendations';
 import { isWithinLima, LIMA_LOCATION_ERROR } from '@/shared/utils/geo';
+import {
+  SETUP_STEPS,
+  nextStep,
+  previousStep,
+  stepNumber,
+  validateSetupStep,
+  type SetupStep,
+} from '../model/setupSteps';
 
 const KM_MIN = 1;
 const KM_MAX = 30;
@@ -38,6 +47,12 @@ interface AddressField {
   selected: GeocodeSuggestion | null;
 }
 const EMPTY_FIELD: AddressField = { query: '', selected: null };
+
+const STEP_TITLE: Record<SetupStep, string> = {
+  home: 'Tu vivienda actual',
+  work: 'Tu lugar de trabajo',
+  prefs: 'Presupuesto y transporte',
+};
 
 interface Props {
   visible: boolean;
@@ -86,7 +101,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
   const { guestHome, guestWorkplace, setGuestHome, setGuestWorkplace, saveGuestRecommendations } = useGuest();
   const guestMutation = useGuestRecommendations();
 
-  const [step, setStep] = useState<'home' | 'work'>('home');
+  const [step, setStep] = useState<SetupStep>('home');
   const [home, setHome] = useState<AddressField>(EMPTY_FIELD);
   const [work, setWork] = useState<AddressField>(EMPTY_FIELD);
   const [budget, setBudget] = useState('');
@@ -132,15 +147,25 @@ export function GuestSetupModal({ visible, onClose }: Props) {
   }, []);
 
   // ── Navigation ────────────────────────────────────────────────
+  const goToStep = (target: SetupStep) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setStep(target);
+  };
+
+  const stepDraft = { homeSelected: !!home.selected, workSelected: !!work.selected, budget };
+
   const handleNextStep = () => {
-    if (!home.selected) { Alert.alert('Falta dirección', 'Busca y selecciona tu vivienda actual.'); return; }
-    setStep('work');
+    const problem = validateSetupStep(step, stepDraft);
+    if (problem) { Alert.alert(problem.title, problem.message); return; }
+    Keyboard.dismiss();
+    goToStep(nextStep(step));
   };
 
   const handleSave = async () => {
+    const problem = validateSetupStep('prefs', stepDraft);
+    if (problem) { Alert.alert(problem.title, problem.message); return; }
     if (!work.selected) { Alert.alert('Falta dirección', 'Busca y selecciona tu lugar de trabajo.'); return; }
     const budgetNum = parseFloat(budget);
-    if (isNaN(budgetNum) || budgetNum <= 0) { Alert.alert('Presupuesto inválido', 'Ingresa un presupuesto mensual válido.'); return; }
 
     if (home.selected && !isWithinLima(home.selected.latitude, home.selected.longitude)) {
       Alert.alert('Fuera de cobertura', `Tu vivienda: ${LIMA_LOCATION_ERROR}`);
@@ -225,12 +250,20 @@ export function GuestSetupModal({ visible, onClose }: Props) {
     );
   };
 
-  const footer = step === 'home' ? (
+  const canAdvance = step === 'home' ? !!home.selected : !!work.selected;
+
+  const footer = step !== 'prefs' ? (
     <View style={styles.row}>
+      {step === 'work' && (
+        <TouchableOpacity style={styles.backBtn} onPress={() => goToStep(previousStep(step))}>
+          <Ionicons name="arrow-back" size={18} color={Colors.textSecondary} />
+          <Text style={styles.backBtnText}>Atrás</Text>
+        </TouchableOpacity>
+      )}
       <TouchableOpacity
-        style={[styles.primaryBtn, { flex: 1 }, !home.selected && styles.btnDisabled]}
+        style={[styles.primaryBtn, { flex: 1 }, !canAdvance && styles.btnDisabled]}
         onPress={handleNextStep}
-        disabled={!home.selected}
+        disabled={!canAdvance}
         activeOpacity={0.8}
       >
         <Text style={styles.primaryBtnText}>Siguiente</Text>
@@ -239,7 +272,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
     </View>
   ) : (
     <View style={styles.row}>
-      <TouchableOpacity style={styles.backBtn} onPress={() => setStep('home')}>
+      <TouchableOpacity style={styles.backBtn} onPress={() => goToStep(previousStep(step))}>
         <Ionicons name="arrow-back" size={18} color={Colors.textSecondary} />
         <Text style={styles.backBtnText}>Atrás</Text>
       </TouchableOpacity>
@@ -262,7 +295,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
   );
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose} maxHeightRatio={0.42} expandable footer={footer}>
+    <BottomSheet visible={visible} onClose={handleClose} maxHeightRatio={0.85} contentPanning={step !== 'prefs'} footer={footer}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerIcon}>
@@ -271,7 +304,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Configura tu búsqueda</Text>
           <Text style={styles.subtitle}>
-            {step === 'home' ? 'Paso 1 de 2 — Tu vivienda actual' : 'Paso 2 de 2 — Tu lugar de trabajo'}
+            {`Paso ${stepNumber(step)} de ${SETUP_STEPS.length} — ${STEP_TITLE[step]}`}
           </Text>
         </View>
         <TouchableOpacity onPress={handleClose} hitSlop={12}>
@@ -279,29 +312,32 @@ export function GuestSetupModal({ visible, onClose }: Props) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {step === 'home' ? (
+      <View style={styles.scrollContent}>
+        {step === 'home' && (
           <>
             <Text style={styles.fieldLabel}>Tu vivienda actual</Text>
             {renderAddressField('home')}
           </>
-        ) : (
+        )}
+
+        {step === 'work' && (
           <>
             <Text style={styles.fieldLabel}>Tu lugar de trabajo</Text>
             {renderAddressField('work')}
+          </>
+        )}
 
+        {step === 'prefs' && (
+          <>
             <Text style={styles.fieldLabel}>Presupuesto mensual (S/)</Text>
-            <TextInput
+            <SheetTextInput
               style={styles.fieldInput}
               placeholder="1500"
               placeholderTextColor={Colors.textMuted}
               value={budget}
               onChangeText={setBudget}
               keyboardType="numeric"
+              returnKeyType="done"
             />
 
             <Text style={styles.fieldLabel}>Transporte preferido</Text>
@@ -328,7 +364,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
             <RadiusSlider value={maxDistanceKm} onChange={setMaxDistanceKm} />
           </>
         )}
-      </ScrollView>
+      </View>
 
       <MapPickerModal
         visible={!!mapTarget}

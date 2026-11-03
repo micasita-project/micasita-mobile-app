@@ -28,7 +28,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -132,7 +131,7 @@ export function HomeSheet({ visible, onClose, onSaved }: HomeSheetProps) {
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      maxHeightRatio={0.42}
+      maxHeightRatio={0.8}
       footer={
         <View style={styles.sheetActions}>
           <TouchableOpacity style={styles.sheetCancel} onPress={handleClose}>
@@ -152,11 +151,7 @@ export function HomeSheet({ visible, onClose, onSaved }: HomeSheetProps) {
         </View>
       }
     >
-      <ScrollView
-        style={{ paddingHorizontal: 24 }}
-        contentContainerStyle={{ paddingBottom: 16 }}
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
         <Text style={styles.sheetTitle}>Mi Vivienda Actual</Text>
         <AddressSearchInput
           value={addr.query}
@@ -181,7 +176,7 @@ export function HomeSheet({ visible, onClose, onSaved }: HomeSheetProps) {
           <Ionicons name="map-outline" size={20} color={Colors.primary} />
           <Text style={styles.mapBtnText}>Elegir en el mapa</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       <MapPickerModal
         visible={mapVisible}

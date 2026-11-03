@@ -12,10 +12,8 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
   Alert,
-  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +23,7 @@ import { useProperties, useToggleFavorite } from '@/entities/housing/model/usePr
 import type { PropertyFilters } from '@/entities/housing/api/housing.api';
 import { Colors } from '@/shared/config/colors';
 import type { Housing } from '@/shared/types';
+import { SheetTextInput } from '@/shared/ui/SheetTextInput';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 
 // ── Filter defaults ──────────────────────────────────────────────
@@ -263,8 +262,7 @@ export default function HousingScreen() {
       <BottomSheet
         visible={filterOpen}
         onClose={() => setFilterOpen(false)}
-        maxHeightRatio={0.58}
-        expandable
+        maxHeightRatio={0.85}
         footer={
           <View style={filterStyles.actions}>
             <TouchableOpacity
@@ -284,19 +282,14 @@ export default function HousingScreen() {
           </View>
         }
       >
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={filterStyles.container}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={filterStyles.container}>
           <Text style={filterStyles.title}>Filtros de búsqueda</Text>
 
           {/* District */}
           <Text style={filterStyles.sectionLabel}>Distrito</Text>
           <View style={filterStyles.inputRow}>
             <Ionicons name="location-outline" size={18} color={Colors.textMuted} />
-            <TextInput
+            <SheetTextInput
               style={filterStyles.input}
               placeholder="Ej. Miraflores, San Isidro..."
               placeholderTextColor={Colors.textMuted}
@@ -336,7 +329,7 @@ export default function HousingScreen() {
           <Text style={filterStyles.sectionLabel}>Área mínima (m²)</Text>
           <View style={filterStyles.inputRow}>
             <Ionicons name="resize-outline" size={18} color={Colors.textMuted} />
-            <TextInput
+            <SheetTextInput
               style={filterStyles.input}
               placeholder="Ej. 50"
               placeholderTextColor={Colors.textMuted}
@@ -356,7 +349,7 @@ export default function HousingScreen() {
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <View style={[filterStyles.inputRow, { flex: 1 }]}>
               <Text style={{ fontSize: 13, color: Colors.textMuted, fontWeight: '600' }}>Min</Text>
-              <TextInput
+              <SheetTextInput
                 style={filterStyles.input}
                 placeholder="0"
                 placeholderTextColor={Colors.textMuted}
@@ -372,7 +365,7 @@ export default function HousingScreen() {
             </View>
             <View style={[filterStyles.inputRow, { flex: 1 }]}>
               <Text style={{ fontSize: 13, color: Colors.textMuted, fontWeight: '600' }}>Max</Text>
-              <TextInput
+              <SheetTextInput
                 style={filterStyles.input}
                 placeholder="Inf"
                 placeholderTextColor={Colors.textMuted}
@@ -387,7 +380,7 @@ export default function HousingScreen() {
               ) : null}
             </View>
           </View>
-        </ScrollView>
+        </View>
       </BottomSheet>
     </View>
   );

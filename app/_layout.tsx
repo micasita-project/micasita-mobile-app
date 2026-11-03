@@ -9,6 +9,8 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import { AuthProvider, useAuth, ConsentModal } from '@/features/auth';
 import { GuestProvider } from '@/features/guest';
@@ -156,15 +158,19 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <GuestProvider>
-          <SelectedWorkplaceProvider>
-            <RootNavigator />
-            <StatusBar style="light" />
-          </SelectedWorkplaceProvider>
-        </GuestProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <GuestProvider>
+            <SelectedWorkplaceProvider>
+              <BottomSheetModalProvider>
+                <RootNavigator />
+                <StatusBar style="light" />
+              </BottomSheetModalProvider>
+            </SelectedWorkplaceProvider>
+          </GuestProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

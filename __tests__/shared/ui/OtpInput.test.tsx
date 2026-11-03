@@ -165,6 +165,58 @@ describe('OtpInput paste', () => {
   });
 });
 
+// ── Paste / typing over a box that already holds a digit ─────────────────────
+
+describe('OtpInput paste over a filled box', () => {
+  it('lets a box hold its own digit plus a full pasted code', async () => {
+    const { boxes } = await setup();
+
+    boxes().forEach((box) => expect(box.props.maxLength).toBeGreaterThanOrEqual(7));
+  });
+
+  it('distributes a full code pasted after the digit already in the first box', async () => {
+    const onComplete = jest.fn();
+    const { boxes, values } = await setup({ onComplete });
+
+    await change(boxes, 0, '9');
+    // The native input delivers the kept digit followed by the pasted text.
+    await change(boxes, 0, '9123456');
+
+    expect(values()).toEqual(['1', '2', '3', '4', '5', '6']);
+    expect(onComplete).toHaveBeenCalledWith('123456');
+  });
+
+  it('keeps a full code that replaces the selected digit of the first box', async () => {
+    const { boxes, values } = await setup();
+
+    await change(boxes, 0, '1');
+    // Selection replaced: the box receives only the pasted code, which starts with the old digit.
+    await change(boxes, 0, '123456');
+
+    expect(values()).toEqual(['1', '2', '3', '4', '5', '6']);
+  });
+
+  it('distributes a full code pasted into a later empty box', async () => {
+    const { boxes, values } = await setup();
+
+    await change(boxes, 0, '1');
+    await change(boxes, 1, '2');
+    await change(boxes, 2, '654321');
+
+    expect(values()).toEqual(['6', '5', '4', '3', '2', '1']);
+  });
+
+  it('replaces one digit without wiping the rest when typing over a filled box', async () => {
+    const { boxes, values } = await setup();
+
+    await change(boxes, 0, '123456');
+    // Cursor after the existing "2": the box receives "27".
+    await change(boxes, 1, '27');
+
+    expect(values()).toEqual(['1', '7', '3', '4', '5', '6']);
+  });
+});
+
 // ── Backspace / deletion ──────────────────────────────────────────────────────
 
 describe('OtpInput deletion', () => {

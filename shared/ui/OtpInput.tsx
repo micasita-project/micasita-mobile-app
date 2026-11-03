@@ -41,7 +41,14 @@ export function OtpInput({
   };
 
   const handleChange = (text: string, index: number) => {
-    const digits = text.replace(/\D/g, "");
+    let digits = text.replace(/\D/g, "");
+
+    // La casilla conserva su dígito: se descarta para quedarse con lo nuevo.
+    const previous = value[index] ?? "";
+    if (previous && digits.length > 1 && digits.length !== length) {
+      if (digits.startsWith(previous)) digits = digits.slice(previous.length);
+      else if (digits.endsWith(previous)) digits = digits.slice(0, -previous.length);
+    }
 
     // ── Pegado / multi-dígito: distribuir desde el inicio ──────────
     if (digits.length > 1) {
@@ -114,7 +121,7 @@ export function OtpInput({
           onChangeText={(t) => handleChange(t, i)}
           onKeyPress={(e) => handleKeyPress(e, i)}
           keyboardType="number-pad"
-          maxLength={length}
+          maxLength={length + 1}
           autoFocus={autoFocus && i === 0}
           editable={!disabled}
           selectTextOnFocus

@@ -1,0 +1,14 @@
+# CP031: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/admin.yaml
+- scrollUntilVisible:
+    element:
+      id: "approve-E2E Pendiente Dueno"
+    direction: DOWN
+    timeout: 45000
+- assertVisible:
+    id: "approve-E2E Pendiente Dueno"
+- assertVisible:
+    id: "reject-E2E Pendiente Dueno"
+- takeScreenshot: CP031-resultado

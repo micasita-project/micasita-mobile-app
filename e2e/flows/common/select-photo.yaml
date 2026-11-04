@@ -1,0 +1,37 @@
+# Preparación compartida; no es un caso independiente del Excel.
+appId: pe.edu.upc.micasita
+---
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "add-photos"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: "Photo taken on.*|Foto tomada.*"
+          timeout: 20000
+      - tapOn:
+          waitToSettleTimeoutMs: 2000
+          text: "Photo taken on.*|Foto tomada.*"
+      - tapOn:
+          waitToSettleTimeoutMs: 2000
+          text: "Done|Listo|Add.*|Añadir.*|Agregar.*"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: PXGGridLayout-Info
+          timeout: 20000
+      - tapOn:
+          id: PXGGridLayout-Info
+          index: 0
+          waitToSettleTimeoutMs: 2000
+      - tapOn:
+          text: "OK"
+          waitToSettleTimeoutMs: 2000
+- assertVisible:
+    id: "selected-photo-0"

@@ -196,7 +196,7 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <View style={styles.headerTop}>
           {currentStep === 1 && (
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerBackBtn}>
+            <TouchableOpacity testID="publish-close" onPress={() => router.back()} style={styles.headerBackBtn}>
               <Ionicons name="chevron-back" size={24} color={Colors.textOnPrimary} />
             </TouchableOpacity>
           )}
@@ -231,6 +231,7 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
         {currentStep < 4 ? (
           <TouchableOpacity
             style={[styles.nextBtn, currentStep === 1 && styles.nextBtnFull]}
+            testID="publish-next"
             onPress={handleNext}
           >
             <Text style={styles.nextBtnText}>Siguiente</Text>
@@ -239,6 +240,7 @@ export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) 
         ) : (
           <TouchableOpacity
             style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+            testID="publish-submit"
             onPress={handleSubmit}
             disabled={isSubmitting}
           >

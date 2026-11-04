@@ -2,7 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import { render, act } from '@testing-library/react-native';
 import { AppCircle } from '@/shared/ui/map/AppCircle.android';
-import { AppMapView } from '@/shared/ui/map/AppMapView.android';
+import { AppMapView, handleMapLog } from '@/shared/ui/map/AppMapView.android';
 import { AppMarker } from '@/shared/ui/map/AppMarker.android';
 import { AppPolyline } from '@/shared/ui/map/AppPolyline.android';
 import { AppUrlTile } from '@/shared/ui/map/AppUrlTile.android';
@@ -16,6 +16,25 @@ jest.mock('@maplibre/maplibre-react-native', () => require('@/__tests__/_helpers
 
 const one = (root: any, type: string) => allByType(root, type)[0];
 const region = { latitude: -12, longitude: -77, latitudeDelta: 0.08, longitudeDelta: 0.08 };
+
+describe('Registros de MapLibre', () => {
+  const cancellation = 'Request failed due to a permanent error: stream was reset: CANCEL';
+
+  it('conserva una cancelación HTTP/2 como información', () => {
+    const info = jest.spyOn(console, 'info').mockImplementation(() => {});
+    expect(handleMapLog({ level: 'warn', tag: 'Mbgl-HttpRequest', message: cancellation })).toBe(true);
+    expect(info).toHaveBeenCalledWith(expect.stringContaining(cancellation));
+    info.mockRestore();
+  });
+
+  it.each([
+    { level: 'warn', tag: 'Mbgl-HttpRequest', message: 'Connection timed out' },
+    { level: 'error', tag: 'Mbgl-HttpRequest', message: cancellation },
+    { level: 'warn', tag: 'Renderer', message: cancellation },
+  ])('deja pasar advertencias y errores reales: $level/$tag', (event) => {
+    expect(handleMapLog(event)).toBe(false);
+  });
+});
 
 describe('AppMapView (Android)', () => {
   it('usa un estilo vacío y reenvía el estilo de la vista', async () => {

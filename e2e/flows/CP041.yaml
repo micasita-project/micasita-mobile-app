@@ -1,0 +1,24 @@
+# CP041: relanzar el proceso conserva la sesión sin volver a ingresar credenciales.
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- runFlow:
+    file: common/login.yaml
+    env:
+      EMAIL: usuario@e2e-micasita.com
+      PASSWORD: Test-1234
+- extendedWaitUntil:
+    visible: "Mapa(, tab, [0-9]+ of [0-9]+)?"
+    timeout: 20000
+- stopApp
+- runFlow: common/relaunch.yaml
+- extendedWaitUntil:
+    visible: "Mapa(, tab, [0-9]+ of [0-9]+)?"
+    timeout: 20000
+- tapOn:
+    text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "Usuario Prueba"
+- assertVisible: ".*usuario@e2e-micasita.com.*"
+- assertVisible: ".*Cerrar sesión.*"
+- takeScreenshot: sesion-restaurada

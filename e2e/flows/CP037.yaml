@@ -1,0 +1,16 @@
+# CP037: una cuenta bloqueada no puede iniciar sesión.
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- runFlow:
+    file: common/login.yaml
+    env:
+      EMAIL: bloqueado@e2e-micasita.com
+      PASSWORD: Test-1234
+- assertVisible: "Esta cuenta ha sido bloqueada o suspendida por un administrador."
+- tapOn:
+    text: ".*OK.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: ".*Ingresar.*"
+- assertNotVisible: ".*Cerrar sesión.*"
+- takeScreenshot: cuenta-bloqueada

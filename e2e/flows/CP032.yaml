@@ -1,0 +1,34 @@
+# CP032: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/admin.yaml
+- scrollUntilVisible:
+    element:
+      id: "approve-E2E Pendiente Admin A"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "approve-E2E Pendiente Admin A"
+- tapOn:
+    text: ".*Sí, confirmar.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "La vivienda ha sido aprobada\\."
+- tapOn:
+    text: ".*OK.*"
+    waitToSettleTimeoutMs: 2000
+- assertNotVisible: ".*E2E Pendiente Admin A.*"
+- runFlow: common/user.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- scrollUntilVisible:
+    element:
+      text: ".*E2E Pendiente Admin A.*"
+    direction: DOWN
+    timeout: 120000
+- assertVisible: ".*E2E Pendiente Admin A.*"
+- takeScreenshot: CP032-resultado

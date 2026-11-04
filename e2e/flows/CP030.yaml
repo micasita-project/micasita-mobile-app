@@ -1,0 +1,18 @@
+# CP030: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/admin.yaml
+- assertVisible: ".*E2E Pendiente Dueno.*"
+- scrollUntilVisible:
+    element:
+      text: ".*E2E Pendiente Admin A.*"
+    direction: DOWN
+    timeout: 45000
+- assertVisible: ".*E2E Pendiente Admin A.*"
+- scrollUntilVisible:
+    element:
+      text: ".*E2E Pendiente Admin B.*"
+    direction: DOWN
+    timeout: 45000
+- assertVisible: ".*E2E Pendiente Admin B.*"
+- takeScreenshot: CP030-resultado

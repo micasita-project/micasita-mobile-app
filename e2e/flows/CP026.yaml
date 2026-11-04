@@ -1,0 +1,32 @@
+# CP026: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/owner.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    text: ".*Publicar.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "Paso 1 de 4"
+- runFlow: common/publish-step4.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-submit"
+- extendedWaitUntil:
+    visible: "¡Publicado exitosamente!"
+    timeout: 45000
+- assertVisible: "Estado: Pendiente de validación"
+- tapOn:
+    text: ".*Ver mis publicaciones.*"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      text: ".*E2E Nuevo CP026.*"
+    direction: DOWN
+    timeout: 45000
+- assertVisible: ".*Pendiente.*"
+- takeScreenshot: CP026-resultado

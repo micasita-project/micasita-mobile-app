@@ -1,0 +1,10 @@
+appId: pe.edu.upc.micasita
+---
+- runFlow: user.yaml
+- extendedWaitUntil:
+    visible:
+      id: map-housing-card
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: mapa-antes-de-tocar

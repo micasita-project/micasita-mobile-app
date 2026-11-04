@@ -1,0 +1,17 @@
+# CP034: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/admin.yaml
+- tapOn:
+    text: "Usuarios(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*usuario@e2e-micasita.com.*"
+    timeout: 45000
+- assertVisible: ".*dueno@e2e-micasita.com.*"
+- assertVisible: "Admin"
+- repeat:
+    times: 3
+    commands:
+      - scroll
+- takeScreenshot: CP034-resultado

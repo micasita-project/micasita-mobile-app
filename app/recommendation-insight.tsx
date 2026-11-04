@@ -10,7 +10,7 @@ import {
   buildInsightTitle,
   scoreLabel,
 } from "@/features/recommendation/model/recommendationMessage";
-import { fetchTimeByFranja, formatTravelTime } from "@/entities/route";
+import { fetchTimeByFranja, fetchModeRoute, formatTravelTime, formatDistance } from "@/entities/route";
 import type { TimeByFranja } from "@/entities/route";
 import { useAuth } from "@/features/auth";
 import { useGuest } from "@/features/guest";
@@ -145,6 +145,22 @@ export default function RecommendationInsightScreen() {
 
   const [franjas, setFranjas] = useState<TimeByFranja | null>(null);
   const [loadingFranjas, setLoadingFranjas] = useState(false);
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+
+  useEffect(() => {
+    setDistanceKm(null);
+    if (!item || !workLat || !workLon) return;
+    let cancelled = false;
+    fetchModeRoute(
+      { latitude: workLat, longitude: workLon },
+      { latitude: item.property.latitude, longitude: item.property.longitude },
+      mode,
+    ).then((route) => {
+      if (!cancelled) setDistanceKm(route.distanceKm);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.property.id, mode, workLat, workLon]);
 
   useEffect(() => {
     if (!item || mode !== "driving" || !workLat || !workLon) return;
@@ -240,6 +256,10 @@ export default function RecommendationInsightScreen() {
         {/* Metrics breakdown */}
         <View style={styles.metricsCard}>
           <Text style={styles.metricsTitle}>¿Por qué este resultado?</Text>
+
+          {distanceKm !== null && (
+            <MetricRow icon="navigate-outline" label="Distancia al trabajo" value={formatDistance(distanceKm)} />
+          )}
 
           <MetricRow
             icon="time-outline"

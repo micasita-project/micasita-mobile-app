@@ -1,0 +1,16 @@
+# CP002: el correo de una cuenta verificada no se puede volver a registrar.
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- runFlow:
+    file: common/register.yaml
+    env:
+      EMAIL: usuario@e2e-micasita.com
+- assertVisible: "El email ya está registrado"
+- tapOn:
+    text: ".*OK.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible:
+    id: auth-submit
+- assertNotVisible: "Enviamos un código de 6 dígitos a:"
+- takeScreenshot: registro-duplicado-rechazado

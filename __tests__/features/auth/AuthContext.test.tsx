@@ -70,6 +70,7 @@ const GUEST = {
 
 beforeEach(() => {
   jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
   mockGetToken.mockResolvedValue(null);
   svc.getMe.mockResolvedValue(USER);
   svc.loginUser.mockResolvedValue({} as any);
@@ -285,6 +286,8 @@ describe('register', () => {
       res = await result.current.register('a@b.com', 'pw');
     });
     expect(res).toEqual({ success: false, error: 'El correo ya existe' });
+    expect(console.warn).toHaveBeenCalledWith('Register failed:', expect.anything());
+    expect(console.error).not.toHaveBeenCalled();
     expect(result.current.pendingEmail).toBeNull();
     expect(result.current.isLoading).toBe(false);
   });
@@ -297,6 +300,7 @@ describe('register', () => {
       res = await result.current.register('a@b.com', 'pw');
     });
     expect(res).toEqual({ success: false, error: 'Error al registrar' });
+    expect(console.error).toHaveBeenCalledWith('Register failed:', expect.any(Error));
   });
 });
 

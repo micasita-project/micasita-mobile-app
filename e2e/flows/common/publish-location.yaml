@@ -1,0 +1,17 @@
+# Preparación compartida; no es un caso independiente del Excel.
+appId: pe.edu.upc.micasita
+---
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "address-search-input"
+- inputText: "Primax San Miguel"
+- extendedWaitUntil:
+    visible:
+      id: address-suggestion-0
+    timeout: 30000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "address-suggestion-0"
+- runFlow: hide-keyboard.yaml
+- assertVisible:
+    id: "publish-location-.*"

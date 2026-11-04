@@ -231,6 +231,7 @@ export default function HousingScreen() {
       </View>
 
       <FlatList
+        testID={`housing-list-count-${allHousing.length}`}
         data={allHousing}
         renderItem={renderHousingItem}
         keyExtractor={(item) => item.id}
@@ -351,6 +352,7 @@ export default function HousingScreen() {
               <Text style={{ fontSize: 13, color: Colors.textMuted, fontWeight: '600' }}>Min</Text>
               <SheetTextInput
                 style={filterStyles.input}
+                testID="filter-min-price"
                 placeholder="0"
                 placeholderTextColor={Colors.textMuted}
                 value={draft.min_price != null ? String(draft.min_price) : ''}
@@ -367,6 +369,7 @@ export default function HousingScreen() {
               <Text style={{ fontSize: 13, color: Colors.textMuted, fontWeight: '600' }}>Max</Text>
               <SheetTextInput
                 style={filterStyles.input}
+                testID="filter-max-price"
                 placeholder="Inf"
                 placeholderTextColor={Colors.textMuted}
                 value={draft.max_price != null ? String(draft.max_price) : ''}

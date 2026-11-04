@@ -66,7 +66,7 @@ export function Step3Photos({ data, onChange }: Step3PhotosProps) {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag">
       <Text style={styles.title}>
         Fotos de la propiedad <Text style={styles.required}>*</Text>
       </Text>
@@ -75,7 +75,7 @@ export function Step3Photos({ data, onChange }: Step3PhotosProps) {
       </Text>
 
       {/* Upload area */}
-      <TouchableOpacity style={styles.uploadArea} onPress={pickImages} activeOpacity={0.8}>
+      <TouchableOpacity testID="add-photos" style={styles.uploadArea} onPress={pickImages} activeOpacity={0.8}>
         <Ionicons name="camera-outline" size={36} color={Colors.primary} />
         <Text style={styles.uploadText}>
           {localImageUris.length === 0
@@ -91,7 +91,7 @@ export function Step3Photos({ data, onChange }: Step3PhotosProps) {
           <Text style={styles.gridTitle}>Fotos seleccionadas</Text>
           <View style={styles.grid}>
             {localImageUris.map((uri, index) => (
-              <View key={uri} style={styles.photoWrapper}>
+              <View key={uri} testID={`selected-photo-${index}`} style={styles.photoWrapper}>
                 <Image source={{ uri }} style={styles.photo} resizeMode="cover" />
                 {index === 0 && (
                   <View style={styles.mainBadge}>

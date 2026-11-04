@@ -2,7 +2,7 @@
  * @layer shared/ui
  * @description Autocomplete de dirección reutilizable.
  * - Debounce interno (400 ms)
- * - Dropdown superpuesto (position: absolute) — no empuja contenido
+ * - Sugerencias dentro del layout para que Android pueda enfocarlas y pulsarlas
  * - FlatList scrolleable con todas las sugerencias del API
  * - Mensaje "sin resultados" cuando la búsqueda no devuelve nada
  */
@@ -108,6 +108,7 @@ export function AddressSearchInput({
       <View style={styles.inputRow}>
         <Ionicons name="search" size={18} color={Colors.textMuted} style={styles.icon} />
         <SheetTextInput
+          testID="address-search-input"
           style={styles.input}
           placeholder={placeholder}
           placeholderTextColor={Colors.textMuted}
@@ -134,6 +135,7 @@ export function AddressSearchInput({
               {suggestions.map((item, index) => (
                 <TouchableOpacity
                   key={`${item.latitude}-${item.longitude}-${index}`}
+                  testID={`address-suggestion-${index}`}
                   style={[
                     styles.item,
                     index === suggestions.length - 1 && styles.itemLast,
@@ -186,10 +188,7 @@ const styles = StyleSheet.create({
   spinner: { marginLeft: 8 },
 
   dropdown: {
-    position: 'absolute',
-    top: INPUT_HEIGHT + 4,
-    left: 0,
-    right: 0,
+    marginTop: 4,
     zIndex: 99,
     backgroundColor: Colors.surface,
     borderRadius: 12,

@@ -15,7 +15,7 @@ export function AdminUserCard({ user, onToggleStatus }: AdminUserCardProps) {
   const accentColor = user.is_active ? Colors.success : Colors.error;
 
   return (
-    <View style={styles.card}>
+    <View testID={`admin-user-${user.email}`} style={styles.card}>
       <View style={[styles.avatar, { backgroundColor: user.is_active ? Colors.success + '18' : Colors.error + '12' }]}>
         <Text style={[styles.avatarText, { color: accentColor }]}>{initial}</Text>
       </View>
@@ -40,6 +40,7 @@ export function AdminUserCard({ user, onToggleStatus }: AdminUserCardProps) {
           </Text>
         </View>
         <Switch
+          testID={`user-status-${user.email}`}
           value={user.is_active}
           onValueChange={() => onToggleStatus(user.id, user.is_active)}
           trackColor={{ false: Colors.border, true: Colors.success }}

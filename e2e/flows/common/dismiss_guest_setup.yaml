@@ -1,0 +1,22 @@
+# El asistente de invitado se vuelve a mostrar al reiniciar sin sesión.
+appId: pe.edu.upc.micasita
+---
+- runFlow:
+    when:
+      visible:
+        id: guest-setup-close
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - retry:
+          maxRetries: 2
+          commands:
+            - tapOn:
+                id: guest-setup-close
+                waitToSettleTimeoutMs: 2000
+            - extendedWaitUntil:
+                notVisible:
+                  id: guest-setup-close
+                timeout: 5000
+- assertNotVisible:
+    id: guest-setup-close

@@ -282,6 +282,7 @@ export function WorkplaceSheet({
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.sheetConfirm}
+          testID="workplace-save"
           onPress={handleSubmit}
           disabled={isSaving}
         >
@@ -350,6 +351,7 @@ export function WorkplaceSheet({
 
         <SheetTextInput
           style={[styles.fieldInput, { marginTop: 8 }]}
+          testID="workplace-budget"
           placeholder="Presupuesto Mensual (S/)"
           placeholderTextColor={Colors.textMuted}
           value={budget}
@@ -361,6 +363,8 @@ export function WorkplaceSheet({
           {TRANSPORT_MODE_CONFIG.map((cfg) => (
             <TouchableOpacity
               key={cfg.id}
+              testID={`transport-${cfg.id}`}
+              accessibilityState={{ selected: transport === cfg.id }}
               style={[
                 styles.transportChip,
                 transport === cfg.id && styles.transportChipActive,

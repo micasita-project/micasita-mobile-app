@@ -1,0 +1,15 @@
+appId: pe.edu.upc.micasita
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          arguments:
+            RCT_jsLocation: localhost:8082
+            RCT_enableDev: "NO"

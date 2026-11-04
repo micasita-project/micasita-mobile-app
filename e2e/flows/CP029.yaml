@@ -1,0 +1,32 @@
+# CP029: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/owner.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    text: ".*Mis publicaciones.*"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: listings-filter-pending
+- assertVisible: ".*E2E Pendiente Dueno.*"
+- assertNotVisible: ".*E2E Aprobada Dueno.*"
+- assertNotVisible: ".*E2E Rechazada Dueno.*"
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: listings-filter-approved
+- assertVisible: ".*E2E Aprobada Dueno.*"
+- assertNotVisible: ".*E2E Pendiente Dueno.*"
+- assertNotVisible: ".*E2E Rechazada Dueno.*"
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: listings-filter-rejected
+- assertVisible: ".*E2E Rechazada Dueno.*"
+- assertNotVisible: ".*E2E Aprobada Dueno.*"
+- assertNotVisible: ".*E2E Pendiente Dueno.*"
+- takeScreenshot: CP029-resultado

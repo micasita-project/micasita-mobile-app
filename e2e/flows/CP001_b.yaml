@@ -1,0 +1,10 @@
+# CP001 (parte 2): verificar el correo con el código y quedar con la sesión iniciada. Parámetro: OTP.
+# El campo del código tiene el foco al abrir la pantalla, así que se escribe directamente.
+appId: pe.edu.upc.micasita
+---
+- inputText: ${OTP}
+- extendedWaitUntil:
+    visible: "Tu casa actual"
+    timeout: 20000
+- assertNotVisible: "Enviamos un código de 6 dígitos a:"
+- takeScreenshot: registro-verificado

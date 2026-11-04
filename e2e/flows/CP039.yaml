@@ -1,0 +1,29 @@
+# CP039: mismo rechazo para contraseña incorrecta y correo inexistente.
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- runFlow:
+    file: common/login.yaml
+    env:
+      EMAIL: usuario@e2e-micasita.com
+      PASSWORD: Incorrecta-1234
+- assertVisible: 'Email o contraseña incorrectos\.'
+- tapOn:
+    text: ".*OK.*"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: email-input
+- eraseText
+- inputText: inexistente@e2e-micasita.com
+- runFlow: common/hide-keyboard.yaml
+- tapOn:
+    text: ".*Ingresar.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: 'Email o contraseña incorrectos\.'
+- tapOn:
+    text: ".*OK.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: ".*Ingresar.*"
+- assertNotVisible: ".*Cerrar sesión.*"
+- takeScreenshot: credenciales-rechazadas

@@ -1,0 +1,29 @@
+# CP022: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/owner.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    text: ".*Publicar.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "Paso 1 de 4"
+- runFlow: common/publish-location.yaml
+- copyTextFrom:
+    id: address-search-input
+- evalScript: ${output.address = maestro.copiedText}
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-next"
+- assertVisible: "Paso 2 de 4"
+- tapOn:
+    text: ".*Atrás.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "${output.address}"
+- assertVisible:
+    id: "publish-location-.*"
+- takeScreenshot: CP022-resultado

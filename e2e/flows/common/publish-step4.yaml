@@ -1,0 +1,9 @@
+# Preparación compartida; no es un caso independiente del Excel.
+appId: pe.edu.upc.micasita
+---
+- runFlow: publish-step3.yaml
+- runFlow: select-photo.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-next"
+- assertVisible: "Paso 4 de 4"

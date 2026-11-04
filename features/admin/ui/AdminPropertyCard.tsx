@@ -100,6 +100,7 @@ export function AdminPropertyCard({
           <TouchableOpacity
             style={[styles.btn, styles.rejectBtn]}
             onPress={() => onReject(property.id)}
+            testID={`reject-${property.title}`}
           >
             <Ionicons name="close-circle" size={20} color={Colors.error} />
             <Text style={[styles.btnText, { color: Colors.error }]}>
@@ -109,6 +110,7 @@ export function AdminPropertyCard({
           <TouchableOpacity
             style={[styles.btn, styles.approveBtn]}
             onPress={() => onApprove(property.id)}
+            testID={`approve-${property.title}`}
           >
             <Ionicons
               name="checkmark-circle"

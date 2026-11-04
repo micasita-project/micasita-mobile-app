@@ -1,0 +1,28 @@
+# CP042: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/user.yaml
+- tapOn:
+    text: "IA(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      id: "recommend-insight-0"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "recommend-insight-0"
+- extendedWaitUntil:
+    visible: "Análisis IA"
+    timeout: 45000
+- scrollUntilVisible:
+    element:
+      text: "¿Cómo cambia el tiempo según la hora?"
+    direction: DOWN
+    timeout: 45000
+- assertVisible: "7:00 a.m."
+- assertVisible: "1:00 p.m."
+- assertVisible: "6:00 p.m."
+- assertVisible: "Tráfico bajo"
+- takeScreenshot: CP042-resultado

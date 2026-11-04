@@ -100,6 +100,7 @@ export function BottomSheet({
 
   return (
     <BottomSheetModal
+      accessible={false}
       ref={sheetRef}
       enableDynamicSizing
       maxDynamicContentSize={SCREEN_HEIGHT * maxHeightRatio}
@@ -117,6 +118,7 @@ export function BottomSheet({
       style={styles.sheet}
     >
       <BottomSheetScrollView
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: footer ? footerHeight : insets.bottom + 16 }}

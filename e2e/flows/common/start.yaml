@@ -1,0 +1,32 @@
+# Arranque limpio de la app y cierre del asistente de invitado.
+appId: pe.edu.upc.micasita
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          clearState: true
+          permissions:
+            all: allow
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          clearState: true
+          arguments:
+            RCT_jsLocation: localhost:8082
+            RCT_enableDev: "NO"
+          permissions:
+            all: allow
+- extendedWaitUntil:
+    visible:
+      id: guest-setup-close
+    timeout: 60000
+- runFlow: dismiss_guest_setup.yaml
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "Mapa(, tab, [0-9]+ of [0-9]+)?"
+    timeout: 20000

@@ -76,7 +76,7 @@ export function Step1Location({ data, onChange, onOpenMapPicker }: Step1Location
   }, [onChange, extractDistrict]);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       <Text style={styles.sectionTitle}>
         Dirección exacta <Text style={styles.required}>*</Text>
       </Text>
@@ -105,7 +105,7 @@ export function Step1Location({ data, onChange, onOpenMapPicker }: Step1Location
             Ubicación en el Mapa
           </Text>
 
-          <View style={styles.mapContainer}>
+          <View testID={`publish-location-${data.latitude.toFixed(5)}-${data.longitude.toFixed(5)}`} style={styles.mapContainer}>
             <AppMapView
               ref={mapRef}
               style={styles.map}

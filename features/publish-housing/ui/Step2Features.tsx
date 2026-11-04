@@ -69,7 +69,7 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
       : null;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag">
 
       {/* Título */}
       <Text style={styles.sectionTitle}>
@@ -78,6 +78,7 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
       <View style={styles.inputWrapper}>
         <TextInput
           style={styles.input}
+          testID="publish-title"
           placeholder="Ej: Departamento Moderno en Surco"
           placeholderTextColor={Colors.textMuted}
           value={data.title}
@@ -114,6 +115,7 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
         <Text style={styles.currencyPrefix}>{data.currency}</Text>
         <TextInput
           style={[styles.input, { paddingLeft: 6 }]}
+          testID="publish-price"
           placeholder="3900"
           placeholderTextColor={Colors.textMuted}
           value={data.price > 0 ? data.price.toString() : ''}
@@ -132,7 +134,8 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
           <Ionicons name="resize-outline" size={16} color={Colors.textSecondary} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Total m²"
+            testID="publish-area"
+          placeholder="Total m²"
             placeholderTextColor={Colors.textMuted}
             value={data.total_area_sqm > 0 ? data.total_area_sqm.toString() : ''}
             onChangeText={(v) => onChange({ total_area_sqm: parseFloat(v) || 0 })}
@@ -194,6 +197,7 @@ export function Step2Features({ data, onChange }: Step2FeaturesProps) {
       <View style={[styles.inputWrapper, { alignItems: 'flex-start', paddingVertical: 12 }]}>
         <TextInput
           style={[styles.input, styles.textarea]}
+          testID="publish-description"
           placeholder="Describe las características más destacadas de tu propiedad…"
           placeholderTextColor={Colors.textMuted}
           value={data.description}

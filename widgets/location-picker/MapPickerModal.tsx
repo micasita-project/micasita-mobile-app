@@ -62,7 +62,7 @@ export function MapPickerModal({
           onRegionChangeComplete={setMapRegion}
         />
         
-        <View style={styles.mapCenterMarker} pointerEvents="none">
+        <View testID="map-picker-pin" style={styles.mapCenterMarker} pointerEvents="none">
           <Ionicons name="location" size={40} color={Colors.primary} style={{ marginTop: -20 }} />
         </View>
 

@@ -276,7 +276,7 @@ export default function HousingDetailScreen() {
 
           {/* Right overlay buttons */}
           <View style={[styles.galleryRightBtns, { top: 16 + topOffset }]}>
-            <TouchableOpacity style={styles.overlayBtn} onPress={handleViewOnMap}>
+            <TouchableOpacity style={styles.overlayBtn} testID="detail-map" onPress={handleViewOnMap}>
               <Ionicons
                 name="map-outline"
                 size={18}
@@ -285,6 +285,8 @@ export default function HousingDetailScreen() {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.overlayBtn}
+              testID="detail-favorite"
+              accessibilityState={{ selected: !!housing.isFavorite }}
               onPress={handleFavoriteToggle}
             >
               <Ionicons 
@@ -302,7 +304,7 @@ export default function HousingDetailScreen() {
 
           {/* Dot indicators */}
           {housing.images.length > 1 && (
-            <View style={styles.dots}>
+            <View testID={`gallery-position-${activeImageIndex + 1}`} style={styles.dots}>
               {housing.images.map((_, i) => (
                 <View
                   key={i}

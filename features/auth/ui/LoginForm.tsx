@@ -115,6 +115,7 @@ export function LoginForm() {
               <Ionicons name="person-outline" size={20} color="rgba(255,255,255,0.5)" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
+                testID="name-input"
                 placeholder="Nombre"
                 placeholderTextColor="rgba(255,255,255,0.4)"
                 value={name}
@@ -126,6 +127,7 @@ export function LoginForm() {
             <View style={[styles.inputContainer, { flex: 1 }]}>
               <TextInput
                 style={[styles.input, { paddingLeft: 16 }]}
+                testID="lastname-input"
                 placeholder="Apellido"
                 placeholderTextColor="rgba(255,255,255,0.4)"
                 value={lastName}
@@ -142,6 +144,7 @@ export function LoginForm() {
           <Ionicons name="mail-outline" size={20} color="rgba(255,255,255,0.5)" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
+            testID="email-input"
             placeholder="Correo electrónico"
             placeholderTextColor="rgba(255,255,255,0.4)"
             value={email}
@@ -157,6 +160,7 @@ export function LoginForm() {
           <Ionicons name="lock-closed-outline" size={20} color="rgba(255,255,255,0.5)" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
+            testID="password-input"
             placeholder="Contraseña"
             placeholderTextColor="rgba(255,255,255,0.4)"
             value={password}
@@ -179,6 +183,7 @@ export function LoginForm() {
             <Ionicons name="shield-checkmark-outline" size={20} color="rgba(255,255,255,0.5)" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
+              testID="confirm-password-input"
               placeholder="Confirmar contraseña"
               placeholderTextColor="rgba(255,255,255,0.4)"
               value={confirmPassword}
@@ -194,6 +199,7 @@ export function LoginForm() {
             <TouchableOpacity
               onPress={() => setAcceptedTerms((v) => !v)}
               hitSlop={8}
+              testID="accept-terms"
               accessibilityRole="checkbox"
               accessibilityState={{ checked: acceptedTerms }}
               activeOpacity={0.7}
@@ -215,6 +221,7 @@ export function LoginForm() {
 
         {/* Submit button */}
         <TouchableOpacity
+          testID="auth-submit"
           style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={isLoading}

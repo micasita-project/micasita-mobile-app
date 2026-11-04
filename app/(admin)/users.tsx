@@ -138,6 +138,7 @@ export default function AdminUsersScreen() {
       </View>
 
       <FlatList
+        keyboardDismissMode="on-drag"
         data={users}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (

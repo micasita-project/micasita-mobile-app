@@ -1,0 +1,36 @@
+appId: pe.edu.upc.micasita
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: ${PIN_POINT}
+          waitToSettleTimeoutMs: 2000
+# run_suite.py toca el pin detectado mediante el evento físico de Android antes de este flujo.
+- assertVisible:
+    id: map-housing-card
+- copyTextFrom:
+    id: map-card-price
+- evalScript: ${output.selectedPrice = Number(maestro.copiedText.replace(/[^0-9]/g, ''))}
+- assertTrue: ${output.selectedPrice > 0 && output.selectedPrice !== Number(BEFORE_PRICE)}
+- assertVisible: ".*San Miguel.*hab.*m².*"
+- assertVisible: ".*al trabajo.*"
+- tapOn:
+    id: map-housing-card
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible:
+      id: detail-map
+    timeout: 15000
+- tapOn:
+    id: detail-map
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: Mapa
+    timeout: 20000
+- assertVisible:
+    id: map-housing-card
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: CP015-resultado

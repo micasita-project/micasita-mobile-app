@@ -1,0 +1,12 @@
+# Preparación compartida; no es un caso independiente del Excel.
+appId: pe.edu.upc.micasita
+---
+- runFlow: start.yaml
+- runFlow:
+    file: login.yaml
+    env:
+      EMAIL: admin@e2e-micasita.com
+      PASSWORD: Admin-E2E-1234
+- extendedWaitUntil:
+    visible: "Pendientes(, tab, [0-9]+ of [0-9]+)?"
+    timeout: 45000

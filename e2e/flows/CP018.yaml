@@ -1,0 +1,14 @@
+# CP018: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/user.yaml
+- tapOn:
+    text: "IA(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      id: "recommend-insight-0"
+    direction: DOWN
+    timeout: 45000
+- runFlow: common/recommend-edit.yaml
+- takeScreenshot: CP018-resultado

@@ -1,0 +1,33 @@
+# CP021: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/owner.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    text: ".*Publicar.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "Paso 1 de 4"
+- runFlow: common/publish-location.yaml
+- tapOn:
+    text: ".*Elegir en el mapa.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible:
+    id: "map-picker-pin"
+- swipe:
+    start: "55%,42%"
+    end: "45%,44%"
+    duration: 600
+- tapOn:
+    text: ".*Confirmar ubicación.*"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: "Ubicación en el Mapa"
+    timeout: 45000
+- assertVisible:
+    id: "publish-location-.*"
+- takeScreenshot: CP021-resultado

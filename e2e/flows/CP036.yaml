@@ -1,0 +1,33 @@
+# CP036: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/admin.yaml
+- tapOn:
+    text: "Usuarios(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    text: "Buscar por nombre o correo..."
+    waitToSettleTimeoutMs: 2000
+- inputText: "victima@e2e-micasita.com"
+- runFlow: common/hide-keyboard.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "user-status-victima@e2e-micasita.com"
+- tapOn:
+    text: ".*Sí, bloquear.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "Bloqueado"
+- runFlow: common/user.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- scrollUntilVisible:
+    element:
+      id: housing-list-count-20
+    direction: DOWN
+    timeout: 120000
+- assertNotVisible: ".*E2E Casa Victima.*"
+- takeScreenshot: CP036-resultado

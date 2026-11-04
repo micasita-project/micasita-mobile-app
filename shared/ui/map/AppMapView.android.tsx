@@ -1,11 +1,24 @@
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { Map, Camera, RasterSource, Layer } from '@maplibre/maplibre-react-native';
+import { Map, Camera, RasterSource, Layer, LogManager } from '@maplibre/maplibre-react-native';
 import type { CameraRef } from '@maplibre/maplibre-react-native';
 import { OSM_TILE_URL } from '@/shared/config/map';
 import type { MapRegion, AppMapViewHandle } from './types';
 
 const EMPTY_STYLE = JSON.stringify({ version: 8, sources: {}, layers: [] });
+
+// Android también expresa las cancelaciones normales de teselas como HTTP/2 CANCEL.
+// Conservar el registro sin convertirlo en un aviso que tape la navegación.
+export function handleMapLog({ level, tag, message }: { level: string; tag: string; message: string }): boolean {
+  if (level === 'warn' && tag === 'Mbgl-HttpRequest' &&
+      message === 'Request failed due to a permanent error: stream was reset: CANCEL') {
+    console.info(`MapLibre Native [INFO] [${tag}] ${message}`);
+    return true;
+  }
+  return false;
+}
+
+LogManager.onLog(handleMapLog);
 
 function regionToZoom(region: MapRegion): number {
   return Math.log2(180 / region.latitudeDelta);
@@ -71,3 +84,5 @@ export const AppMapView = forwardRef<AppMapViewHandle, AppMapViewProps>(
     );
   }
 );
+
+AppMapView.displayName = 'AppMapView';

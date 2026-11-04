@@ -1,0 +1,61 @@
+# CP045: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/owner.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    text: ".*Mis publicaciones.*"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      id: "edit-E2E Rechazada Dueno"
+    direction: DOWN
+    timeout: 45000
+- assertVisible: ".*Motivo: Fotos borrosas.*"
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "edit-E2E Rechazada Dueno"
+- assertVisible: "Paso 1 de 4"
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-next"
+- scrollUntilVisible:
+    element:
+      id: "publish-price"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-price"
+- eraseText
+- inputText: "1450"
+- runFlow: common/hide-keyboard.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-next"
+- assertVisible: "Paso 3 de 4"
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-next"
+- assertVisible: "Paso 4 de 4"
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-submit"
+- extendedWaitUntil:
+    visible: "¡Actualizado exitosamente!"
+    timeout: 45000
+- tapOn:
+    text: ".*Ver mis publicaciones.*"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      text: ".*E2E Rechazada Dueno.*"
+    direction: DOWN
+    timeout: 45000
+- assertVisible: ".*Pendiente.*"
+- takeScreenshot: CP045-resultado

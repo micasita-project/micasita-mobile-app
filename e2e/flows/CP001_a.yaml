@@ -1,0 +1,7 @@
+# CP001 (parte 1): Registrar un usuario nuevo con datos válidos (HU01). Parámetro: EMAIL.
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- runFlow: common/register.yaml
+- assertVisible: "Enviamos un código de 6 dígitos a:"
+- assertVisible: ${EMAIL}

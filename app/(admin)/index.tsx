@@ -143,13 +143,14 @@ export default function AdminPendingPropertiesScreen() {
           style={styles.modalOverlay} 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <View style={styles.modalInnerOverlay}>
               <View style={styles.modalContainer}>
                 <Text style={styles.modalTitle}>Rechazar Vivienda</Text>
                 <Text style={styles.modalMessage}>Por favor, indica el motivo del rechazo. Este mensaje será enviado al propietario para que pueda corregirlo.</Text>
                 
                 <TextInput
+                  testID="admin-reject-reason"
                   style={styles.textInput}
                   placeholder="Ej. Las fotos no son claras..."
                   value={rejectReason}
@@ -168,6 +169,7 @@ export default function AdminPendingPropertiesScreen() {
                     <Text style={styles.modalBtnCancelText}>Cancelar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    testID="admin-reject-confirm"
                     style={[styles.modalBtn, styles.modalBtnSubmit]}
                     onPress={submitReject}
                   >

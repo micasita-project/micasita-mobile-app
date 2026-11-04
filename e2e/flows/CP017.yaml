@@ -1,0 +1,27 @@
+# CP017: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/user.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "favorite-E2E Ficha Completa"
+- assertVisible:
+    id: favorite-E2E Ficha Completa
+    selected: true
+- tapOn:
+    text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    text: ".*Favoritos.*"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: "Mis Favoritos"
+    timeout: 45000
+- assertVisible: ".*E2E Ficha Completa.*"
+- takeScreenshot: CP017-resultado

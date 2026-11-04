@@ -348,6 +348,7 @@ export default function RecommendScreen() {
                       <View style={[styles.wpDivider, isActive && styles.wpDividerActive]} />
                       <TouchableOpacity
                         style={styles.wpEditBtn}
+                        testID={`workplace-edit-${wp.id}`}
                         onPress={() => {
                           setEditingWp(wp);
                           setShowWorkplaceSheet(true);
@@ -676,6 +677,8 @@ export default function RecommendScreen() {
                   {/* Match ring → insight screen */}
                   <TouchableOpacity
                     style={styles.ringBtn}
+                    testID={`recommend-insight-${index}`}
+                    accessibilityLabel={`Ver análisis, coincidencia ${Math.round(item.match_score)}%`}
                     onPress={() => handleInsightPress(item)}
                     activeOpacity={0.7}
                   >

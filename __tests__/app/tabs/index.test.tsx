@@ -416,14 +416,17 @@ describe('MapScreen recomendaciones y selección automática', () => {
     );
   });
 
-  it('hace zoom a la seleccionada tras 350 ms', async () => {
+  it('encuadra la seleccionada y el trabajo tras 350 ms, dejando margen para la tarjeta', async () => {
     await setup();
     expect(mapHandle.animateToRegion).not.toHaveBeenCalled();
     await flush(350);
-    expect(mapHandle.animateToRegion).toHaveBeenCalledWith(
-      { latitude: -12.2, longitude: -77.1, latitudeDelta: 0.025, longitudeDelta: 0.025 },
-      700,
-    );
+    const [region, duration] = mapHandle.animateToRegion.mock.calls[0];
+    expect(duration).toBe(700);
+    for (const point of [hB, { latitude: wp1.work_lat, longitude: wp1.work_lon }]) {
+      expect(Math.abs(point.latitude - region.latitude)).toBeLessThan(region.latitudeDelta / 2);
+      expect(Math.abs(point.longitude - region.longitude)).toBeLessThan(region.longitudeDelta / 2);
+    }
+    expect(region.latitude).toBeLessThan((hB.latitude + wp1.work_lat) / 2);
   });
 
   it('si llega focusPropertyId enfoca esa vivienda en vez de la mejor', async () => {
@@ -431,7 +434,10 @@ describe('MapScreen recomendaciones y selección automática', () => {
     await setup();
     expect(screen.getByTestId('housing-marker-A').props.isSelected).toBe(true);
     await flush(350);
-    expect(mapHandle.animateToRegion.mock.calls[0][0]).toMatchObject({ latitude: -12.1, longitude: -77.0 });
+    const [region] = mapHandle.animateToRegion.mock.calls[0];
+    expect(Math.abs(hA.latitude - region.latitude)).toBeLessThan(region.latitudeDelta / 2);
+    expect(Math.abs(wp1.work_lat - region.latitude)).toBeLessThan(region.latitudeDelta / 2);
+    expect(region.longitude).toBe(-77.0);
   });
 
   it('si focusPropertyId no existe vuelve a la mejor', async () => {
@@ -619,4 +625,16 @@ describe('MapScreen tarjeta flotante', () => {
       'walking',
     );
   });
+});
+
+it('centra el mapa en el nuevo trabajo aunque no tenga recomendaciones', async () => {
+  authState({ selectedId: 11, recs: { results: [] } });
+  await setup();
+  mapHandle.animateToRegion.mockClear();
+  authState({ selectedId: 22, recs: { results: [] } });
+  await screen.rerender(<MapScreen />);
+  expect(mapHandle.animateToRegion).toHaveBeenCalledWith(
+    expect.objectContaining({ latitude: wp2.work_lat, longitude: wp2.work_lon }),
+    500,
+  );
 });

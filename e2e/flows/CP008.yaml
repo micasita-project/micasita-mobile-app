@@ -1,0 +1,42 @@
+# CP008: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    text: ".*Filtros.*"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      id: "filter-min-price"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "filter-min-price"
+- inputText: "1000"
+- runFlow: common/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: "filter-max-price"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "filter-max-price"
+- inputText: "1500"
+- runFlow: common/hide-keyboard.yaml
+- tapOn:
+    text: ".*Aplicar filtros.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: ".*E2E Ficha Completa.*"
+- repeat:
+    times: 5
+    commands:
+      - scroll
+- takeScreenshot: CP008-resultado

@@ -1,0 +1,50 @@
+# Preparación compartida; no es un caso independiente del Excel.
+appId: pe.edu.upc.micasita
+---
+- runFlow: publish-step2.yaml
+- scrollUntilVisible:
+    element:
+      id: "publish-title"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-title"
+- inputText: "${LISTING_TITLE}"
+- runFlow: hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: "publish-price"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-price"
+- eraseText
+- inputText: "1400"
+- runFlow: hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: "publish-area"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-area"
+- eraseText
+- inputText: "60"
+- runFlow: hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: "publish-description"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-description"
+- inputText: "Departamento de prueba con luz natural y servicios."
+- runFlow: hide-keyboard.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-next"
+- assertVisible: "Paso 3 de 4"

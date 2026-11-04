@@ -30,6 +30,15 @@ import {
   verifyEmail,
 } from "../api/auth.service";
 
+function logAuthFailure(message: string, error: any) {
+  const status = error?.response?.status;
+  if (status >= 400 && status < 500) {
+    console.warn(message, error);
+  } else {
+    console.error(message, error);
+  }
+}
+
 export interface GuestDataForTransfer {
   home?: { lat: number; lon: number; address: string };
   workplace?: {
@@ -193,7 +202,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setIsLoading(false);
         return { success: true };
       } catch (error: any) {
-        console.error("Login failed:", error);
+        logAuthFailure("Login failed:", error);
         setIsLoading(false);
 
         if (error?.response?.status === 403) {
@@ -234,7 +243,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setIsLoading(false);
         return { success: true };
       } catch (error: any) {
-        console.error("Register failed:", error);
+        logAuthFailure("Register failed:", error);
         setIsLoading(false);
         const message = error?.response?.data?.detail ?? "Error al registrar";
         return { success: false, error: message };
@@ -262,7 +271,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setIsLoading(false);
         return { success: true };
       } catch (error: any) {
-        console.error("Verification failed:", error);
+        logAuthFailure("Verification failed:", error);
         setIsLoading(false);
         const message =
           error?.response?.data?.detail ?? "Código incorrecto o expirado.";

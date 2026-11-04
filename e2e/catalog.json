@@ -1,0 +1,2395 @@
+{
+  "source": "Casos_de_Prueba_MiCasita.xlsx",
+  "sha256": "cf4ac1cc58286aab36fe37396de0eda1cf74538bbdf218c70fde92a2a3780656",
+  "cases": [
+    {
+      "id": "CP001",
+      "title": "Registrar un usuario nuevo con datos válidos",
+      "rows": [
+        [
+          "Caso de Prueba: CP001: Registrar un usuario nuevo con datos válidos"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El correo que se usará no está registrado."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la app y tocar la opción para crear una cuenta.",
+          "Se muestra el formulario de registro."
+        ],
+        [
+          "2",
+          "Ingresar nombre, un correo nuevo con formato válido, una contraseña segura y su confirmación.",
+          "Los campos aceptan los datos sin mostrar errores."
+        ],
+        [
+          "3",
+          "Marcar la casilla de aceptación del uso de datos, si el formulario la solicita.",
+          "La casilla queda marcada."
+        ],
+        [
+          "4",
+          "Tocar el botón \"Registrarme\".",
+          "El sistema crea la cuenta del usuario."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF01 / HU01"
+        ],
+        [
+          "Postcondiciones:\nLa cuenta queda registrada en el sistema."
+        ]
+      ],
+      "flow": [
+        "flows/CP001_a.yaml",
+        "flows/CP001_b.yaml"
+      ]
+    },
+    {
+      "id": "CP002",
+      "title": "Impedir el registro con un correo ya registrado",
+      "rows": [
+        [
+          "Caso de Prueba: CP002: Impedir el registro con un correo ya registrado"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• Se conoce el correo del usuario de prueba."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la pantalla de registro.",
+          "Se muestra el formulario de registro."
+        ],
+        [
+          "2",
+          "Ingresar los datos del formulario usando el correo del usuario de prueba ya registrado.",
+          "Los campos aceptan los datos."
+        ],
+        [
+          "3",
+          "Tocar el botón \"Registrarme\".",
+          "El sistema muestra un mensaje de error indicando que el correo ya está registrado."
+        ],
+        [
+          "4",
+          "Verificar que no se haya creado una segunda cuenta.",
+          "No se crea otra cuenta con ese correo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF01 / HU01"
+        ],
+        [
+          "Postcondiciones:\nNo se crea ninguna cuenta nueva."
+        ]
+      ],
+      "flow": "flows/CP002.yaml"
+    },
+    {
+      "id": "CP003",
+      "title": "Guardar un lugar de trabajo con una dirección válida de Lima",
+      "rows": [
+        [
+          "Caso de Prueba: CP003: Guardar un lugar de trabajo con una dirección válida de Lima"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba inició sesión."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la pantalla donde se ingresa el lugar de trabajo (\"Configura tu búsqueda\").",
+          "Se muestra el campo \"Tu lugar de trabajo\"."
+        ],
+        [
+          "2",
+          "Escribir \"Primax\" en el campo.",
+          "Aparece una lista de direcciones sugeridas."
+        ],
+        [
+          "3",
+          "Seleccionar una dirección de la lista de sugerencias.",
+          "La dirección queda seleccionada y se muestra con una marca de confirmación."
+        ],
+        [
+          "4",
+          "Guardar o continuar con la configuración.",
+          "El sistema guarda el lugar de trabajo y lo muestra geolocalizado en el mapa."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF03 / HU02"
+        ],
+        [
+          "Postcondiciones:\nEl lugar de trabajo queda guardado con sus coordenadas."
+        ]
+      ],
+      "flow": "flows/CP003.yaml"
+    },
+    {
+      "id": "CP004",
+      "title": "Rechazar una dirección no seleccionada de la lista o fuera de Lima",
+      "rows": [
+        [
+          "Caso de Prueba: CP004: Rechazar una dirección no seleccionada de la lista o fuera de Lima"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba inició sesión."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la pantalla donde se ingresa el lugar de trabajo.",
+          "Se muestra el campo \"Tu lugar de trabajo\"."
+        ],
+        [
+          "2",
+          "Escribir un texto cualquiera (ej. \"xyz123\") sin elegir ninguna sugerencia y tratar de guardar.",
+          "El sistema muestra una alerta y no guarda la dirección."
+        ],
+        [
+          "3",
+          "Buscar una dirección fuera de Lima (ej. \"Trujillo\") y seleccionarla.",
+          "El sistema muestra una alerta indicando que está fuera del área de cobertura."
+        ],
+        [
+          "4",
+          "Verificar el lugar de trabajo guardado.",
+          "No se guardó ninguna de las dos direcciones."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF03 / HU02"
+        ],
+        [
+          "Postcondiciones:\nEl lugar de trabajo anterior no cambia."
+        ]
+      ],
+      "flow": "flows/CP004.yaml"
+    },
+    {
+      "id": "CP006",
+      "title": "Mostrar el catálogo de 10 en 10 con carga al desplazarse",
+      "rows": [
+        [
+          "Caso de Prueba: CP006: Mostrar el catálogo de 10 en 10 con carga al desplazarse"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Hay más de 10 viviendas aprobadas en el catálogo."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la app y entrar a la pestaña \"Viviendas\".",
+          "Se carga la lista de tarjetas con foto, precio y distrito."
+        ],
+        [
+          "2",
+          "Contar las tarjetas que se muestran al cargar.",
+          "Se muestran 10 viviendas."
+        ],
+        [
+          "3",
+          "Desplazarse hacia abajo hasta el final de la lista.",
+          "Se cargan 10 viviendas más."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF04 / HU04"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP006.yaml"
+    },
+    {
+      "id": "CP007",
+      "title": "Mostrar solo las viviendas aprobadas",
+      "rows": [
+        [
+          "Caso de Prueba: CP007: Mostrar solo las viviendas aprobadas"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existen una vivienda aprobada, una pendiente y una rechazada, con títulos distintos y conocidos."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"Viviendas\".",
+          "Se carga el catálogo."
+        ],
+        [
+          "2",
+          "Buscar en la lista la vivienda aprobada.",
+          "La vivienda aprobada aparece."
+        ],
+        [
+          "3",
+          "Buscar en la lista la vivienda pendiente y la rechazada.",
+          "Ninguna de las dos aparece en el catálogo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF04 / HU04"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP007.yaml"
+    },
+    {
+      "id": "CP008",
+      "title": "Filtrar viviendas por rango de precio",
+      "rows": [
+        [
+          "Caso de Prueba: CP008: Filtrar viviendas por rango de precio"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Hay viviendas con precios dentro y fuera del rango S/ 1,000 a S/ 1,500."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"Viviendas\" y tocar \"Filtros\".",
+          "Se muestra el panel de filtros."
+        ],
+        [
+          "2",
+          "Ingresar un rango de precio de 1,000 a 1,500 y aplicar el filtro.",
+          "El panel se cierra y la lista se actualiza."
+        ],
+        [
+          "3",
+          "Revisar el precio de cada vivienda mostrada.",
+          "Todas las viviendas tienen un precio dentro del rango."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF05 / HU05"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP008.yaml"
+    },
+    {
+      "id": "CP009",
+      "title": "Mostrar las recomendaciones ordenadas por puntaje de coincidencia",
+      "rows": [
+        [
+          "Caso de Prueba: CP009: Mostrar las recomendaciones ordenadas por puntaje de coincidencia"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba tiene su búsqueda configurada (lugar de trabajo \"Primax, San Miguel\", presupuesto S/ 1,400 y modo de transporte auto)."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Iniciar sesión y entrar a la pestaña \"IA\".",
+          "Se muestra la pantalla de recomendaciones."
+        ],
+        [
+          "2",
+          "Tocar \"Actualizar resultados\".",
+          "El sistema genera la lista \"viviendas recomendadas\"."
+        ],
+        [
+          "3",
+          "Revisar el puntaje de coincidencia de cada vivienda, de arriba hacia abajo.",
+          "La lista está ordenada de mayor a menor puntaje."
+        ],
+        [
+          "4",
+          "Revisar una tarjeta cualquiera.",
+          "Cada vivienda muestra su tiempo estimado al trabajo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF08 / HU06"
+        ],
+        [
+          "Postcondiciones:\nSe guarda la última recomendación generada."
+        ]
+      ],
+      "flow": "flows/CP009.yaml"
+    },
+    {
+      "id": "CP010",
+      "title": "Informar cuando no hay viviendas dentro del presupuesto",
+      "rows": [
+        [
+          "Caso de Prueba: CP010: Informar cuando no hay viviendas dentro del presupuesto"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba tiene su búsqueda configurada con un presupuesto muy bajo (ej. S/ 100)."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Iniciar sesión y entrar a la pestaña \"IA\".",
+          "Se muestra la pantalla de recomendaciones."
+        ],
+        [
+          "2",
+          "Tocar \"Actualizar resultados\".",
+          "El sistema procesa la solicitud."
+        ],
+        [
+          "3",
+          "Revisar el resultado.",
+          "Se muestra un mensaje de que no hay resultados."
+        ],
+        [
+          "4",
+          "Leer el mensaje completo.",
+          "El mensaje indica el precio mínimo disponible en la zona."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF08 / HU06"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP010.yaml"
+    },
+    {
+      "id": "CP011",
+      "title": "Mostrar la ficha completa de una vivienda",
+      "rows": [
+        [
+          "Caso de Prueba: CP011: Mostrar la ficha completa de una vivienda"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Hay viviendas aprobadas en el catálogo."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"Viviendas\".",
+          "Se muestra el catálogo."
+        ],
+        [
+          "2",
+          "Tocar una vivienda de la lista.",
+          "Se abre la vista de detalle."
+        ],
+        [
+          "3",
+          "Deslizar la galería de fotos.",
+          "Se muestran todas las fotos de la vivienda."
+        ],
+        [
+          "4",
+          "Revisar la descripción y las características.",
+          "Se ven la descripción completa y las características (habitaciones, baños y área)."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF06 / HU07"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP011.yaml"
+    },
+    {
+      "id": "CP012",
+      "title": "Mostrar el tiempo de viaje al trabajo en el detalle",
+      "rows": [
+        [
+          "Caso de Prueba: CP012: Mostrar el tiempo de viaje al trabajo en el detalle"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba tiene su búsqueda configurada (lugar de trabajo \"Primax, San Miguel\", presupuesto S/ 1,400 y modo de transporte auto)."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Iniciar sesión y entrar a la pestaña \"Viviendas\".",
+          "Se muestra el catálogo."
+        ],
+        [
+          "2",
+          "Abrir el detalle de una vivienda.",
+          "Se muestra la vista de detalle."
+        ],
+        [
+          "3",
+          "Ubicar la sección \"Tiempo a tu trabajo\".",
+          "El sistema muestra el tiempo de viaje estimado hasta el trabajo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF06 / HU07"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP012.yaml"
+    },
+    {
+      "id": "CP013",
+      "title": "Mostrar los pines del trabajo y de las viviendas en el mapa",
+      "rows": [
+        [
+          "Caso de Prueba: CP013: Mostrar los pines del trabajo y de las viviendas en el mapa"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba tiene su búsqueda configurada (lugar de trabajo \"Primax, San Miguel\", presupuesto S/ 1,400 y modo de transporte auto)."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Iniciar sesión y entrar a la pestaña \"Mapa\".",
+          "Se carga el mapa."
+        ],
+        [
+          "2",
+          "Esperar a que termine de cargar la interfaz.",
+          "Se ve el pin del lugar de trabajo."
+        ],
+        [
+          "3",
+          "Revisar la zona del mapa.",
+          "Se ven los pines de las viviendas con su precio."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF09 / HU08"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP013.yaml"
+    },
+    {
+      "id": "CP014",
+      "title": "Mostrar la tarjeta informativa al tocar un pin de vivienda",
+      "rows": [
+        [
+          "Caso de Prueba: CP014: Mostrar la tarjeta informativa al tocar un pin de vivienda"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba tiene su búsqueda configurada (lugar de trabajo \"Primax, San Miguel\", presupuesto S/ 1,400 y modo de transporte auto).\n• El mapa muestra pines de viviendas."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"Mapa\".",
+          "Se carga el mapa con los pines."
+        ],
+        [
+          "2",
+          "Tocar el pin de una vivienda.",
+          "Se despliega una tarjeta con la miniatura de la propiedad."
+        ],
+        [
+          "3",
+          "Revisar los datos de la tarjeta.",
+          "Se ven el precio, el distrito, las características básicas y el tiempo al trabajo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF09 / HU08"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": [
+        "flows/common/map-ready.yaml",
+        "flows/CP014.yaml"
+      ],
+      "visual_probe": "support/map_visual.py"
+    },
+    {
+      "id": "CP015",
+      "title": "Dibujar la ruta de la vivienda al trabajo",
+      "rows": [
+        [
+          "Caso de Prueba: CP015: Dibujar la ruta de la vivienda al trabajo"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba tiene su búsqueda configurada (lugar de trabajo \"Primax, San Miguel\", presupuesto S/ 1,400 y modo de transporte auto)."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"Mapa\".",
+          "Se carga el mapa con los pines."
+        ],
+        [
+          "2",
+          "Seleccionar una vivienda y abrir la vista detallada del mapa.",
+          "Se muestra la vista detallada."
+        ],
+        [
+          "3",
+          "Solicitar ver la ruta al trabajo.",
+          "El sistema dibuja la línea del trayecto en el mapa."
+        ],
+        [
+          "4",
+          "Verificar los extremos de la línea.",
+          "La ruta une la vivienda con el lugar de trabajo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF10 / HU09"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": [
+        "flows/common/map-ready.yaml",
+        "flows/CP015.yaml"
+      ],
+      "visual_probe": "support/map_visual.py"
+    },
+    {
+      "id": "CP016",
+      "title": "Mostrar las variables que influyen en la recomendación",
+      "rows": [
+        [
+          "Caso de Prueba: CP016: Mostrar las variables que influyen en la recomendación"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba tiene su búsqueda configurada (lugar de trabajo \"Primax, San Miguel\", presupuesto S/ 1,400 y modo de transporte auto).\n• Hay una lista de viviendas recomendadas."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"IA\".",
+          "Se muestra la lista de recomendaciones."
+        ],
+        [
+          "2",
+          "Tocar \"Ver análisis\" en una vivienda.",
+          "Se abre la pantalla \"¿Por qué este resultado?\"."
+        ],
+        [
+          "3",
+          "Revisar el contenido.",
+          "Se muestran las variables analizadas (tiempo de viaje, presupuesto, distancia y área)."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF12, RNF10 / HU10"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP016.yaml"
+    },
+    {
+      "id": "CP017",
+      "title": "Agregar una vivienda a favoritos",
+      "rows": [
+        [
+          "Caso de Prueba: CP017: Agregar una vivienda a favoritos"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba inició sesión."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"Viviendas\".",
+          "Se muestra el catálogo."
+        ],
+        [
+          "2",
+          "Tocar el icono de corazón de una vivienda.",
+          "El corazón cambia a estado activo."
+        ],
+        [
+          "3",
+          "Abrir \"Mis Favoritos\".",
+          "La vivienda aparece en la lista de favoritos."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF07 / HU11"
+        ],
+        [
+          "Postcondiciones:\nLa vivienda queda guardada como favorita."
+        ]
+      ],
+      "flow": "flows/CP017.yaml"
+    },
+    {
+      "id": "CP018",
+      "title": "Recalcular los tiempos al cambiar el modo de transporte",
+      "rows": [
+        [
+          "Caso de Prueba: CP018: Recalcular los tiempos al cambiar el modo de transporte"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba tiene su búsqueda configurada (lugar de trabajo \"Primax, San Miguel\", presupuesto S/ 1,400 y modo de transporte auto)."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"IA\" y anotar los tiempos al trabajo de las primeras viviendas (modo auto).",
+          "Se muestran los tiempos del modo auto."
+        ],
+        [
+          "2",
+          "Tocar \"Editar\" en \"Tu búsqueda\" y elegir el modo \"Bicicleta\".",
+          "El modo Bicicleta queda seleccionado."
+        ],
+        [
+          "3",
+          "Guardar y tocar \"Actualizar resultados\".",
+          "El sistema recalcula los resultados."
+        ],
+        [
+          "4",
+          "Comparar los tiempos con los anotados.",
+          "Los tiempos se actualizaron según el nuevo modo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF11 / HU12"
+        ],
+        [
+          "Postcondiciones:\nLa preferencia de transporte queda en bicicleta."
+        ]
+      ],
+      "flow": "flows/CP018.yaml"
+    },
+    {
+      "id": "CP019",
+      "title": "Iniciar el formulario de publicación de un anuncio",
+      "rows": [
+        [
+          "Caso de Prueba: CP019: Iniciar el formulario de publicación de un anuncio"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"Viviendas\".",
+          "Se muestra el catálogo con el botón \"Publicar\"."
+        ],
+        [
+          "2",
+          "Tocar el botón \"Publicar\".",
+          "El sistema muestra el formulario de publicación por pasos."
+        ],
+        [
+          "3",
+          "Revisar la pantalla inicial.",
+          "Se muestra el paso 1 (ubicación de la vivienda)."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF13 / HU13"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP019.yaml"
+    },
+    {
+      "id": "CP020",
+      "title": "Guardar automáticamente el borrador al salir del formulario",
+      "rows": [
+        [
+          "Caso de Prueba: CP020: Guardar automáticamente el borrador al salir del formulario"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Tocar \"Publicar\" y completar el paso 1 con una dirección.",
+          "Los datos del paso 1 quedan ingresados."
+        ],
+        [
+          "2",
+          "Salir del flujo sin terminar (botón atrás o cerrar).",
+          "El formulario se cierra."
+        ],
+        [
+          "3",
+          "Volver a tocar \"Publicar\".",
+          "El sistema recupera los datos ingresados como borrador."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF13 / HU13"
+        ],
+        [
+          "Postcondiciones:\nEl borrador queda guardado."
+        ]
+      ],
+      "flow": "flows/CP020.yaml"
+    },
+    {
+      "id": "CP021",
+      "title": "Ubicar la vivienda con un pin en el mapa",
+      "rows": [
+        [
+          "Caso de Prueba: CP021: Ubicar la vivienda con un pin en el mapa"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario está en el paso 1 del formulario de publicación."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Escribir una dirección de Lima en el buscador del paso 1.",
+          "Aparece una lista de direcciones sugeridas."
+        ],
+        [
+          "2",
+          "Seleccionar una sugerencia.",
+          "El mapa muestra un pin en esa ubicación."
+        ],
+        [
+          "3",
+          "Repetir con la opción \"Elegir en el mapa\" y tocar un punto del mapa.",
+          "El pin se coloca en el punto elegido."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF14 / HU14"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP021.yaml"
+    },
+    {
+      "id": "CP022",
+      "title": "Guardar las coordenadas y avanzar al paso 2",
+      "rows": [
+        [
+          "Caso de Prueba: CP022: Guardar las coordenadas y avanzar al paso 2"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El pin de la vivienda ya está ubicado en el mapa."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Tocar \"Siguiente\".",
+          "El sistema avanza al paso 2."
+        ],
+        [
+          "2",
+          "Volver al paso 1.",
+          "El pin se mantiene en la misma ubicación."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF14 / HU14"
+        ],
+        [
+          "Postcondiciones:\nLas coordenadas de la vivienda quedan guardadas."
+        ]
+      ],
+      "flow": "flows/CP022.yaml"
+    },
+    {
+      "id": "CP023",
+      "title": "Bloquear el avance si faltan datos clave en el paso 2",
+      "rows": [
+        [
+          "Caso de Prueba: CP023: Bloquear el avance si faltan datos clave en el paso 2"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario está en el paso 2 del formulario con los datos clave vacíos."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Dejar vacíos el título, el precio y el área.",
+          "Los campos permanecen vacíos."
+        ],
+        [
+          "2",
+          "Tocar \"Siguiente\".",
+          "El sistema muestra una alerta con los datos faltantes."
+        ],
+        [
+          "3",
+          "Verificar la pantalla.",
+          "No se avanza al paso 3."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF15 / HU15"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP023.yaml"
+    },
+    {
+      "id": "CP024",
+      "title": "Advertir al superar el límite de 5 fotos",
+      "rows": [
+        [
+          "Caso de Prueba: CP024: Advertir al superar el límite de 5 fotos"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario está en el paso 3 del formulario y el dispositivo tiene al menos 6 fotos."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Agregar 5 fotos al anuncio.",
+          "Las 5 fotos se agregan."
+        ],
+        [
+          "2",
+          "Intentar agregar una sexta foto.",
+          "El sistema muestra una advertencia indicando que se alcanzó el límite."
+        ],
+        [
+          "3",
+          "Contar las fotos de la lista.",
+          "Solo hay 5 fotos."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF16 / HU16"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP024.yaml"
+    },
+    {
+      "id": "CP025",
+      "title": "Guardar las áreas comunes y servicios elegidos",
+      "rows": [
+        [
+          "Caso de Prueba: CP025: Guardar las áreas comunes y servicios elegidos"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario completó los pasos 1 a 3 y está en el paso 4."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Marcar dos áreas comunes y un servicio extra.",
+          "Las casillas quedan marcadas."
+        ],
+        [
+          "2",
+          "Tocar el botón para finalizar la publicación.",
+          "El sistema envía el anuncio."
+        ],
+        [
+          "3",
+          "Abrir el anuncio desde \"Mis publicaciones\".",
+          "Las áreas comunes y los servicios marcados aparecen guardados."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF15 / HU17"
+        ],
+        [
+          "Postcondiciones:\nEl anuncio guarda las características elegidas."
+        ]
+      ],
+      "flow": "flows/CP025.yaml"
+    },
+    {
+      "id": "CP026",
+      "title": "Dejar el anuncio en estado Pendiente al finalizar",
+      "rows": [
+        [
+          "Caso de Prueba: CP026: Dejar el anuncio en estado Pendiente al finalizar"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario completó todos los pasos del formulario."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Tocar el botón para finalizar la publicación.",
+          "Se muestra la pantalla \"¡Publicación enviada!\"."
+        ],
+        [
+          "2",
+          "Abrir \"Mis publicaciones\".",
+          "El anuncio nuevo aparece en la lista."
+        ],
+        [
+          "3",
+          "Revisar el estado del anuncio.",
+          "El estado es \"Pendiente\"."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF13, RF18 / HU18"
+        ],
+        [
+          "Postcondiciones:\nEl anuncio queda pendiente de revisión."
+        ]
+      ],
+      "flow": "flows/CP026.yaml"
+    },
+    {
+      "id": "CP027",
+      "title": "Bloquear la edición de un anuncio pendiente",
+      "rows": [
+        [
+          "Caso de Prueba: CP027: Bloquear la edición de un anuncio pendiente"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario tiene un anuncio en estado \"Pendiente\"."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir \"Mis publicaciones\" y entrar al anuncio pendiente.",
+          "Se muestra el anuncio."
+        ],
+        [
+          "2",
+          "Intentar editar el anuncio.",
+          "El sistema bloquea la edición y muestra un mensaje."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF18 / HU18"
+        ],
+        [
+          "Postcondiciones:\nEl anuncio no cambia."
+        ]
+      ],
+      "flow": "flows/CP027.yaml"
+    },
+    {
+      "id": "CP028",
+      "title": "Listar todas las propiedades del propietario",
+      "rows": [
+        [
+          "Caso de Prueba: CP028: Listar todas las propiedades del propietario"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario tiene publicaciones pendientes, aprobadas y rechazadas."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir \"Mis publicaciones\".",
+          "Se muestra el panel del propietario."
+        ],
+        [
+          "2",
+          "Contar las publicaciones con la pestaña \"Todas\".",
+          "Aparecen todas las publicaciones del usuario."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF17 / HU19"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP028.yaml"
+    },
+    {
+      "id": "CP029",
+      "title": "Filtrar las publicaciones por estado",
+      "rows": [
+        [
+          "Caso de Prueba: CP029: Filtrar las publicaciones por estado"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario tiene publicaciones en los tres estados."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir \"Mis publicaciones\" y tocar la pestaña \"Pendiente\".",
+          "Solo se muestran las pendientes."
+        ],
+        [
+          "2",
+          "Tocar la pestaña \"Aprobado\".",
+          "Solo se muestran las aprobadas."
+        ],
+        [
+          "3",
+          "Tocar la pestaña \"Rechazado\".",
+          "Solo se muestran las rechazadas."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF17 / HU19"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP029.yaml"
+    },
+    {
+      "id": "CP030",
+      "title": "Listar las propiedades pendientes en el panel del administrador",
+      "rows": [
+        [
+          "Caso de Prueba: CP030: Listar las propiedades pendientes en el panel del administrador"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe una cuenta de administrador activa.\n• Existen al menos dos propiedades en estado pendiente."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Iniciar sesión con la cuenta de administrador.",
+          "Se ingresa a la app."
+        ],
+        [
+          "2",
+          "Abrir el módulo de moderación.",
+          "Se carga la vista del panel de validación."
+        ],
+        [
+          "3",
+          "Revisar la lista.",
+          "Se ven todas las propiedades con estado pendiente."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF18 / HU20"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP030.yaml"
+    },
+    {
+      "id": "CP031",
+      "title": "Mostrar los botones de moderación en cada tarjeta",
+      "rows": [
+        [
+          "Caso de Prueba: CP031: Mostrar los botones de moderación en cada tarjeta"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe una cuenta de administrador activa.\n• Existen propiedades pendientes."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir el módulo de moderación.",
+          "Se muestra la lista de pendientes."
+        ],
+        [
+          "2",
+          "Observar una propiedad de la lista.",
+          "La tarjeta muestra los botones para aprobar y rechazar."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF18 / HU20"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP031.yaml"
+    },
+    {
+      "id": "CP032",
+      "title": "Aprobar una publicación y verla en el catálogo",
+      "rows": [
+        [
+          "Caso de Prueba: CP032: Aprobar una publicación y verla en el catálogo"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe una cuenta de administrador activa.\n• Existe una propiedad pendiente con un título conocido."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir el módulo de moderación e identificar la propiedad.",
+          "La propiedad aparece en la lista."
+        ],
+        [
+          "2",
+          "Tocar el botón aprobar.",
+          "La propiedad deja la lista de pendientes."
+        ],
+        [
+          "3",
+          "Con otro usuario, buscar la propiedad en el catálogo.",
+          "La propiedad aparece visible en el catálogo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF18 / HU21"
+        ],
+        [
+          "Postcondiciones:\nLa propiedad queda en estado \"Aprobada\"."
+        ]
+      ],
+      "flow": "flows/CP032.yaml"
+    },
+    {
+      "id": "CP033",
+      "title": "Rechazar una publicación con motivo",
+      "rows": [
+        [
+          "Caso de Prueba: CP033: Rechazar una publicación con motivo"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe una cuenta de administrador activa.\n• Existe una propiedad pendiente con un título conocido."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir el módulo de moderación y tocar rechazar en la propiedad.",
+          "El sistema solicita un motivo de rechazo."
+        ],
+        [
+          "2",
+          "Intentar confirmar sin escribir un motivo.",
+          "El sistema exige escribir un motivo."
+        ],
+        [
+          "3",
+          "Escribir un motivo y confirmar.",
+          "La propiedad queda rechazada."
+        ],
+        [
+          "4",
+          "Buscar la propiedad en el catálogo con otro usuario.",
+          "La propiedad no aparece en el catálogo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF18 / HU21"
+        ],
+        [
+          "Postcondiciones:\nLa propiedad queda en estado \"Rechazada\" con su motivo."
+        ]
+      ],
+      "flow": "flows/CP033.yaml"
+    },
+    {
+      "id": "CP034",
+      "title": "Mostrar el listado de usuarios registrados",
+      "rows": [
+        [
+          "Caso de Prueba: CP034: Mostrar el listado de usuarios registrados"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe una cuenta de administrador activa.\n• Existen varios usuarios registrados."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Iniciar sesión con la cuenta de administrador.",
+          "Se ingresa a la app."
+        ],
+        [
+          "2",
+          "Abrir la sección de gestión de usuarios.",
+          "El sistema carga la tabla de usuarios."
+        ],
+        [
+          "3",
+          "Revisar la tabla.",
+          "Se ven todos los usuarios con sus datos básicos."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF20 / HU23"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP034.yaml"
+    },
+    {
+      "id": "CP035",
+      "title": "Buscar un usuario por correo",
+      "rows": [
+        [
+          "Caso de Prueba: CP035: Buscar un usuario por correo"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe una cuenta de administrador activa.\n• Existen varios usuarios registrados."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la sección de gestión de usuarios.",
+          "Se muestra la tabla."
+        ],
+        [
+          "2",
+          "Escribir en el buscador el correo de un usuario.",
+          "La tabla se filtra."
+        ],
+        [
+          "3",
+          "Revisar el resultado.",
+          "Solo se muestra el usuario que coincide con el correo."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF20 / HU23"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP035.yaml"
+    },
+    {
+      "id": "CP036",
+      "title": "Bloquear una cuenta y desactivar sus propiedades",
+      "rows": [
+        [
+          "Caso de Prueba: CP036: Bloquear una cuenta y desactivar sus propiedades"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe una cuenta de administrador activa.\n• Existe un usuario de prueba con al menos una propiedad aprobada visible en el catálogo."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la sección de gestión de usuarios y buscar al usuario de prueba.",
+          "Se muestra el usuario."
+        ],
+        [
+          "2",
+          "Bloquear la cuenta del usuario.",
+          "La cuenta queda como bloqueada."
+        ],
+        [
+          "3",
+          "Con otro usuario, buscar sus propiedades en el catálogo.",
+          "Las propiedades del usuario bloqueado ya no aparecen."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF20 / HU24"
+        ],
+        [
+          "Postcondiciones:\nLa cuenta y sus propiedades quedan desactivadas."
+        ]
+      ],
+      "flow": "flows/CP036.yaml"
+    },
+    {
+      "id": "CP037",
+      "title": "Denegar el inicio de sesión a una cuenta bloqueada",
+      "rows": [
+        [
+          "Caso de Prueba: CP037: Denegar el inicio de sesión a una cuenta bloqueada"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario con la cuenta bloqueada por el administrador."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la pantalla de inicio de sesión.",
+          "Se muestra el formulario."
+        ],
+        [
+          "2",
+          "Ingresar el correo y la contraseña correctos del usuario bloqueado.",
+          "Los campos aceptan los datos."
+        ],
+        [
+          "3",
+          "Tocar \"Iniciar sesión\".",
+          "El sistema deniega el acceso y muestra un mensaje de cuenta bloqueada."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF20 / HU24"
+        ],
+        [
+          "Postcondiciones:\nNo se inicia ninguna sesión."
+        ]
+      ],
+      "flow": "flows/CP037.yaml"
+    },
+    {
+      "id": "CP038",
+      "title": "Iniciar sesión con credenciales correctas",
+      "rows": [
+        [
+          "Caso de Prueba: CP038: Iniciar sesión con credenciales correctas"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• Se conocen el correo y la contraseña del usuario de prueba."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la pantalla de inicio de sesión.",
+          "Se muestra el formulario."
+        ],
+        [
+          "2",
+          "Ingresar el correo y la contraseña correctos.",
+          "Los campos aceptan los datos."
+        ],
+        [
+          "3",
+          "Tocar \"Iniciar sesión\".",
+          "El sistema inicia la sesión y muestra el inicio de la app."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF02 / HU25"
+        ],
+        [
+          "Postcondiciones:\nEl usuario queda con la sesión iniciada."
+        ]
+      ],
+      "flow": "flows/CP038.yaml"
+    },
+    {
+      "id": "CP039",
+      "title": "Rechazar credenciales incorrectas",
+      "rows": [
+        [
+          "Caso de Prueba: CP039: Rechazar credenciales incorrectas"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir la pantalla de inicio de sesión.",
+          "Se muestra el formulario."
+        ],
+        [
+          "2",
+          "Ingresar el correo del usuario de prueba y una contraseña incorrecta.",
+          "Los campos aceptan los datos."
+        ],
+        [
+          "3",
+          "Tocar \"Iniciar sesión\".",
+          "El sistema muestra un mensaje de credenciales incorrectas y no inicia la sesión."
+        ],
+        [
+          "4",
+          "Repetir con un correo que no está registrado.",
+          "Se muestra el mismo mensaje de error."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF02 / HU25"
+        ],
+        [
+          "Postcondiciones:\nNo se inicia ninguna sesión."
+        ]
+      ],
+      "flow": "flows/CP039.yaml"
+    },
+    {
+      "id": "CP040",
+      "title": "Cerrar la sesión del usuario",
+      "rows": [
+        [
+          "Caso de Prueba: CP040: Cerrar la sesión del usuario"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba inició sesión."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"Perfil\".",
+          "Se muestra el perfil del usuario."
+        ],
+        [
+          "2",
+          "Tocar la opción \"Cerrar sesión\".",
+          "El sistema cierra la sesión."
+        ],
+        [
+          "3",
+          "Revisar la pantalla.",
+          "Ya no se muestran los datos de la cuenta."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF02, RNF04 / HU26"
+        ],
+        [
+          "Postcondiciones:\nLa sesión queda cerrada."
+        ]
+      ],
+      "flow": "flows/CP040.yaml"
+    },
+    {
+      "id": "CP041",
+      "title": "Recordar la sesión al reabrir la app",
+      "rows": [
+        [
+          "Caso de Prueba: CP041: Recordar la sesión al reabrir la app"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba inició sesión."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Cerrar la app por completo (quitarla de las apps recientes).",
+          "La app se cierra."
+        ],
+        [
+          "2",
+          "Volver a abrir la app.",
+          "La app abre sin pedir correo ni contraseña."
+        ],
+        [
+          "3",
+          "Entrar a la pestaña \"Perfil\".",
+          "Se muestra la cuenta del usuario."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF02, RNF04 / HU26"
+        ],
+        [
+          "Postcondiciones:\nLa sesión se mantiene iniciada."
+        ]
+      ],
+      "flow": "flows/CP041.yaml"
+    },
+    {
+      "id": "CP042",
+      "title": "Mostrar los tiempos por franja horaria en modo auto",
+      "rows": [
+        [
+          "Caso de Prueba: CP042: Mostrar los tiempos por franja horaria en modo auto"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• Existe un usuario de prueba registrado y con cuenta activa.\n• El usuario de prueba tiene su búsqueda configurada (lugar de trabajo \"Primax, San Miguel\", presupuesto S/ 1,400 y modo de transporte auto).\n• Hay recomendaciones generadas."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"IA\".",
+          "Se muestra la lista de recomendaciones."
+        ],
+        [
+          "2",
+          "Tocar \"Ver análisis\" en una vivienda recomendada.",
+          "Se abre el análisis de la vivienda."
+        ],
+        [
+          "3",
+          "Revisar los tiempos de viaje.",
+          "Se ven los tiempos estimados para la mañana, el mediodía y la tarde."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "RF11, RNF09 / HU27"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP042.yaml"
+    },
+    {
+      "id": "CP043",
+      "title": "Contactar al anunciante por WhatsApp",
+      "rows": [
+        [
+          "Caso de Prueba: CP043: Contactar al anunciante por WhatsApp"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• WhatsApp está instalado en el dispositivo.\n• Existe una vivienda con teléfono de contacto registrado."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Entrar a la pestaña \"Viviendas\" y abrir esa vivienda.",
+          "Se muestra el detalle."
+        ],
+        [
+          "2",
+          "Tocar el botón de contacto.",
+          "Se abre WhatsApp."
+        ],
+        [
+          "3",
+          "Revisar la conversación.",
+          "El chat es con el número del anunciante y trae un mensaje listo para enviar."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "HU28"
+        ],
+        [
+          "Postcondiciones:\nNinguna."
+        ]
+      ],
+      "flow": "flows/CP043.yaml"
+    },
+    {
+      "id": "CP044",
+      "title": "Editar una publicación aprobada y enviarla a nueva revisión",
+      "rows": [
+        [
+          "Caso de Prueba: CP044: Editar una publicación aprobada y enviarla a nueva revisión"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario tiene una publicación en estado aprobado."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir \"Mis publicaciones\" y entrar a la publicación aprobada.",
+          "Se muestra la publicación."
+        ],
+        [
+          "2",
+          "Editarla (ej. cambiar el precio) y guardar los cambios.",
+          "El sistema guarda los cambios."
+        ],
+        [
+          "3",
+          "Revisar el estado en \"Mis publicaciones\".",
+          "El anuncio vuelve a estado \"Pendiente\"."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF17 / HU29"
+        ],
+        [
+          "Postcondiciones:\nEl anuncio queda pendiente de una nueva revisión."
+        ]
+      ],
+      "flow": "flows/CP044.yaml"
+    },
+    {
+      "id": "CP045",
+      "title": "Corregir una publicación rechazada y reenviarla",
+      "rows": [
+        [
+          "Caso de Prueba: CP045: Corregir una publicación rechazada y reenviarla"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• La app MiCasita está instalada en un dispositivo Android o iOS, con conexión a internet y el servidor en línea.\n• El usuario de prueba es propietario y ya inició sesión.\n• El usuario tiene una publicación en estado rechazado."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Abrir \"Mis publicaciones\" y entrar a la publicación rechazada.",
+          "Se muestra la publicación con el motivo del rechazo."
+        ],
+        [
+          "2",
+          "Corregir los datos y guardar los cambios.",
+          "El sistema guarda los cambios."
+        ],
+        [
+          "3",
+          "Revisar el estado en \"Mis publicaciones\".",
+          "El anuncio vuelve a estado \"Pendiente\"."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Alta"
+        ],
+        [
+          "Requerimientos",
+          "RF17 / HU29"
+        ],
+        [
+          "Postcondiciones:\nEl anuncio queda pendiente de una nueva revisión."
+        ]
+      ],
+      "flow": "flows/CP045.yaml"
+    }
+  ],
+  "excluded_cases": [
+    {
+      "id": "CP005",
+      "title": "Limpiar los valores nulos con el script de ETL",
+      "rows": [
+        [
+          "Caso de Prueba: CP005: Limpiar los valores nulos con el script de ETL"
+        ],
+        [
+          "Autor:",
+          "Jherson David Astuyauri Calderon"
+        ],
+        [
+          "Precondiciones:\n• Se cuenta con el script de ETL y un conjunto de datos crudos con valores nulos en algunas columnas.\n• Se registró previamente el número de valores nulos por columna."
+        ],
+        [
+          "#:",
+          "Pasos:",
+          "Resultados Esperados:"
+        ],
+        [
+          "1",
+          "Ejecutar el script de ETL sobre el conjunto de datos crudos.",
+          "El script termina sin errores."
+        ],
+        [
+          "2",
+          "Revisar los datos resultantes columna por columna.",
+          "No quedan valores nulos sin tratar."
+        ],
+        [
+          "3",
+          "Comparar con el conjunto original.",
+          "Los valores nulos fueron eliminados o imputados según la regla del script."
+        ],
+        [
+          "Tipo de ejecución:",
+          "Manual"
+        ],
+        [
+          "Prioridad:",
+          "Media"
+        ],
+        [
+          "Requerimientos",
+          "HU03"
+        ],
+        [
+          "Postcondiciones:\nSe obtiene un conjunto de datos sin valores nulos."
+        ]
+      ],
+      "exclusion_reason": "Retirado del Excel junto con HU03 el 4 de noviembre de 2026: prueba ETL sin interacción con la app. Se conserva solo como referencia histórica.",
+      "source_sha256": "2374bc8f7e1bfab7918109e9f47cdbc1eefc1b3f6cd1a52834e558afdd676dc5"
+    }
+  ]
+}

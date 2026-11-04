@@ -1,0 +1,56 @@
+# CP004: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/user.yaml
+- tapOn:
+    text: "IA(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    text: ".*Agregar lugar de trabajo.*"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      id: "workplace-budget"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "workplace-budget"
+- inputText: "1400"
+- runFlow: common/hide-keyboard.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "address-search-input"
+- inputText: "xyz123"
+- runFlow: common/hide-keyboard.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "workplace-save"
+- assertVisible: "Direccion faltante"
+- tapOn:
+    text: ".*OK.*"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "address-search-input"
+- eraseText
+- inputText: "Trujillo, La Libertad"
+- extendedWaitUntil:
+    visible: ".*Trujillo, La Libertad,.*"
+    timeout: 30000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    text: ".*Trujillo, La Libertad,.*"
+- runFlow: common/hide-keyboard.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "workplace-save"
+- assertVisible: "Fuera de cobertura"
+- tapOn:
+    text: ".*OK.*"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    text: ".*Cancelar.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: ".*Primax, San Miguel.*"
+- takeScreenshot: CP004-resultado

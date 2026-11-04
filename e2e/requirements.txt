@@ -1,0 +1,4 @@
+# Dependencias Python E2E adicionales al backend (entorno validado).
+Pillow==10.4.0
+numpy==2.4.4
+scipy==1.17.1

@@ -1,0 +1,24 @@
+# CP027: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/owner.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    text: ".*Mis publicaciones.*"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      id: "edit-E2E Pendiente Dueno"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "edit-E2E Pendiente Dueno"
+- assertVisible: "Publicación en revisión"
+- assertVisible: "Tu anuncio está siendo revisado.*"
+- takeScreenshot: CP027-resultado

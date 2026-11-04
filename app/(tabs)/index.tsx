@@ -73,14 +73,14 @@ function HousingFloatingCard({
       style={styles.floatingCard}
     >
       {imgSrc ? (
-        <Image source={imgSrc} style={styles.cardImage} />
+        <Image testID="map-card-image" accessible accessibilityLabel="Foto de la vivienda" source={imgSrc} style={styles.cardImage} />
       ) : (
         <View style={[styles.cardImage, { alignItems: "center", justifyContent: "center" }]}>
           <Ionicons name="home-outline" size={24} color={Colors.textMuted} />
         </View>
       )}
       <View style={styles.cardRight}>
-        <Text style={styles.cardPrice}>
+        <Text testID="map-card-price" style={styles.cardPrice}>
           {formatPrice(housing.price, housing.currency)}{" "}
           <Text style={styles.cardPriceUnit}>/mes</Text>
         </Text>
@@ -121,7 +121,7 @@ export default function MapScreen() {
 
   const panelPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, { dy }) => dy > 4,
       onPanResponderMove: (_, { dy }) => {
         if (dy > 0) panelTranslateY.setValue(dy);
@@ -174,6 +174,9 @@ export default function MapScreen() {
     workplaces[0] ||
     null;
 
+  const workplaceLat = isGuest ? guestWorkplace?.lat : activeWorkplace?.work_lat;
+  const workplaceLon = isGuest ? guestWorkplace?.lon : activeWorkplace?.work_lon;
+
   const { data: preferences = [] } = usePreferences(
     activeWorkplace?.id ?? null,
   );
@@ -189,6 +192,17 @@ export default function MapScreen() {
         : (authRecommendations?.results ?? []),
     [isGuest, guestRecommendations, authRecommendations],
   );
+
+  // Sin candidatas, mantener visible el nuevo trabajo en lugar de la zona anterior.
+  useEffect(() => {
+    if (workplaceLat == null || workplaceLon == null || recommendations.length > 0) return;
+    mapRef.current?.animateToRegion({
+      latitude: workplaceLat,
+      longitude: workplaceLon,
+      latitudeDelta: 0.025,
+      longitudeDelta: 0.025,
+    }, 500);
+  }, [workplaceLat, workplaceLon, recommendations.length]);
 
   // Algunas viviendas comparten coordenada exacta (geocoding sin número de
   // puerta cae al centroide de la calle) — sin esto sus marcadores quedan
@@ -273,7 +287,7 @@ export default function MapScreen() {
     }
   }, [selectedHousing, panelTranslateY]);
 
-  // Al entrar al mapa con recomendaciones listas, selecciona y hace zoom a la
+  // Al entrar al mapa con recomendaciones listas, selecciona y encuadra la
   // vivienda con mejor match_score (top 1). Se ejecuta una vez por cada set de
   // recomendaciones (se vuelve a disparar si cambian, p. ej. tras regenerar).
   // Clear stale route and selection whenever loading starts (workplace switch,
@@ -318,14 +332,20 @@ export default function MapScreen() {
     autoFocusKeyRef.current = setKey;
 
     handleHousingSelect(target.property);
+    // Incluir el trabajo evita recortarlo al volver desde una vivienda lejana.
+    // El margen inferior reserva espacio para la tarjeta flotante.
+    const workLat = workplaceLat ?? target.property.latitude;
+    const workLon = workplaceLon ?? target.property.longitude;
+    const latitudeDelta = Math.max(Math.abs(target.property.latitude - workLat) * 1.8, 0.025);
+    const longitudeDelta = Math.max(Math.abs(target.property.longitude - workLon) * 1.8, 0.025);
     // Pequeño delay para asegurar que el mapa esté montado antes de animar.
     const t = setTimeout(() => {
       mapRef.current?.animateToRegion(
         {
-          latitude: target.property.latitude,
-          longitude: target.property.longitude,
-          latitudeDelta: 0.025,
-          longitudeDelta: 0.025,
+          latitude: (target.property.latitude + workLat) / 2 - latitudeDelta * 0.08,
+          longitude: (target.property.longitude + workLon) / 2,
+          latitudeDelta,
+          longitudeDelta,
         },
         700,
       );
@@ -336,6 +356,8 @@ export default function MapScreen() {
     isLoadingRecommendations,
     isGuest,
     activeWorkplace?.id,
+    workplaceLat,
+    workplaceLon,
     focusPropertyId,
     handleHousingSelect,
     clearRoute,
@@ -391,6 +413,7 @@ export default function MapScreen() {
         <Text style={styles.mapHeaderTitle}>Mapa</Text>
         <TouchableOpacity
           style={styles.searchBar}
+          testID="edit-workplace"
           onPress={handleEditWorkplace}
           activeOpacity={0.85}
         >
@@ -510,6 +533,7 @@ export default function MapScreen() {
 
         {selectedHousing && (
           <Animated.View
+            testID="map-housing-card"
             {...panelPanResponder.panHandlers}
             style={[
               styles.floatingCardContainer,

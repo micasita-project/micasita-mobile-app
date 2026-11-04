@@ -51,6 +51,7 @@ export default function LoginScreen() {
             canGoBack && styles.scrollContentWithBack,
           ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           {/* Header */}
           <View style={styles.header}>

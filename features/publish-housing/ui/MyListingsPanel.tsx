@@ -45,11 +45,13 @@ const STATUS_CONFIG: Record<
 function ListingCard({
   listing,
   onEdit,
+  onView,
   onDelete,
   isDeleting,
 }: {
   listing: PublishedHousing;
   onEdit: (listing: PublishedHousing) => void;
+  onView: (listing: PublishedHousing) => void;
   onDelete: (listing: PublishedHousing) => void;
   isDeleting: boolean;
 }) {
@@ -58,7 +60,7 @@ function ListingCard({
   const typeLabel = listing.property_type;
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity testID={`listing-card-${listing.title}`} style={styles.card} onPress={() => onView(listing)} activeOpacity={0.9}>
       {/* Image */}
       {mainImage ? (
         <Image
@@ -174,6 +176,7 @@ function ListingCard({
           <TouchableOpacity
             style={styles.editBtn}
             onPress={() => onEdit(listing)}
+            testID={`edit-${listing.title}`}
             disabled={isDeleting}
           >
             <Ionicons name="pencil-outline" size={16} color={Colors.primary} />
@@ -181,7 +184,7 @@ function ListingCard({
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -298,6 +301,7 @@ export function MyListingsPanel() {
         <ListingCard
           listing={item}
           onEdit={handleEdit}
+          onView={(listing) => router.push({ pathname: "/housing-detail", params: { id: listing.id, data: JSON.stringify(listing) } })}
           onDelete={handleDelete}
           isDeleting={deletingId === item.id}
         />
@@ -324,6 +328,7 @@ export function MyListingsPanel() {
                 styles.filterTab,
                 statusFilter === "all" && styles.filterTabActive,
               ]}
+              testID="listings-filter-all"
               onPress={() => setStatusFilter("all")}
             >
               <Text
@@ -341,6 +346,7 @@ export function MyListingsPanel() {
                 return (
                   <TouchableOpacity
                     key={key}
+                    testID={`listings-filter-${key}`}
                     style={[
                       styles.filterTab,
                       isActive && styles.filterTabActive,

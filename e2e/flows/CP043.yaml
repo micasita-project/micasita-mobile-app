@@ -1,0 +1,24 @@
+# CP043: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "housing-card-E2E Ficha Completa"
+- extendedWaitUntil:
+    visible: ".*E2E Ficha Completa.*"
+    timeout: 45000
+- tapOn:
+    text: ".*Contactar por WhatsApp.*"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: "Hola, vi el anuncio.*"
+    timeout: 45000
+- assertVisible: ".*987.?654.?321.*"
+- takeScreenshot: CP043-resultado

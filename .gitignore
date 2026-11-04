@@ -44,3 +44,7 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Artefactos de ejecuciones locales de Maestro/Jest
+/e2e/results/
+/e2e/**/__pycache__/

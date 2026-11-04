@@ -57,6 +57,8 @@ export function OtpInput({
           <View
             key={i}
             testID="otp-box"
+            // Mantiene el padre nativo del dígito al cambiar opacidad/foco en Fabric.
+            collapsable={false}
             style={[
               styles.box,
               value[i] ? styles.boxFilled : null,

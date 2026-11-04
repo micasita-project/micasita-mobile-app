@@ -73,6 +73,8 @@ export function Step4Amenities({ data, onChange }: Step4AmenitiesProps) {
           return (
             <TouchableOpacity
               key={label}
+              testID={`amenity-${label}`}
+              accessibilityState={{ selected: isSelected }}
               style={[styles.chip, isSelected && styles.chipActive]}
               onPress={() => toggleAmenity(label)}
               activeOpacity={0.75}

@@ -1,0 +1,32 @@
+# CP011: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "housing-card-E2E Ficha Completa"
+- extendedWaitUntil:
+    visible: ".*E2E Ficha Completa.*"
+    timeout: 45000
+- swipe:
+    start: "85%,20%"
+    end: "15%,20%"
+    duration: 600
+- assertVisible:
+    id: "gallery-position-2"
+- scrollUntilVisible:
+    element:
+      text: "Descripción"
+    direction: DOWN
+    timeout: 45000
+- assertVisible: "Vivienda creada para las pruebas automatizadas."
+- assertVisible: "Hab."
+- assertVisible: "Baños"
+- assertVisible: "m² total"
+- takeScreenshot: CP011-resultado

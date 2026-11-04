@@ -1,0 +1,34 @@
+# CP020: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/owner.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- tapOn:
+    text: ".*Publicar.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "Paso 1 de 4"
+- runFlow: common/publish-location.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-close"
+- tapOn:
+    text: ".*Publicar.*"
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "Borrador encontrado"
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          text: "Recuperar"
+          waitToSettleTimeoutMs: 2000
+      - extendedWaitUntil:
+          notVisible: "Borrador encontrado"
+          timeout: 5000
+- assertVisible:
+    id: "publish-location-.*"
+- takeScreenshot: CP020-resultado

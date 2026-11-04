@@ -362,3 +362,12 @@ describe('MyListingsPanel eliminar publicación', () => {
     expect(screen.queryByText('Eliminar')).toBeNull();
   });
 });
+
+it('abre el detalle de una publicación propia al tocar su tarjeta', async () => {
+  await render(<MyListingsPanel />);
+  await fireEvent.press(await screen.findByTestId('listing-card-Depa pendiente'));
+  expect(mockRouter.push).toHaveBeenCalledWith({
+    pathname: '/housing-detail',
+    params: { id: PENDING.id, data: JSON.stringify(PENDING) },
+  });
+});

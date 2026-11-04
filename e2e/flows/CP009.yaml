@@ -1,0 +1,56 @@
+# CP009: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/user.yaml
+- tapOn:
+    text: "IA(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      text: ".*Generar recomendaciones.*"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    text: ".*Generar recomendaciones.*"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Actualizar resultados.*"
+    timeout: 45000
+- scrollUntilVisible:
+    element:
+      id: "recommend-insight-0"
+    direction: DOWN
+    timeout: 45000
+- assertVisible: ".*min al trabajo.*"
+- evalScript: ${output.previousScore = 101}
+- scrollUntilVisible:
+    element:
+      id: recommend-insight-0
+    direction: DOWN
+    timeout: 20000
+- copyTextFrom:
+    id: recommend-insight-0
+- evalScript: ${output.score = Number(maestro.copiedText.replace(/[^0-9.]/g, ''))}
+- assertTrue: ${output.score > 0 && output.score <= 100 && output.score <= output.previousScore}
+- evalScript: ${output.previousScore = output.score}
+- scrollUntilVisible:
+    element:
+      id: recommend-insight-1
+    direction: DOWN
+    timeout: 20000
+- copyTextFrom:
+    id: recommend-insight-1
+- evalScript: ${output.score = Number(maestro.copiedText.replace(/[^0-9.]/g, ''))}
+- assertTrue: ${output.score > 0 && output.score <= 100 && output.score <= output.previousScore}
+- evalScript: ${output.previousScore = output.score}
+- scrollUntilVisible:
+    element:
+      id: recommend-insight-2
+    direction: DOWN
+    timeout: 20000
+- copyTextFrom:
+    id: recommend-insight-2
+- evalScript: ${output.score = Number(maestro.copiedText.replace(/[^0-9.]/g, ''))}
+- assertTrue: ${output.score > 0 && output.score <= 100 && output.score <= output.previousScore}
+- evalScript: ${output.previousScore = output.score}
+- takeScreenshot: CP009-resultado

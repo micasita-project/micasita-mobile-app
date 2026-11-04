@@ -1,0 +1,8 @@
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- runFlow:
+    file: common/login.yaml
+    env:
+      EMAIL: ${EMAIL}
+      PASSWORD: Test-1234

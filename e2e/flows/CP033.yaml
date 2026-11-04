@@ -1,0 +1,62 @@
+# CP033: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/admin.yaml
+- scrollUntilVisible:
+    element:
+      id: "reject-E2E Pendiente Admin B"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "reject-E2E Pendiente Admin B"
+- tapOn:
+    id: admin-reject-confirm
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "Motivo requerido"
+- tapOn:
+    text: ".*OK.*"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    id: admin-reject-reason
+    waitToSettleTimeoutMs: 2000
+- assertVisible:
+    id: admin-reject-reason
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: admin-reject-reason
+          focused: true
+# XCTest no expone focused para este TextInput de iOS; las siguientes aserciones
+# comprueban que el motivo escrito llegó al campo real.
+# Separar las dos R evita el atajo de recarga de React Native en modales del build de desarrollo.
+# Maestro pasteText reutiliza inputText en Android; el contenido final sigue siendo el mismo.
+- inputText: "Fotos bor"
+- assertVisible: "Fotos bor"
+- takeScreenshot: CP033-motivo-parcial
+- inputText: "rosas E2E"
+- assertVisible: "Fotos borrosas E2E"
+- takeScreenshot: CP033-motivo-con-teclado
+- tapOn:
+    id: admin-reject-confirm
+    waitToSettleTimeoutMs: 2000
+- assertVisible: "La vivienda ha sido rechazada\\."
+- tapOn:
+    text: ".*OK.*"
+    waitToSettleTimeoutMs: 2000
+- runFlow: common/user.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- scrollUntilVisible:
+    element:
+      id: housing-list-count-21
+    direction: DOWN
+    timeout: 120000
+- assertNotVisible: ".*E2E Pendiente Admin B.*"
+- takeScreenshot: CP033-resultado

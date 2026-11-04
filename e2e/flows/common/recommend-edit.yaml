@@ -1,0 +1,40 @@
+# Preparación compartida; no es un caso independiente del Excel.
+appId: pe.edu.upc.micasita
+---
+- scrollUntilVisible:
+    element:
+      id: "workplace-edit-1"
+    direction: UP
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "workplace-edit-1"
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "transport-cycling"
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "workplace-save"
+- extendedWaitUntil:
+    visible: "Resultados personalizados"
+    timeout: 45000
+- scrollUntilVisible:
+    element:
+      text: ".*Actualizar resultados.*"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    text: ".*Actualizar resultados.*"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    text: ".*Actualizar.*"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Actualizar resultados.*"
+    timeout: 45000
+- scrollUntilVisible:
+    element:
+      id: "recommend-insight-0"
+    direction: DOWN
+    timeout: 45000
+- assertVisible: ".*min al trabajo.*"

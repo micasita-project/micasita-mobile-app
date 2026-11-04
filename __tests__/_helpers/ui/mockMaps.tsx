@@ -13,6 +13,7 @@ export const mapControls = {
 
 /** Sustituto de `@maplibre/maplibre-react-native`. */
 export const maplibreModule = {
+  LogManager: { onLog: jest.fn() },
   Map: host('MLMap'),
   Camera: React.forwardRef(function Camera({ children, ...props }: any, ref: any) {
     React.useImperativeHandle(ref, () => ({ easeTo: mapControls.easeTo }));

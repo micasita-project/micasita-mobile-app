@@ -10,6 +10,7 @@ const mockWorkplaces = jest.fn();
 const mockPreferences = jest.fn();
 const mockSelected = jest.fn();
 const mockFetchFranja = jest.fn();
+const mockFetchModeRoute = jest.fn();
 
 jest.mock('expo-router', () => require('@/__tests__/_helpers/app/expoRouter').expoRouterModule);
 jest.mock('@expo/vector-icons', () => require('@/__tests__/_helpers/app/icons').iconsModule);
@@ -21,6 +22,8 @@ jest.mock('react-native/Libraries/Components/ActivityIndicator/ActivityIndicator
   require('@/__tests__/_helpers/app/rnPieces').activityIndicatorModule,
 );
 jest.mock('@/entities/route', () => ({
+  fetchModeRoute: (...a: any[]) => mockFetchModeRoute(...a),
+  formatDistance: (km: number) => `${km} km`,
   fetchTimeByFranja: (...a: any[]) => mockFetchFranja(...a),
   formatTravelTime: (m: number) => `${m}min`,
 }));
@@ -71,6 +74,7 @@ beforeEach(() => {
   mockPreferences.mockReturnValue({ data: [{ preferred_transportation: 'driving' }] });
   mockSelected.mockReturnValue({ selectedWorkplaceId: null });
   mockFetchFranja.mockResolvedValue(franjas);
+  mockFetchModeRoute.mockResolvedValue({ distanceKm: 3.5 });
   setItem(item());
 });
 
@@ -284,4 +288,15 @@ describe('RecommendationInsightScreen acción', () => {
       },
     });
   });
+});
+
+it('muestra la distancia de la ruta al trabajo en las variables del análisis', async () => {
+  await setup();
+  expect(screen.getByText('Distancia al trabajo')).toBeTruthy();
+  expect(screen.getByText('3.5 km')).toBeTruthy();
+  expect(mockFetchModeRoute).toHaveBeenCalledWith(
+    { latitude: wp.work_lat, longitude: wp.work_lon },
+    { latitude: property.latitude, longitude: property.longitude },
+    'driving',
+  );
 });

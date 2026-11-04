@@ -33,6 +33,7 @@ export function HousingCard({
     return (
       <TouchableOpacity
         style={styles.compactContainer}
+        testID={`housing-card-${housing.title}`}
         onPress={() => onPress?.(housing)}
         activeOpacity={0.8}
       >
@@ -87,6 +88,8 @@ export function HousingCard({
         {/* Favorite Icon for Compact */}
         <TouchableOpacity 
           style={styles.compactFavoriteBtn}
+          testID={`favorite-${housing.title}`}
+          accessibilityState={{ selected: !!housing.isFavorite }}
           onPress={() => onFavoriteToggle?.(housing.id, !housing.isFavorite)}
         >
           <Ionicons 
@@ -110,7 +113,8 @@ export function HousingCard({
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => onPress?.(housing)}
+      testID={`housing-card-${housing.title}`}
+        onPress={() => onPress?.(housing)}
       activeOpacity={0.8}
     >
       <Image
@@ -125,7 +129,9 @@ export function HousingCard({
 
       <TouchableOpacity 
         style={styles.favoriteBtn}
-        onPress={() => onFavoriteToggle?.(housing.id, !housing.isFavorite)}
+        testID={`favorite-${housing.title}`}
+          accessibilityState={{ selected: !!housing.isFavorite }}
+          onPress={() => onFavoriteToggle?.(housing.id, !housing.isFavorite)}
         activeOpacity={0.7}
       >
         <View style={styles.favoriteCircle}>

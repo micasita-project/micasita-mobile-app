@@ -307,7 +307,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
             {`Paso ${stepNumber(step)} de ${SETUP_STEPS.length} — ${STEP_TITLE[step]}`}
           </Text>
         </View>
-        <TouchableOpacity onPress={handleClose} hitSlop={12}>
+        <TouchableOpacity testID="guest-setup-close" accessibilityLabel="Cerrar configuración de búsqueda" onPress={handleClose} hitSlop={12}>
           <Ionicons name="close" size={22} color={Colors.textMuted} />
         </TouchableOpacity>
       </View>

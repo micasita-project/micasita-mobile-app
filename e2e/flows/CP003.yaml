@@ -1,0 +1,45 @@
+# CP003: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/user.yaml
+- tapOn:
+    text: "IA(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    text: ".*Agregar lugar de trabajo.*"
+    waitToSettleTimeoutMs: 2000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "address-search-input"
+- inputText: "Primax"
+- extendedWaitUntil:
+    visible:
+      id: address-suggestion-0
+    timeout: 30000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "address-suggestion-0"
+- runFlow: common/hide-keyboard.yaml
+- assertVisible: "Ubicacion seleccionada"
+- scrollUntilVisible:
+    element:
+      id: "workplace-budget"
+    direction: DOWN
+    timeout: 45000
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "workplace-budget"
+- inputText: "1400"
+- runFlow: common/hide-keyboard.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "workplace-save"
+- extendedWaitUntil:
+    visible: "Resultados personalizados"
+    timeout: 45000
+- tapOn:
+    text: "Mapa(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: CP003-resultado

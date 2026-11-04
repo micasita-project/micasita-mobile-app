@@ -1,0 +1,18 @@
+# CP007: trazable al caso homónimo de catalog.json (Excel original).
+appId: pe.edu.upc.micasita
+---
+- runFlow: common/start.yaml
+- tapOn:
+    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
+    waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: ".*Filtros.*"
+    timeout: 45000
+- assertVisible: ".*E2E Ficha Completa.*"
+- repeat:
+    times: 7
+    commands:
+      - scroll
+- assertNotVisible: ".*E2E Pendiente Dueno.*"
+- assertNotVisible: ".*E2E Rechazada Dueno.*"
+- takeScreenshot: CP007-resultado

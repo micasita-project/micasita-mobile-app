@@ -11,6 +11,7 @@ import 'react-native-reanimated';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { AuthProvider, useAuth, ConsentModal } from '@/features/auth';
 import { GuestProvider } from '@/features/guest';
@@ -159,6 +160,7 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <KeyboardProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <GuestProvider>
@@ -171,6 +173,7 @@ export default function RootLayout() {
           </GuestProvider>
         </AuthProvider>
       </QueryClientProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

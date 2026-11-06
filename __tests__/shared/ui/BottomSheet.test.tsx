@@ -6,6 +6,19 @@ import { sheet, resetSheet } from '@/__tests__/_helpers/ui/mockGorhom';
 import { flat } from '@/__tests__/_helpers/ui/host';
 
 jest.mock('@gorhom/bottom-sheet', () => require('@/__tests__/_helpers/ui/mockGorhom').gorhomModule);
+// Desplazamiento consciente del teclado: renderiza el componente de scroll recibido y expone bottomOffset.
+jest.mock('react-native-keyboard-controller', () => ({
+  // Como la librería real, añade al final un relleno con el alto del teclado.
+  KeyboardAwareScrollView: ({ ScrollViewComponent, bottomOffset, children, ...rest }: any) => {
+    const { View } = require('react-native');
+    return (
+      <ScrollViewComponent {...rest} {...({ 'data-bottom-offset': bottomOffset } as any)}>
+        {children}
+        <View testID="keyboard-spacer" />
+      </ScrollViewComponent>
+    );
+  },
+}));
 
 const mockInsets = { top: 30, bottom: 8, left: 0, right: 0 };
 jest.mock('react-native-safe-area-context', () => ({
@@ -281,6 +294,34 @@ describe('BottomSheet footer', () => {
   });
 });
 
+
+describe('BottomSheet teclado', () => {
+  it('desplaza con el teclado usando el scroll del panel', async () => {
+    const { element } = setup();
+    const { getByTestId } = await render(element());
+    expect(getByTestId('sheet-scroll')).toBeTruthy();
+  });
+
+  it('sin footer deja 16 px entre el campo enfocado y el teclado', async () => {
+    const { element } = setup();
+    const { getByTestId } = await render(element());
+    expect(getByTestId('sheet-scroll').props['data-bottom-offset']).toBe(16);
+  });
+
+  it('con footer deja el campo por encima del footer más 16 px', async () => {
+    const { element } = setup();
+    const { getByTestId, getByText } = await render(element({ footer: <Text>Guardar</Text> }));
+    await fireEvent(getByText('Guardar').parent!, 'layout', { nativeEvent: { layout: { height: 72 } } });
+    expect(getByTestId('sheet-scroll').props['data-bottom-offset']).toBe(88);
+  });
+
+  it('no deja espacio en blanco del alto del teclado al final del contenido', async () => {
+    const { element } = setup();
+    const { queryByTestId, getByText } = await render(element());
+    expect(getByText('Contenido')).toBeTruthy();
+    expect(queryByTestId('keyboard-spacer')).toBeNull();
+  });
+});
 
 describe('BottomSheet transiciones rápidas', () => {
   it('espera a terminar el cierre antes de reabrir, sin cancelar la nueva apertura', async () => {

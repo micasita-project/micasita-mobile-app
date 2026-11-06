@@ -67,6 +67,18 @@ describe('AppMapView (iOS)', () => {
   });
 });
 
+describe('AppMapView (iOS) sin contenido de Apple', () => {
+  it('oculta puntos de interés, edificios, tráfico e interiores', async () => {
+    const { root } = await render(<AppMapView initialRegion={{ latitude: -12, longitude: -77, latitudeDelta: 1, longitudeDelta: 1 }} />);
+    expect(one(root!, 'RNMapView').props).toMatchObject({
+      showsPointsOfInterest: false,
+      showsBuildings: false,
+      showsTraffic: false,
+      showsIndoors: false,
+    });
+  });
+});
+
 describe('AppMarker (iOS)', () => {
   it('pasa coordenada, título y seguimiento de vistas al marcador nativo', async () => {
     const onPress = jest.fn();
@@ -96,11 +108,23 @@ describe('AppMarker (iOS)', () => {
 describe('AppPolyline (iOS)', () => {
   const line = [coord, { latitude: -12.2, longitude: -77.1 }];
 
-  it('no dibuja nada con menos de dos puntos', async () => {
-    const vacio = await render(<AppPolyline coordinates={[]} />);
-    expect(vacio.toJSON()).toBeNull();
-    const uno = await render(<AppPolyline coordinates={[coord]} />);
-    expect(uno.toJSON()).toBeNull();
+  it('sin ruta sigue montada pero invisible, para que el mapa nativo no deje la anterior', async () => {
+    for (const coords of [[], [coord]]) {
+      const { root } = await render(<AppPolyline coordinates={coords} strokeColor="#f00" strokeWidth={5} />);
+      const p = one(root!, 'RNPolyline').props;
+      expect(p.strokeColor).toBe('transparent');
+      expect(p.strokeWidth).toBe(0);
+      expect(p.coordinates).toHaveLength(2);
+    }
+  });
+
+  it('al pasar de una ruta a ninguna actualiza la misma línea en lugar de quitarla', async () => {
+    const r = await render(<AppPolyline coordinates={line} strokeColor="#f00" strokeWidth={5} />);
+    const first = one(r.root!, 'RNPolyline');
+    await r.rerender(<AppPolyline coordinates={[]} strokeColor="#f00" strokeWidth={5} />);
+    const after = one(r.root!, 'RNPolyline');
+    expect(after).toBe(first);
+    expect(after.props.strokeColor).toBe('transparent');
   });
 
   it('dibuja la línea con su estilo', async () => {
@@ -155,5 +179,10 @@ describe('AppUrlTile (iOS)', () => {
       maximumZ: 19,
       tileSize: 256,
     });
+  });
+
+  it('reemplaza el contenido del mapa de Apple (calles, nombres y lugares)', async () => {
+    const { root } = await render(<AppUrlTile urlTemplate="https://t/{z}/{x}/{y}.png" />);
+    expect(one(root!, 'RNUrlTile').props.shouldReplaceMapContent).toBe(true);
   });
 });

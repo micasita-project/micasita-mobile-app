@@ -121,7 +121,7 @@ export default function RecommendScreen() {
   const [showSetup, setShowSetup] = useState(false);
 
   // Mutation (manual trigger only — preserves the "generate once, read many" pattern)
-  const guestMutation = useGuestRecommendations();
+  const guestMutation = useGuestRecommendations(saveGuestRecommendations);
   const isGuestGenerating = useIsMutating({ mutationKey: guestGenerateKey }) > 0;
   // Detects generation fired from ANY component (WorkplaceSheet, recommend screen, etc.)
   const isAuthGenerating = useIsMutating({ mutationKey: recommendKeys.generate }) > 0;
@@ -133,7 +133,7 @@ export default function RecommendScreen() {
     }
     const hasExisting = guestRecommendations && guestRecommendations.results.length > 0;
     const run = async () => {
-      const items = await guestMutation.mutateAsync({
+      await guestMutation.mutateAsync({
         work_lat: guestWorkplace.lat,
         work_lon: guestWorkplace.lon,
         budget: guestWorkplace.budget,
@@ -142,7 +142,6 @@ export default function RecommendScreen() {
         home_lat: guestHome?.lat,
         home_lon: guestHome?.lon,
       });
-      await saveGuestRecommendations(items);
     };
 
     if (hasExisting) {

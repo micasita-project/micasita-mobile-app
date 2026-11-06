@@ -195,3 +195,37 @@ describe('useGenerateRecommendations', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 });
+
+describe('sin parpadeo de "no hay resultados" al regenerar', () => {
+  it('generar deja el resultado nuevo en la caché de latest al terminar, sin esperar la nueva consulta', async () => {
+    const NEW = { results: [{ id: 99 }], total: 1 } as any;
+    mocked.generateRecommendations.mockResolvedValue(NEW);
+    mocked.getLatestRecommendations.mockReturnValue(new Promise(() => {}));
+    client.setQueryData(recommendKeys.latest(6), { results: [], total: 0 });
+    const { result } = setup(() => useGenerateRecommendations());
+    await act(async () => {
+      await result.current.mutateAsync({ workplaceId: 6 });
+    });
+    expect(client.getQueryData(recommendKeys.latest(6))).toEqual(NEW);
+  });
+
+  it('invitado: la generación sigue en curso hasta que se guarda el resultado', async () => {
+    mocked.getGuestRecommendations.mockResolvedValue(PAGE);
+    let release!: () => void;
+    const onResult = jest.fn(() => new Promise<void>((r) => (release = r)));
+    const { result } = setup(() => useGuestRecommendations(onResult));
+    let pending!: Promise<unknown>;
+    await act(async () => {
+      pending = result.current.mutateAsync(REQ);
+    });
+    await flush();
+    expect(onResult).toHaveBeenCalledWith(PAGE);
+    expect(result.current.isPending).toBe(true);
+    await act(async () => {
+      release();
+      await pending;
+    });
+    await flush();
+    expect(result.current.isPending).toBe(false);
+  });
+});

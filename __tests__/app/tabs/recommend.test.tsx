@@ -55,7 +55,14 @@ jest.mock('@/features/recommendation/model/useRecommendations', () => ({
   recommendKeys: { generate: ['auth-generate'] },
   useLatestRecommendations: (id: any) => mockLatest(id),
   useGenerateRecommendations: () => mockGenerate(),
-  useGuestRecommendations: () => mockGuestMutation(),
+  useGuestRecommendations: (onResult?: (r: any) => any) => ({
+    // Igual que el hook real: guarda el resultado antes de terminar la generación.
+    mutateAsync: async (v: any) => {
+      const r = await mockGuestMutation().mutateAsync(v);
+      await onResult?.(r);
+      return r;
+    },
+  }),
 }));
 
 const wp1 = { id: 1, work_address: 'Av. Javier Prado 100' };

@@ -21,7 +21,14 @@ jest.mock('@/widgets/location-picker/MapPickerModal', () => require('@/__tests__
 jest.mock('@react-native-community/slider', () => require('@/__tests__/_helpers/features/mockFeatureUi').sliderModule);
 jest.mock('../../../../features/guest/model/GuestContext', () => ({ useGuest: () => mockGuest }));
 jest.mock('@/features/recommendation/model/useRecommendations', () => ({
-  useGuestRecommendations: () => mockMutation,
+  useGuestRecommendations: (onResult?: (r: any) => any) => ({
+    // Igual que el hook real: guarda el resultado antes de terminar la generación.
+    mutateAsync: async (v: any) => {
+      const r = await mockMutation.mutateAsync(v);
+      await onResult?.(r);
+      return r;
+    },
+  }),
 }));
 
 let alertSpy: jest.SpyInstance;

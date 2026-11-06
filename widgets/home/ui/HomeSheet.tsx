@@ -55,7 +55,7 @@ export function HomeSheet({ visible, onClose, onSaved }: HomeSheetProps) {
   const activeWorkplace =
     workplaces.find((wp) => wp.id === selectedWorkplaceId) || workplaces[0] || null;
   const generateRecs = useGenerateRecommendations();
-  const guestRecs = useGuestRecommendations();
+  const guestRecs = useGuestRecommendations(saveGuestRecommendations);
 
   const [addr, setAddr] = useState<AddressState>(EMPTY_ADDR);
   const [mapVisible, setMapVisible] = useState(false);
@@ -110,7 +110,7 @@ export function HomeSheet({ visible, onClose, onSaved }: HomeSheetProps) {
       } else {
         await setGuestHome({ lat: home_lat, lon: home_lon, address: home_address });
         if (guestWorkplace) {
-          const fresh = await guestRecs.mutateAsync({
+          await guestRecs.mutateAsync({
             work_lat: guestWorkplace.lat,
             work_lon: guestWorkplace.lon,
             budget: guestWorkplace.budget,
@@ -119,7 +119,6 @@ export function HomeSheet({ visible, onClose, onSaved }: HomeSheetProps) {
             home_lat,
             home_lon,
           });
-          await saveGuestRecommendations(fresh);
         }
       }
       onSaved?.();

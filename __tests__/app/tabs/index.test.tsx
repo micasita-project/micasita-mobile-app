@@ -2,7 +2,7 @@ import React from 'react';
 import { render, fireEvent, screen, act } from '@testing-library/react-native';
 import MapScreen from '@/app/(tabs)';
 import { router, routeState, resetRouter } from '@/__tests__/_helpers/app/expoRouter';
-import { mapHandle } from '@/__tests__/_helpers/app/map';
+import { mapHandle, mapStats } from '@/__tests__/_helpers/app/map';
 import { makeHousing } from '@/__tests__/_helpers/app/housingCard';
 
 const mockAuth = jest.fn();
@@ -637,4 +637,41 @@ it('centra el mapa en el nuevo trabajo aunque no tenga recomendaciones', async (
     expect.objectContaining({ latitude: wp2.work_lat, longitude: wp2.work_lon }),
     500,
   );
+});
+
+describe('MapScreen limpieza del mapa nativo (iOS)', () => {
+  it('sin ruta seleccionada la línea sigue montada, vacía, para no dejar la anterior dibujada', async () => {
+    routeState2.route = null;
+    await setup();
+    expect(screen.getByTestId('polyline').props.children).toBe('0');
+  });
+
+  it('al cambiar de lugar de trabajo recrea el mapa (sin marcadores ni rutas del anterior)', async () => {
+    authState({ selectedId: 11 });
+    await setup();
+    const antes = mapStats.mounts;
+    authState({ selectedId: 22 });
+    await screen.rerender(<MapScreen />);
+    await flush(0);
+    expect(mapStats.mounts).toBe(antes + 1);
+  });
+
+  it('al llegar otras recomendaciones recrea el mapa', async () => {
+    authState({ selectedId: 11 });
+    await setup();
+    const antes = mapStats.mounts;
+    authState({ selectedId: 11, recs: { results: [recA] } });
+    await screen.rerender(<MapScreen />);
+    await flush(0);
+    expect(mapStats.mounts).toBe(antes + 1);
+  });
+
+  it('si nada cambia no vuelve a crear el mapa', async () => {
+    authState({ selectedId: 11 });
+    await setup();
+    const antes = mapStats.mounts;
+    await screen.rerender(<MapScreen />);
+    await flush(0);
+    expect(mapStats.mounts).toBe(antes);
+  });
 });

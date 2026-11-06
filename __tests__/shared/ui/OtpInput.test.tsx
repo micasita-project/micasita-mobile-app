@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Platform, StyleSheet } from 'react-native';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { OtpInput, normalizeOtp } from '@/shared/ui/OtpInput';
 
@@ -32,6 +33,8 @@ async function enter(input: () => any, text: string) {
   });
 }
 
+afterEach(() => jest.restoreAllMocks());
+
 describe('OtpInput rendering', () => {
   it('muestra `length` casillas (6 por defecto)', async () => {
     const { getAllByTestId } = await setup();
@@ -48,12 +51,17 @@ describe('OtpInput rendering', () => {
     expect(digits()).toEqual(['', '', '', '', '', '']);
   });
 
-  it('oculta el texto sin hacer intocable el campo nativo en iOS', async () => {
+  it.each(['ios', 'android'] as const)('oculta el texto conservando el área táctil nativa en %s', async (platform) => {
+    jest.replaceProperty(Platform, 'OS', platform);
     const { input } = await setup({ initial: '528301' });
-    const style = Object.assign({}, ...[input().props.style].flat());
+    const style = StyleSheet.flatten(input().props.style);
     expect(style.opacity ?? 1).toBeGreaterThanOrEqual(0.01);
     expect(style.color).toBe('transparent');
     expect(input().props.caretHidden).toBe(true);
+    expect(style.position).toBe('absolute');
+    expect([style.top, style.right, style.bottom, style.left]).toEqual([0, 0, 0, 0]);
+    expect(input().props.contextMenuHidden).toBe(false);
+    expect(style.opacity).toBe(platform === 'ios' ? 1 : 0.01);
   });
 
   it('usa el teclado numérico', async () => {

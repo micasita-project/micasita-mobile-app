@@ -195,7 +195,9 @@ export function BottomSheet({
       enableContentPanningGesture={contentPanning}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
+      // Edge-to-edge Android windows can overlay the IME instead of resizing.
+      // Let the sheet account for the keyboard height itself.
+      android_keyboardInputMode="adjustPan"
       backdropComponent={renderBackdrop}
       footerComponent={footer ? renderFooter : undefined}
       onDismiss={handleDismiss}

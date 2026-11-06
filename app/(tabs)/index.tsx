@@ -32,6 +32,7 @@ import {
 } from "@/features/recommendation/model/useRecommendations";
 import { useIsMutating } from "@tanstack/react-query";
 import { useRouteCalculation } from "@/features/route-calculation";
+import { buildMapKey } from "@/shared/utils/mapKey";
 import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
 import { HomeSheet } from "@/widgets/home/ui/HomeSheet";
 
@@ -224,6 +225,13 @@ export default function MapScreen() {
   const isLoadingRecommendations = isGuest
     ? isGuestGenerating
     : isLoadingAuth || isGeneratingRecs;
+
+  // Cambiar de trabajo o de resultados recrea el mapa: en iOS los marcadores y
+  // rutas retirados pueden quedarse dibujados en el mapa nativo.
+  const mapKey = buildMapKey(
+    isGuest ? "guest" : String(activeWorkplace?.id ?? "none"),
+    recommendations.map((r) => r.property.id),
+  );
 
   const [selectedHousing, setSelectedHousing] = useState<Housing | null>(null);
   const [homeSheetVisible, setHomeSheetVisible] = useState(false);
@@ -435,6 +443,7 @@ export default function MapScreen() {
         )}
 
         <AppMapView
+          key={mapKey}
           ref={mapRef}
           style={styles.map}
           initialRegion={LIMA_REGION}
@@ -523,12 +532,10 @@ export default function MapScreen() {
               isSelected={selectedHousing?.id === rec.property.id}
             />
           ))}
-          {route && (
-            <RoutePolyline
-              coordinates={route.waypoints}
-              color={getTransportConfig(mode).color}
-            />
-          )}
+          <RoutePolyline
+            coordinates={route?.waypoints ?? []}
+            color={getTransportConfig(mode).color}
+          />
         </AppMapView>
 
         {selectedHousing && (

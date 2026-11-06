@@ -10,7 +10,7 @@ import {
   generateRecommendations,
   getLatestRecommendations,
 } from '../api/recommendation.api';
-import type { GuestRecommendRequest, GenerateOptions } from '../api/recommendation.api';
+import type { GuestRecommendRequest, GenerateOptions, RecommendationPageResponse } from '../api/recommendation.api';
 
 export const recommendKeys = {
   guest: (data: GuestRecommendRequest | null) =>
@@ -24,10 +24,15 @@ export const recommendKeys = {
  */
 export const guestGenerateKey = ['recommendations', 'guest-generate'] as const;
 
-export function useGuestRecommendations() {
+export function useGuestRecommendations(
+  onResult?: (page: RecommendationPageResponse) => Promise<void> | void,
+) {
   return useMutation({
     mutationKey: guestGenerateKey,
     mutationFn: (data: GuestRecommendRequest) => getGuestRecommendations(data),
+    // La generación sigue "en curso" hasta guardar el resultado, para que la
+    // pantalla no muestre por un instante que no hay recomendaciones.
+    onSuccess: (page) => onResult?.(page),
   });
 }
 
@@ -66,7 +71,9 @@ export function useGenerateRecommendations() {
     mutationKey: recommendKeys.generate,
     mutationFn: ({ workplaceId, options }: { workplaceId: number; options?: GenerateOptions }) =>
       generateRecommendations(workplaceId, options),
-    onSuccess: (_data, { workplaceId }) => {
+    onSuccess: (data, { workplaceId }) => {
+      // El resultado nuevo entra a la caché antes de terminar la generación.
+      qc.setQueryData(recommendKeys.latest(workplaceId), data);
       qc.invalidateQueries({ queryKey: recommendKeys.latest(workplaceId) });
     },
   });

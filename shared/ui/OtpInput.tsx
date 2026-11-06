@@ -7,7 +7,7 @@
  */
 
 import React, { useRef, useState } from "react";
-import { Keyboard, StyleSheet, Text, TextInput, View } from "react-native";
+import { Keyboard, Platform, StyleSheet, Text, TextInput, View } from "react-native";
 
 interface OtpInputProps {
   length?: number;
@@ -75,7 +75,7 @@ export function OtpInput({
       <TextInput
         ref={inputRef}
         testID="otp-input"
-        style={styles.input}
+        style={[styles.input, Platform.OS === "android" && styles.androidInput]}
         value={value}
         onChangeText={handleChange}
         onFocus={() => setFocused(true)}
@@ -139,5 +139,11 @@ const styles = StyleSheet.create({
     opacity: 1,
     color: "transparent",
     backgroundColor: "transparent",
+  },
+  androidInput: {
+    // Android can render native text spans in black despite color="transparent".
+    // Fade the entire native drawing, keeping the full input bounds and a
+    // nonzero alpha for touch, accessibility and the native Paste menu.
+    opacity: 0.01,
   },
 });

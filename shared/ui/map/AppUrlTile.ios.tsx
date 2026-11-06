@@ -8,5 +8,6 @@ interface AppUrlTileProps {
 }
 
 export function AppUrlTile({ urlTemplate, maximumZ, tileSize }: AppUrlTileProps) {
-  return <UrlTile urlTemplate={urlTemplate} maximumZ={maximumZ} tileSize={tileSize} />;
+  // Reemplaza el mapa de Apple: sin sus calles, nombres ni puntos de interés debajo.
+  return <UrlTile urlTemplate={urlTemplate} maximumZ={maximumZ} tileSize={tileSize} shouldReplaceMapContent />;
 }

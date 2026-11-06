@@ -36,6 +36,10 @@ export const AppMapView = forwardRef<AppMapViewHandle, AppMapViewProps>(
         showsMyLocationButton={showsMyLocationButton}
         showsCompass={showsCompass}
         toolbarEnabled={toolbarEnabled}
+        showsPointsOfInterest={false}
+        showsBuildings={false}
+        showsTraffic={false}
+        showsIndoors={false}
       >
         {children}
       </MapView>

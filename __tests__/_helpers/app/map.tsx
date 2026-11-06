@@ -1,12 +1,17 @@
 import React from 'react';
 
 export const mapHandle = { animateToRegion: jest.fn(), fitToCoordinates: jest.fn() };
+/** Veces que se montó el mapa (una nueva clave lo vuelve a montar). */
+export const mapStats = { mounts: 0 };
 
 /** Sustituto de `@/shared/ui/map`: los marcadores son botones con su título para poder pulsarlos. */
 export const mapModule = {
   AppMapView: React.forwardRef(function AppMapView({ children, initialRegion }: any, ref: any) {
     const { View } = require('react-native');
     React.useImperativeHandle(ref, () => mapHandle);
+    React.useEffect(() => {
+      mapStats.mounts++;
+    }, []);
     return (
       <View testID="map" {...({ initialRegion } as any)}>
         {children}

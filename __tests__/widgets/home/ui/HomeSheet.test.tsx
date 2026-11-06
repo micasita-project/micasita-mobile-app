@@ -17,7 +17,14 @@ jest.mock('@/features/auth', () => ({ useAuth: () => mockAuth }));
 jest.mock('@/features/guest', () => ({ useGuest: () => mockGuest }));
 jest.mock('@/features/recommendation/model/useRecommendations', () => ({
   useGenerateRecommendations: () => mockGenerate,
-  useGuestRecommendations: () => mockGuestRecs,
+  useGuestRecommendations: (onResult?: (r: any) => any) => ({
+    // Igual que el hook real: guarda el resultado antes de terminar la generación.
+    mutateAsync: async (v: any) => {
+      const r = await mockGuestRecs.mutateAsync(v);
+      await onResult?.(r);
+      return r;
+    },
+  }),
 }));
 jest.mock('@/entities/workplace/model/useWorkplaces', () => ({
   useWorkplaces: jest.fn(() => mockWorkplaces),

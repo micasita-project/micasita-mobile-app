@@ -99,7 +99,7 @@ const sliderStyles = StyleSheet.create({
 // ── Main Component ────────────────────────────────────────────────
 export function GuestSetupModal({ visible, onClose }: Props) {
   const { guestHome, guestWorkplace, setGuestHome, setGuestWorkplace, saveGuestRecommendations } = useGuest();
-  const guestMutation = useGuestRecommendations();
+  const guestMutation = useGuestRecommendations(saveGuestRecommendations);
 
   const [step, setStep] = useState<SetupStep>('home');
   const [home, setHome] = useState<AddressField>(EMPTY_FIELD);
@@ -198,7 +198,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
         max_distance_km: workData.maxDistanceKm,
         home_lat: homeData.lat,
         home_lon: homeData.lon,
-      }).then(saveGuestRecommendations).catch(() => {});
+      }).catch(() => {});
     } catch {
       Alert.alert('Error', 'No se pudo guardar. Intenta de nuevo.');
     } finally {

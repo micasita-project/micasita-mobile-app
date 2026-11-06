@@ -48,10 +48,10 @@ describe('OtpInput rendering', () => {
     expect(digits()).toEqual(['', '', '', '', '', '']);
   });
 
-  it('el campo que recibe el código es invisible para no mostrar el texto pegado sobre las casillas', async () => {
+  it('oculta el texto sin hacer intocable el campo nativo en iOS', async () => {
     const { input } = await setup({ initial: '528301' });
     const style = Object.assign({}, ...[input().props.style].flat());
-    expect(style.opacity).toBe(0);
+    expect(style.opacity ?? 1).toBeGreaterThanOrEqual(0.01);
     expect(style.color).toBe('transparent');
     expect(input().props.caretHidden).toBe(true);
   });

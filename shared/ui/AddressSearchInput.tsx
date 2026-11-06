@@ -117,6 +117,8 @@ export function AddressSearchInput({
           onBlur={handleBlur}
           onFocus={handleFocus}
           autoFocus={autoFocus}
+          autoCorrect={false}
+          spellCheck={false}
           returnKeyType="done"
         />
         {isSearching && (

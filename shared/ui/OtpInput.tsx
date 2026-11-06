@@ -1,7 +1,7 @@
 /**
  * @layer shared/ui
  * @description Input de código OTP con casillas separadas.
- * Un único campo de texto invisible recibe lo que se escribe o se pega y las
+ * Un único campo de texto transparente recibe lo que se escribe o se pega y las
  * casillas solo lo muestran, así que un código pegado se reparte siempre
  * entre todas las casillas.
  */
@@ -134,7 +134,9 @@ const styles = StyleSheet.create({
   },
   input: {
     ...StyleSheet.absoluteFillObject,
-    opacity: 0,
+    // iOS descarta los toques en vistas con alpha < 0.01.
+    // Ocultar solo los caracteres permite volver a enfocar y abrir Pegar.
+    opacity: 1,
     color: "transparent",
     backgroundColor: "transparent",
   },

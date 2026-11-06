@@ -295,7 +295,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
   );
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose} maxHeightRatio={0.85} contentPanning={step !== 'prefs'} footer={footer}>
+    <BottomSheet visible={visible} onClose={handleClose} maxHeightRatio={0.85} contentPanning={false} footer={footer}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerIcon}>
@@ -333,6 +333,7 @@ export function GuestSetupModal({ visible, onClose }: Props) {
             <SheetTextInput
               style={styles.fieldInput}
               placeholder="1500"
+              testID="guest-budget"
               placeholderTextColor={Colors.textMuted}
               value={budget}
               onChangeText={setBudget}

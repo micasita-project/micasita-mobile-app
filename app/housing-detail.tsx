@@ -100,10 +100,13 @@ export default function HousingDetailScreen() {
     return undefined;
   }, [data]);
 
-  const { data: housing, isLoading: isLoadingHousing } = useQuery({
+  const { data: housing, isLoading: isLoadingHousing, isFetching: isRefreshingHousing } = useQuery({
     queryKey: ['property', id],
     queryFn: () => fetchPropertyById(Number(id)),
     initialData: initialHousing,
+    // La recomendación puede ser una copia histórica sin contacto actualizado.
+    staleTime: 0,
+    refetchOnMount: 'always',
     enabled: !!id,
   });
 
@@ -514,6 +517,11 @@ export default function HousingDetailScreen() {
             <Ionicons name="logo-whatsapp" size={20} color="#fff" />
             <Text style={styles.ctaWhatsappText}>Contactar por WhatsApp</Text>
           </TouchableOpacity>
+        ) : isRefreshingHousing ? (
+          <View style={styles.ctaDisabled}>
+            <ActivityIndicator size="small" color={Colors.primary} />
+            <Text style={styles.ctaDisabledText}>Consultando contacto...</Text>
+          </View>
         ) : (
           <View style={styles.ctaDisabled}>
             <Ionicons name="chatbubble-ellipses-outline" size={18} color={Colors.textMuted} />

@@ -186,16 +186,16 @@ describe('BottomSheet botón atrás de Android', () => {
 });
 
 describe('BottomSheet configuración del panel', () => {
-  it('permite arrastrar el contenido por defecto', async () => {
+  it('el contenido se desplaza sin arrastrar el panel por defecto', async () => {
     const { element } = setup();
     await render(element());
-    expect(sheet.props.enableContentPanningGesture).toBe(true);
+    expect(sheet.props.enableContentPanningGesture).toBe(false);
   });
 
-  it('contentPanning=false desactiva el arrastre desde el contenido', async () => {
+  it('contentPanning=true habilita explícitamente el arrastre desde el contenido', async () => {
     const { element } = setup();
-    await render(element({ contentPanning: false }));
-    expect(sheet.props.enableContentPanningGesture).toBe(false);
+    await render(element({ contentPanning: true }));
+    expect(sheet.props.enableContentPanningGesture).toBe(true);
   });
 
   it('limita la altura al 90% de la pantalla por defecto', async () => {

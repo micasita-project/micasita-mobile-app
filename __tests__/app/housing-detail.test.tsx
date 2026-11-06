@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, Linking } from 'react-native';
-import { render, fireEvent, screen, act } from '@testing-library/react-native';
+import { render, fireEvent, screen, act, waitFor } from '@testing-library/react-native';
 import HousingDetailScreen from '@/app/housing-detail';
 import { router, routeState, resetRouter } from '@/__tests__/_helpers/app/expoRouter';
 import { makeHousing } from '@/__tests__/_helpers/app/housingCard';
@@ -123,6 +123,25 @@ async function setup() {
 }
 
 describe('HousingDetailScreen estados de carga', () => {
+  it('consulta el contacto actual aunque llegue una recomendación antigua y exista caché reciente sin teléfono', async () => {
+    const actual = jest.requireActual('@tanstack/react-query');
+    const client = new actual.QueryClient({
+      defaultOptions: { queries: { staleTime: 300000, retry: false } },
+    });
+    const previous = { ...house, id: '1294', phone: undefined };
+    client.setQueryData(['property', '1294'], previous);
+    setParams({ id: '1294', data: JSON.stringify(previous) });
+    const { fetchPropertyById } = require('@/entities/housing/api/housing.api');
+    fetchPropertyById.mockResolvedValueOnce({ ...previous, phone: '51 940 246 465' });
+    mockUseQuery.mockImplementation((options) => actual.useQuery(options));
+    const Provider = actual.QueryClientProvider;
+    const view = await render(<Provider client={client}><HousingDetailScreen /></Provider>);
+    await waitFor(() => expect(screen.getByText('Contactar por WhatsApp')).toBeTruthy());
+    expect(fetchPropertyById).toHaveBeenCalledWith(1294);
+    await view.unmount();
+    client.clear();
+  });
+
   it('mientras carga muestra el mensaje', async () => {
     setHousing(undefined, { isLoading: true });
     await setup();
@@ -345,6 +364,13 @@ describe('HousingDetailScreen WhatsApp', () => {
     await setup();
     expect(screen.queryByText('Contactar por WhatsApp')).toBeNull();
     expect(screen.getByText('El anunciante no dejó un número de contacto')).toBeTruthy();
+  });
+
+  it('no afirma que falta el teléfono mientras consulta los datos actuales', async () => {
+    setHousing({ ...house, phone: undefined }, { isFetching: true });
+    await setup();
+    expect(screen.getByText('Consultando contacto...')).toBeTruthy();
+    expect(screen.queryByText('El anunciante no dejó un número de contacto')).toBeNull();
   });
 });
 

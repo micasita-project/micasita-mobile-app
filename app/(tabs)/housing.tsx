@@ -293,6 +293,7 @@ export default function HousingScreen() {
             <SheetTextInput
               style={filterStyles.input}
               placeholder="Ej. Miraflores, San Isidro..."
+              testID="filter-district"
               placeholderTextColor={Colors.textMuted}
               value={draft.district ?? ''}
               onChangeText={(t) => setDraft((d) => ({ ...d, district: t || undefined }))}
@@ -333,6 +334,7 @@ export default function HousingScreen() {
             <SheetTextInput
               style={filterStyles.input}
               placeholder="Ej. 50"
+              testID="filter-min-area"
               placeholderTextColor={Colors.textMuted}
               value={draft.min_area_sqm != null ? String(draft.min_area_sqm) : ''}
               onChangeText={(t) => setDraft((d) => ({ ...d, min_area_sqm: t ? Number(t) : undefined }))}

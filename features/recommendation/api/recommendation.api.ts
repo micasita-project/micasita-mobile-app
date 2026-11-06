@@ -72,6 +72,7 @@ interface RawRecommendationItem {
     description: string | null;
     images: string[];
     source_url: string | null;
+    phone?: string | null;
   };
   match_score: number;
   predicted_time_min: number;
@@ -114,6 +115,7 @@ function toRecommendationItem(raw: RawRecommendationItem): RecommendationItem {
       images: raw.property.images ?? [],
       features: [],
       source_url: raw.property.source_url ?? undefined,
+      phone: raw.property.phone ?? undefined,
     },
   };
 }

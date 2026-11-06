@@ -72,6 +72,12 @@ const GUEST_REQUEST = {
 // Tested indirectly through getGuestRecommendations.
 
 describe('toRecommendationItem mapper', () => {
+  it('conserva el teléfono de la vivienda al abrirla desde una recomendación', async () => {
+    mockPost.mockResolvedValueOnce({ data: makeRawPage([makeRawItem({ phone: '51 940 246 465' })]) });
+    const result = await getGuestRecommendations(GUEST_REQUEST);
+    expect(result.results[0].property.phone).toBe('51 940 246 465');
+  });
+
   it('converts property id from number to string', async () => {
     mockPost.mockResolvedValueOnce({ data: makeRawPage([makeRawItem({ id: 7 })]) });
     const result = await getGuestRecommendations(GUEST_REQUEST);

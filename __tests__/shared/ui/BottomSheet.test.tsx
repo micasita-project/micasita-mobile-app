@@ -280,3 +280,43 @@ describe('BottomSheet footer', () => {
     });
   });
 });
+
+
+describe('BottomSheet transiciones rápidas', () => {
+  it('espera a terminar el cierre antes de reabrir, sin cancelar la nueva apertura', async () => {
+    const { element, onClose, onClosed } = setup({ visible: true });
+    const view = await render(element());
+    await view.rerender(element({ visible: false }));
+    await view.rerender(element({ visible: true }));
+    expect(sheet.present).toHaveBeenCalledTimes(1);
+    await userDismiss();
+    expect(sheet.present).toHaveBeenCalledTimes(2);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onClosed).not.toHaveBeenCalled();
+    await userDismiss();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('no descarta antes de que la apertura diferida de Gorhom haya terminado', async () => {
+    sheet.present.mockImplementation(() => {});
+    const { element, onClose } = setup({ visible: true });
+    const view = await render(element());
+    await view.rerender(element({ visible: false }));
+    expect(sheet.dismiss).not.toHaveBeenCalled();
+    await act(async () => sheet.props.onChange(0));
+    expect(sheet.dismiss).toHaveBeenCalledTimes(1);
+    await userDismiss();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('mantiene una apertura pendiente si visible cambia antes de terminar de abrir', async () => {
+    sheet.present.mockImplementation(() => {});
+    const { element } = setup({ visible: true });
+    const view = await render(element());
+    await view.rerender(element({ visible: false }));
+    await view.rerender(element({ visible: true }));
+    await act(async () => sheet.props.onChange(0));
+    expect(sheet.present).toHaveBeenCalledTimes(1);
+    expect(sheet.dismiss).not.toHaveBeenCalled();
+  });
+});

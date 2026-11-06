@@ -20,20 +20,18 @@ import {
   useGuestRecommendations,
   useLatestRecommendations,
 } from "@/features/recommendation/model/useRecommendations";
-import { useToggleFavorite } from "@/entities/housing/model/useProperties";
 import { Colors } from "@/shared/config/colors";
 import { getTransportConfig, normalizeTransportMode } from "@/shared/config/transport";
 import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
-import type { Housing, TransportMode } from "@/shared/types";
 import { formatPrice } from "@/shared/utils/currency";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -41,9 +39,11 @@ import {
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
-// Mismo orden y horas de referencia que el desglose por franja del backend
-// (ver MODOS_CON_DESGLOSE_HORARIO). Solo auto trae `franjas`; en bici/caminata
-// item.franjas es null y esta fila no se muestra.
+const EMPTY_RESULTS: RecommendationItem[] = [];
+const PAGE_SIZE = 10;
+
+// Mismo orden y horas de referencia que el desglose por franja del backend.
+// Solo auto trae `franjas`; en bici/caminata esta fila no se muestra.
 const FRANJA_MINI: { key: keyof TimeByFranja; hora: string }[] = [
   { key: "punta_manana", hora: "7am" },
   { key: "valle", hora: "1pm" },
@@ -159,6 +159,8 @@ export default function RecommendScreen() {
     }
   }, [
     guestWorkplace,
+    guestHome?.lat,
+    guestHome?.lon,
     guestRecommendations,
     guestMutation,
     saveGuestRecommendations,
@@ -192,7 +194,6 @@ export default function RecommendScreen() {
   const { data: cachedResults, isLoading: loadingCached } =
     useLatestRecommendations(isAuthenticated ? selectedWorkplaceId : null);
   const generateRecs = useGenerateRecommendations();
-  const toggleFavorite = useToggleFavorite();
 
   const handleRefresh = useCallback(() => {
     if (!selectedWorkplaceId) return;
@@ -239,11 +240,151 @@ export default function RecommendScreen() {
   );
 
   const results: RecommendationItem[] = isAuthenticated
-    ? (cachedResults?.results ?? [])
-    : (guestRecommendations?.results ?? []);
+    ? (cachedResults?.results ?? EMPTY_RESULTS)
+    : (guestRecommendations?.results ?? EMPTY_RESULTS);
   const isLoadingResults = isAuthenticated
     ? loadingCached || isAuthGenerating
     : isGuestGenerating;
+
+  // The ranking is already generated/cached. Reveal it in batches without rerunning IA.
+  const [page, setPage] = useState({ source: results, workplace: selectedWorkplaceId, authenticated: isAuthenticated, count: PAGE_SIZE });
+  const listRef = useRef<FlatList<RecommendationItem>>(null);
+  useEffect(() => {
+    setPage(current => current.source === results && current.workplace === selectedWorkplaceId && current.authenticated === isAuthenticated
+      ? current
+      : { source: results, workplace: selectedWorkplaceId, authenticated: isAuthenticated, count: PAGE_SIZE });
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [results, selectedWorkplaceId, isAuthenticated]);
+  const sameRanking = page.source === results && page.workplace === selectedWorkplaceId && page.authenticated === isAuthenticated;
+  const visibleCount = sameRanking ? page.count : PAGE_SIZE;
+  const visibleResults = isLoadingResults ? [] : results.slice(0, visibleCount);
+  const loadMore = () => {
+    if (isLoadingResults || visibleCount >= results.length) return;
+    setPage(current => ({ source: results, workplace: selectedWorkplaceId, authenticated: isAuthenticated,
+      count: Math.min(results.length, (current.source === results && current.workplace === selectedWorkplaceId && current.authenticated === isAuthenticated ? current.count : PAGE_SIZE) + PAGE_SIZE),
+    }));
+  };
+  const renderRecommendation = ({ item, index }: { item: RecommendationItem; index: number }) => {
+    const img = item.property.images?.[0];
+    const thumbSrc = img ? { uri: img } : null;
+    return (
+      <View key={item.property.id} style={styles.resultCard}>
+        {/* Rank badge */}
+        <View style={styles.rankBadge}>
+          <Text style={styles.rankText}>#{index + 1}</Text>
+        </View>
+        {/* Main area → housing detail */}
+        <TouchableOpacity
+          style={styles.cardMain}
+          onPress={() => handleHousingPress(item)}
+          activeOpacity={0.85}
+        >
+          {/* Thumbnail */}
+          {thumbSrc ? (
+            <Image
+              source={thumbSrc}
+              style={styles.cardThumb}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={[styles.cardThumb, styles.cardThumbPlaceholder]}
+            >
+              <Ionicons
+                name="home-outline"
+                size={24}
+                color={Colors.textMuted}
+              />
+            </View>
+          )}
+          {/* Info */}
+          <View style={styles.cardInfo}>
+            <Text style={styles.cardPrice}>
+              {formatPrice(item.property.price, item.property.currency)}
+              <Text style={styles.cardPriceUnit}> /mes</Text>
+            </Text>
+            <Text style={styles.cardAddr} numberOfLines={1}>
+              {item.property.district}
+            </Text>
+            <Text style={styles.cardSpecs} numberOfLines={1}>
+              {item.property.bedrooms}h · {item.property.bathrooms}b ·{" "}
+              {item.property.total_area_sqm}m²
+            </Text>
+            <View style={styles.timeChip}>
+              <Ionicons
+                name="time-outline"
+                size={11}
+                color={Colors.accent}
+              />
+              <Text style={styles.timeText}>
+                ~{item.predicted_time_min} min al trabajo
+              </Text>
+            </View>
+            {item.time_saved_mins !== null &&
+              item.time_saved_mins !== 0 && (
+                <View
+                  style={[
+                    styles.timeSavedChip,
+                    item.time_saved_mins > 0
+                      ? styles.timeSavedPos
+                      : styles.timeSavedNeg,
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      item.time_saved_mins > 0
+                        ? "trending-down"
+                        : "trending-up"
+                    }
+                    size={11}
+                    color={
+                      item.time_saved_mins > 0
+                        ? Colors.success
+                        : Colors.error
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.timeSavedText,
+                      item.time_saved_mins > 0
+                        ? styles.timeSavedTextPos
+                        : styles.timeSavedTextNeg,
+                    ]}
+                  >
+                    {item.time_saved_mins > 0
+                      ? `Ahorras ${item.time_saved_mins} min`
+                      : `${Math.abs(item.time_saved_mins)} min más`}
+                  </Text>
+                </View>
+              )}
+            {item.franjas && (
+              <View style={styles.franjasMiniRow}>
+                {FRANJA_MINI.map(({ key, hora }) => (
+                  <View key={key} style={styles.franjaMiniPill}>
+                    <Text style={styles.franjaMiniHora}>{hora}</Text>
+                    <Text style={styles.franjaMiniMin}>
+                      {Math.round(item.franjas![key])}m
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+        {/* Match ring → insight screen */}
+        <TouchableOpacity
+          style={styles.ringBtn}
+          testID={`recommend-insight-${index}`}
+          accessibilityLabel={`Ver análisis, coincidencia ${Math.round(item.match_score)}%`}
+          onPress={() => handleInsightPress(item)}
+          activeOpacity={0.7}
+        >
+          <MatchRing score={item.match_score} />
+          <Text style={styles.ringHint}>Ver análisis</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -269,521 +410,421 @@ export default function RecommendScreen() {
         }}
       />
 
-      <ScrollView
+      <FlatList
+        ref={listRef}
+        testID="recommendations-list"
         style={styles.scrollArea}
         contentContainerStyle={styles.scrollContent}
-      >
-        {/* Header */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroIconBox}>
-            <Ionicons name="sparkles" size={22} color={Colors.textOnPrimary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>Resultados personalizados</Text>
-            <Text style={styles.heroSubtitle}>
-              Ranking por distancia al trabajo, presupuesto y modo de
-              transporte.
-            </Text>
-          </View>
-        </View>
-
-        {/* ── Authenticated: Select Workplace ─────────────────── */}
-        {isAuthenticated ? (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="briefcase" size={20} color={Colors.primary} />
-              <Text style={styles.sectionTitle}>Tu lugar de trabajo</Text>
+        data={visibleResults}
+        renderItem={renderRecommendation}
+        keyExtractor={(item) => String(item.property.id)}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.4}
+        ListHeaderComponent={
+          <>
+          {/* Header */}
+          <View style={styles.heroCard}>
+            <View style={styles.heroIconBox}>
+              <Ionicons name="sparkles" size={22} color={Colors.textOnPrimary} />
             </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroTitle}>Resultados personalizados</Text>
+              <Text style={styles.heroSubtitle}>
+                Ranking por distancia al trabajo, presupuesto y modo de
+                transporte.
+              </Text>
+            </View>
+          </View>
 
-            {loadingWorkplaces ? (
-              <ActivityIndicator
-                color={Colors.primary}
-                style={{ padding: 20 }}
-              />
-            ) : workplaces.length === 0 ? (
-              <View style={styles.emptyWorkplaces}>
-                <Ionicons
-                  name="add-circle-outline"
-                  size={32}
-                  color={Colors.textMuted}
-                />
-                <Text style={styles.emptyText}>
-                  No tienes lugares de trabajo.
-                </Text>
+          {/* ── Authenticated: Select Workplace ─────────────────── */}
+          {isAuthenticated ? (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="briefcase" size={20} color={Colors.primary} />
+                <Text style={styles.sectionTitle}>Tu lugar de trabajo</Text>
               </View>
-            ) : (
-              <View style={styles.workplaceList}>
-                {workplaces.map((wp) => {
-                  const isActive = selectedWorkplaceId === wp.id;
-                  return (
-                    <View
-                      key={wp.id}
-                      style={[styles.workplaceChip, isActive && styles.workplaceChipActive]}
-                    >
-                      <TouchableOpacity
-                        style={styles.wpSelectArea}
-                        onPress={() => setSelectedWorkplaceId(wp.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons
-                          name="location"
-                          size={16}
-                          color={isActive ? Colors.textOnPrimary : Colors.primary}
-                        />
-                        <View style={styles.workplaceChipText}>
-                          <Text
-                            style={[styles.workplaceAlias, isActive && styles.workplaceAliasActive]}
-                            numberOfLines={1}
-                          >
-                            {wp.work_address}
-                          </Text>
-                          <Text style={[styles.workplaceMeta, isActive && styles.workplaceMetaActive]}>
-                            Lugar de trabajo
-                          </Text>
-                        </View>
-                        {isActive && (
-                          <Ionicons name="checkmark-circle" size={20} color={Colors.textOnPrimary} />
-                        )}
-                      </TouchableOpacity>
-                      <View style={[styles.wpDivider, isActive && styles.wpDividerActive]} />
-                      <TouchableOpacity
-                        style={styles.wpEditBtn}
-                        testID={`workplace-edit-${wp.id}`}
-                        onPress={() => {
-                          setEditingWp(wp);
-                          setShowWorkplaceSheet(true);
-                        }}
-                        hitSlop={8}
-                      >
-                        <Ionicons
-                          name="pencil-outline"
-                          size={15}
-                          color={isActive ? "rgba(255,255,255,0.7)" : Colors.textMuted}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
-                <TouchableOpacity
-                  style={styles.addWpBtn}
-                  onPress={() => {
-                    setEditingWp(null);
-                    setShowWorkplaceSheet(true);
-                  }}
-                  activeOpacity={0.7}
-                >
+
+              {loadingWorkplaces ? (
+                <ActivityIndicator
+                  color={Colors.primary}
+                  style={{ padding: 20 }}
+                />
+              ) : workplaces.length === 0 ? (
+                <View style={styles.emptyWorkplaces}>
                   <Ionicons
                     name="add-circle-outline"
-                    size={16}
-                    color={Colors.primary}
+                    size={32}
+                    color={Colors.textMuted}
                   />
-                  <Text style={styles.addWpBtnText}>
-                    Agregar lugar de trabajo
+                  <Text style={styles.emptyText}>
+                    No tienes lugares de trabajo.
                   </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ) : (
-          /* ── Guest: stored workplace + generate/update control ── */
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="briefcase" size={20} color={Colors.primary} />
-              <Text style={styles.sectionTitle}>Tu búsqueda</Text>
-            </View>
-
-            {guestWorkplace ? (
-              <>
-                {/* Section header with Editar link */}
-                <View style={styles.searchCardHeader}>
-                  <Text style={styles.searchCardLabel}>TU BÚSQUEDA</Text>
-                  <TouchableOpacity
-                    onPress={() => setShowSetup(true)}
-                    style={styles.editLink}
-                  >
-                    <Ionicons
-                      name="pencil-outline"
-                      size={12}
-                      color={Colors.primary}
-                    />
-                    <Text style={styles.editLinkText}>Editar</Text>
-                  </TouchableOpacity>
                 </View>
-                {/* 3-column grid */}
-                <View style={styles.searchGrid}>
-                  <View style={styles.searchCell}>
-                    <Text style={styles.searchCellLabel}>TRABAJO</Text>
-                    <Text style={styles.searchCellValue} numberOfLines={1}>
-                      {guestWorkplace.address.split(",")[0]}
-                    </Text>
-                  </View>
-                  <View style={styles.searchCell}>
-                    <Text style={styles.searchCellLabel}>PRESUP.</Text>
-                    <Text style={styles.searchCellValue}>
-                      {formatPrice(guestWorkplace.budget, "PEN")}
-                    </Text>
-                  </View>
-                  <View style={styles.searchCell}>
-                    <Text style={styles.searchCellLabel}>MODO</Text>
-                    {(() => {
-                      const cfg = getTransportConfig(normalizeTransportMode(guestWorkplace.transport));
-                      return (
-                        <View style={styles.transportBadge}>
-                          <Ionicons name={cfg.iconOutline} size={13} color={cfg.color} />
-                          <Text style={[styles.searchCellValue, { color: cfg.color }]}>
-                            {cfg.label}
-                          </Text>
-                        </View>
-                      );
-                    })()}
-                  </View>
-                </View>
-
-                {/* Generate / Update button */}
-                <TouchableOpacity
-                  style={[
-                    styles.generateGuestBtn,
-                    isGuestGenerating && styles.btnDisabled,
-                  ]}
-                  onPress={handleGuestGenerate}
-                  disabled={isGuestGenerating}
-                  activeOpacity={0.85}
-                >
-                  {isGuestGenerating ? (
-                    <ActivityIndicator color={Colors.textOnPrimary} />
-                  ) : (
-                    <>
-                      <Ionicons
-                        name={guestRecommendations ? "refresh" : "sparkles"}
-                        size={18}
-                        color={Colors.textOnPrimary}
-                      />
-                      <Text style={styles.generateGuestBtnText}>
-                        {guestRecommendations
-                          ? "Actualizar resultados"
-                          : "Generar recomendaciones"}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                {/* Inline empty-state message — visible without scrolling */}
-                {guestRecommendations !== null &&
-                  guestRecommendations.results.length === 0 &&
-                  !isGuestGenerating && (
-                    <View style={styles.inlineEmptyState}>
-                      <Ionicons name="home-outline" size={32} color={Colors.textMuted} />
-                      <Text style={styles.inlineEmptyText}>
-                        {guestRecommendations.message ?? "No encontramos viviendas con esos criterios."}
-                      </Text>
-                      {guestRecommendations.min_price_in_area !== null && (
-                        <Text style={styles.inlineEmptyHint}>
-                          Las más económicas parten desde{" "}
-                          <Text style={{ fontWeight: "700" }}>
-                            S/ {guestRecommendations.min_price_in_area.toLocaleString("es-PE")}
-                          </Text>
-                        </Text>
-                      )}
-                      <TouchableOpacity
-                        style={styles.changeConfigBtn}
-                        onPress={() => setShowSetup(true)}
-                        activeOpacity={0.85}
-                      >
-                        <Ionicons name="settings-outline" size={14} color={Colors.textOnPrimary} />
-                        <Text style={styles.changeConfigBtnText}>Cambiar configuración</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-              </>
-            ) : (
-              <View style={styles.emptyWorkplaces}>
-                <Ionicons
-                  name="search-outline"
-                  size={32}
-                  color={Colors.textMuted}
-                />
-                <Text style={styles.emptyText}>
-                  Configura tu trabajo y presupuesto para obtener
-                  recomendaciones.
-                </Text>
-                <TouchableOpacity
-                  style={styles.setupBtn}
-                  onPress={() => setShowSetup(true)}
-                >
-                  <Ionicons
-                    name="sparkles"
-                    size={16}
-                    color={Colors.textOnPrimary}
-                  />
-                  <Text style={styles.setupBtnText}>Configurar búsqueda</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* ── Loading ─────────────────────────────────────────── */}
-        {isLoadingResults && (
-          <View style={styles.loadingCard}>
-            <View style={styles.loadingIconBg}>
-              <Ionicons name="sparkles" size={24} color={Colors.textOnPrimary} />
-            </View>
-            <Text style={styles.loadingTitle}>Analizando viviendas...</Text>
-            <Text style={styles.loadingSubtitle}>
-              La IA está calculando el mejor match para ti
-            </Text>
-            <ActivityIndicator
-              size="small"
-              color={Colors.primary}
-              style={{ marginTop: 4 }}
-            />
-          </View>
-        )}
-
-        {/* ── Results ─────────────────────────────────────────── */}
-        {!isLoadingResults && results.length > 0 && (
-          <View style={styles.resultsSection}>
-            <View style={styles.resultsHeader}>
-              <Ionicons name="trophy" size={20} color={Colors.warning} />
-              <Text style={styles.resultsTitle}>
-                {results.length} vivienda{results.length !== 1 ? "s" : ""}{" "}
-                recomendada{results.length !== 1 ? "s" : ""}
-              </Text>
-            </View>
-
-            {isAuthenticated && selectedWorkplaceId && (
-              <TouchableOpacity
-                style={styles.refreshButton}
-                onPress={handleRefresh}
-                disabled={generateRecs.isPending}
-                activeOpacity={0.6}
-              >
-                <Ionicons
-                  name="refresh-outline"
-                  size={14}
-                  color={Colors.textMuted}
-                />
-                <Text style={styles.refreshText}>Actualizar resultados</Text>
-              </TouchableOpacity>
-            )}
-
-            {results.map((item, index) => {
-              const img = item.property.images?.[0];
-              const thumbSrc = img ? { uri: img } : null;
-              return (
-                <View key={item.property.id} style={styles.resultCard}>
-                  {/* Rank badge */}
-                  <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>#{index + 1}</Text>
-                  </View>
-                  {/* Main area → housing detail */}
-                  <TouchableOpacity
-                    style={styles.cardMain}
-                    onPress={() => handleHousingPress(item)}
-                    activeOpacity={0.85}
-                  >
-                    {/* Thumbnail */}
-                    {thumbSrc ? (
-                      <Image
-                        source={thumbSrc}
-                        style={styles.cardThumb}
-                        resizeMode="cover"
-                      />
-                    ) : (
+              ) : (
+                <View style={styles.workplaceList}>
+                  {workplaces.map((wp) => {
+                    const isActive = selectedWorkplaceId === wp.id;
+                    return (
                       <View
-                        style={[styles.cardThumb, styles.cardThumbPlaceholder]}
+                        key={wp.id}
+                        style={[styles.workplaceChip, isActive && styles.workplaceChipActive]}
                       >
-                        <Ionicons
-                          name="home-outline"
-                          size={24}
-                          color={Colors.textMuted}
-                        />
-                      </View>
-                    )}
-                    {/* Info */}
-                    <View style={styles.cardInfo}>
-                      <Text style={styles.cardPrice}>
-                        {formatPrice(item.property.price, item.property.currency)}
-                        <Text style={styles.cardPriceUnit}> /mes</Text>
-                      </Text>
-                      <Text style={styles.cardAddr} numberOfLines={1}>
-                        {item.property.district}
-                      </Text>
-                      <Text style={styles.cardSpecs} numberOfLines={1}>
-                        {item.property.bedrooms}h · {item.property.bathrooms}b ·{" "}
-                        {item.property.total_area_sqm}m²
-                      </Text>
-                      <View style={styles.timeChip}>
-                        <Ionicons
-                          name="time-outline"
-                          size={11}
-                          color={Colors.accent}
-                        />
-                        <Text style={styles.timeText}>
-                          ~{item.predicted_time_min} min al trabajo
-                        </Text>
-                      </View>
-                      {item.time_saved_mins !== null &&
-                        item.time_saved_mins !== 0 && (
-                          <View
-                            style={[
-                              styles.timeSavedChip,
-                              item.time_saved_mins > 0
-                                ? styles.timeSavedPos
-                                : styles.timeSavedNeg,
-                            ]}
-                          >
-                            <Ionicons
-                              name={
-                                item.time_saved_mins > 0
-                                  ? "trending-down"
-                                  : "trending-up"
-                              }
-                              size={11}
-                              color={
-                                item.time_saved_mins > 0
-                                  ? Colors.success
-                                  : Colors.error
-                              }
-                            />
+                        <TouchableOpacity
+                          style={styles.wpSelectArea}
+                          onPress={() => setSelectedWorkplaceId(wp.id)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name="location"
+                            size={16}
+                            color={isActive ? Colors.textOnPrimary : Colors.primary}
+                          />
+                          <View style={styles.workplaceChipText}>
                             <Text
-                              style={[
-                                styles.timeSavedText,
-                                item.time_saved_mins > 0
-                                  ? styles.timeSavedTextPos
-                                  : styles.timeSavedTextNeg,
-                              ]}
+                              style={[styles.workplaceAlias, isActive && styles.workplaceAliasActive]}
+                              numberOfLines={1}
                             >
-                              {item.time_saved_mins > 0
-                                ? `Ahorras ${item.time_saved_mins} min`
-                                : `${Math.abs(item.time_saved_mins)} min más`}
+                              {wp.work_address}
+                            </Text>
+                            <Text style={[styles.workplaceMeta, isActive && styles.workplaceMetaActive]}>
+                              Lugar de trabajo
                             </Text>
                           </View>
-                        )}
-                      {item.franjas && (
-                        <View style={styles.franjasMiniRow}>
-                          {FRANJA_MINI.map(({ key, hora }) => (
-                            <View key={key} style={styles.franjaMiniPill}>
-                              <Text style={styles.franjaMiniHora}>{hora}</Text>
-                              <Text style={styles.franjaMiniMin}>
-                                {Math.round(item.franjas![key])}m
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                  {/* Match ring → insight screen */}
+                          {isActive && (
+                            <Ionicons name="checkmark-circle" size={20} color={Colors.textOnPrimary} />
+                          )}
+                        </TouchableOpacity>
+                        <View style={[styles.wpDivider, isActive && styles.wpDividerActive]} />
+                        <TouchableOpacity
+                          style={styles.wpEditBtn}
+                          testID={`workplace-edit-${wp.id}`}
+                          onPress={() => {
+                            setEditingWp(wp);
+                            setShowWorkplaceSheet(true);
+                          }}
+                          hitSlop={8}
+                        >
+                          <Ionicons
+                            name="pencil-outline"
+                            size={15}
+                            color={isActive ? "rgba(255,255,255,0.7)" : Colors.textMuted}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
                   <TouchableOpacity
-                    style={styles.ringBtn}
-                    testID={`recommend-insight-${index}`}
-                    accessibilityLabel={`Ver análisis, coincidencia ${Math.round(item.match_score)}%`}
-                    onPress={() => handleInsightPress(item)}
+                    style={styles.addWpBtn}
+                    onPress={() => {
+                      setEditingWp(null);
+                      setShowWorkplaceSheet(true);
+                    }}
                     activeOpacity={0.7}
                   >
-                    <MatchRing score={item.match_score} />
-                    <Text style={styles.ringHint}>Ver análisis</Text>
+                    <Ionicons
+                      name="add-circle-outline"
+                      size={16}
+                      color={Colors.primary}
+                    />
+                    <Text style={styles.addWpBtnText}>
+                      Agregar lugar de trabajo
+                    </Text>
                   </TouchableOpacity>
                 </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Empty state for authenticated */}
-        {isAuthenticated &&
-          !isLoadingResults &&
-          results.length === 0 &&
-          selectedWorkplaceId !== null &&
-          !loadingCached && (
-            <View style={styles.emptyResults}>
-              <Ionicons
-                name="search-outline"
-                size={48}
-                color={Colors.textMuted}
-              />
-              <Text style={styles.emptyResultsText}>
-                {generateRecs.data?.message ??
-                  cachedResults?.message ??
-                  "Sin recomendaciones guardadas"}
-              </Text>
-              {(generateRecs.data?.min_price_in_area ??
-                cachedResults?.min_price_in_area) != null && (
-                <Text style={styles.emptyResultsHint}>
-                  Las más económicas en la zona parten desde{" "}
-                  <Text style={{ fontWeight: "700" }}>
-                    S/{" "}
-                    {(
-                      generateRecs.data?.min_price_in_area ??
-                      cachedResults?.min_price_in_area ??
-                      0
-                    ).toLocaleString("es-PE")}
-                  </Text>
-                </Text>
               )}
-              {/* Generar solo cuando no hay historial (workplace nuevo) */}
-              {cachedResults === null && (
+            </View>
+          ) : (
+            /* ── Guest: stored workplace + generate/update control ── */
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="briefcase" size={20} color={Colors.primary} />
+                <Text style={styles.sectionTitle}>Tu búsqueda</Text>
+              </View>
+
+              {guestWorkplace ? (
+                <>
+                  {/* Section header with Editar link */}
+                  <View style={styles.searchCardHeader}>
+                    <Text style={styles.searchCardLabel}>TU BÚSQUEDA</Text>
+                    <TouchableOpacity
+                      onPress={() => setShowSetup(true)}
+                      style={styles.editLink}
+                    >
+                      <Ionicons
+                        name="pencil-outline"
+                        size={12}
+                        color={Colors.primary}
+                      />
+                      <Text style={styles.editLinkText}>Editar</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {/* 3-column grid */}
+                  <View style={styles.searchGrid}>
+                    <View style={styles.searchCell}>
+                      <Text style={styles.searchCellLabel}>TRABAJO</Text>
+                      <Text style={styles.searchCellValue} numberOfLines={1}>
+                        {guestWorkplace.address.split(",")[0]}
+                      </Text>
+                    </View>
+                    <View style={styles.searchCell}>
+                      <Text style={styles.searchCellLabel}>PRESUP.</Text>
+                      <Text style={styles.searchCellValue}>
+                        {formatPrice(guestWorkplace.budget, "PEN")}
+                      </Text>
+                    </View>
+                    <View style={styles.searchCell}>
+                      <Text style={styles.searchCellLabel}>MODO</Text>
+                      {(() => {
+                        const cfg = getTransportConfig(normalizeTransportMode(guestWorkplace.transport));
+                        return (
+                          <View style={styles.transportBadge}>
+                            <Ionicons name={cfg.iconOutline} size={13} color={cfg.color} />
+                            <Text style={[styles.searchCellValue, { color: cfg.color }]}>
+                              {cfg.label}
+                            </Text>
+                          </View>
+                        );
+                      })()}
+                    </View>
+                  </View>
+
+                  {/* Generate / Update button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.generateGuestBtn,
+                      isGuestGenerating && styles.btnDisabled,
+                    ]}
+                    onPress={handleGuestGenerate}
+                    disabled={isGuestGenerating}
+                    activeOpacity={0.85}
+                  >
+                    {isGuestGenerating ? (
+                      <ActivityIndicator color={Colors.textOnPrimary} />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name={guestRecommendations ? "refresh" : "sparkles"}
+                          size={18}
+                          color={Colors.textOnPrimary}
+                        />
+                        <Text style={styles.generateGuestBtnText}>
+                          {guestRecommendations
+                            ? "Actualizar resultados"
+                            : "Generar recomendaciones"}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Inline empty-state message — visible without scrolling */}
+                  {guestRecommendations !== null &&
+                    guestRecommendations.results.length === 0 &&
+                    !isGuestGenerating && (
+                      <View style={styles.inlineEmptyState}>
+                        <Ionicons name="home-outline" size={32} color={Colors.textMuted} />
+                        <Text style={styles.inlineEmptyText}>
+                          {guestRecommendations.message ?? "No encontramos viviendas con esos criterios."}
+                        </Text>
+                        {guestRecommendations.min_price_in_area !== null && (
+                          <Text style={styles.inlineEmptyHint}>
+                            Las más económicas parten desde{" "}
+                            <Text style={{ fontWeight: "700" }}>
+                              S/ {guestRecommendations.min_price_in_area.toLocaleString("es-PE")}
+                            </Text>
+                          </Text>
+                        )}
+                        <TouchableOpacity
+                          style={styles.changeConfigBtn}
+                          onPress={() => setShowSetup(true)}
+                          activeOpacity={0.85}
+                        >
+                          <Ionicons name="settings-outline" size={14} color={Colors.textOnPrimary} />
+                          <Text style={styles.changeConfigBtnText}>Cambiar configuración</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                </>
+              ) : (
+                <View style={styles.emptyWorkplaces}>
+                  <Ionicons
+                    name="search-outline"
+                    size={32}
+                    color={Colors.textMuted}
+                  />
+                  <Text style={styles.emptyText}>
+                    Configura tu trabajo y presupuesto para obtener
+                    recomendaciones.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.setupBtn}
+                    onPress={() => setShowSetup(true)}
+                  >
+                    <Ionicons
+                      name="sparkles"
+                      size={16}
+                      color={Colors.textOnPrimary}
+                    />
+                    <Text style={styles.setupBtnText}>Configurar búsqueda</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* ── Loading ─────────────────────────────────────────── */}
+          {isLoadingResults && (
+            <View style={styles.loadingCard}>
+              <View style={styles.loadingIconBg}>
+                <Ionicons name="sparkles" size={24} color={Colors.textOnPrimary} />
+              </View>
+              <Text style={styles.loadingTitle}>Analizando viviendas...</Text>
+              <Text style={styles.loadingSubtitle}>
+                La IA está calculando el mejor match para ti
+              </Text>
+              <ActivityIndicator
+                size="small"
+                color={Colors.primary}
+                style={{ marginTop: 4 }}
+              />
+            </View>
+          )}
+
+          {/* ── Results ─────────────────────────────────────────── */}
+          {!isLoadingResults && results.length > 0 && (
+            <View style={styles.resultsSection}>
+              <View style={styles.resultsHeader}>
+                <Ionicons name="trophy" size={20} color={Colors.warning} />
+                <Text style={styles.resultsTitle}>
+                  {results.length} vivienda{results.length !== 1 ? "s" : ""}{" "}
+                  recomendada{results.length !== 1 ? "s" : ""}
+                </Text>
+              </View>
+
+              {isAuthenticated && selectedWorkplaceId && (
                 <TouchableOpacity
-                  style={styles.setupBtn}
-                  onPress={() =>
-                    selectedWorkplaceId &&
-                    generateRecs.mutate({ workplaceId: selectedWorkplaceId })
-                  }
-                  disabled={isAuthGenerating}
+                  style={styles.refreshButton}
+                  onPress={handleRefresh}
+                  disabled={generateRecs.isPending}
+                  activeOpacity={0.6}
                 >
-                  <Ionicons name="sparkles" size={16} color={Colors.textOnPrimary} />
-                  <Text style={styles.setupBtnText}>Generar recomendaciones</Text>
+                  <Ionicons
+                    name="refresh-outline"
+                    size={14}
+                    color={Colors.textMuted}
+                  />
+                  <Text style={styles.refreshText}>Actualizar resultados</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity
-                style={styles.changeConfigBtn}
-                onPress={() => {
-                  const wp = workplaces.find((w) => w.id === selectedWorkplaceId) ?? null;
-                  setEditingWp(wp);
-                  setShowWorkplaceSheet(true);
-                }}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="settings-outline" size={14} color={Colors.textOnPrimary} />
-                <Text style={styles.changeConfigBtnText}>Cambiar preferencias</Text>
-              </TouchableOpacity>
             </View>
+          )}
+          </>
+        }
+        ListFooterComponent={
+          <>
+          {visibleResults.length > 0 && visibleCount < results.length && (
+            <TouchableOpacity onPress={loadMore} style={styles.refreshButton} accessibilityRole="button">
+              <Text style={styles.refreshText}>Ver más recomendaciones</Text>
+            </TouchableOpacity>
           )}
 
-        {/* Empty state for guests — backend message explains why */}
-        {!isAuthenticated &&
-          !isLoadingResults &&
-          guestRecommendations !== null &&
-          results.length === 0 && (
-            <View style={styles.emptyResults}>
-              <Ionicons
-                name="home-outline"
-                size={48}
-                color={Colors.textMuted}
-              />
-              <Text style={styles.emptyResultsText}>
-                {guestRecommendations.message ?? "No encontramos viviendas con esos criterios."}
-              </Text>
-              {guestRecommendations.min_price_in_area !== null && (
-                <Text style={styles.emptyResultsHint}>
-                  Las más económicas en la zona parten desde{" "}
-                  <Text style={{ fontWeight: "700" }}>
-                    S/ {guestRecommendations.min_price_in_area.toLocaleString("es-PE")}
-                  </Text>
+          {/* Empty state for authenticated */}
+          {isAuthenticated &&
+            !isLoadingResults &&
+            results.length === 0 &&
+            selectedWorkplaceId !== null &&
+            !loadingCached && (
+              <View style={styles.emptyResults}>
+                <Ionicons
+                  name="search-outline"
+                  size={48}
+                  color={Colors.textMuted}
+                />
+                <Text style={styles.emptyResultsText}>
+                  {generateRecs.data?.message ??
+                    cachedResults?.message ??
+                    "Sin recomendaciones guardadas"}
                 </Text>
-              )}
-              <TouchableOpacity
-                style={styles.changeConfigBtn}
-                onPress={() => setShowSetup(true)}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="settings-outline" size={14} color={Colors.textOnPrimary} />
-                <Text style={styles.changeConfigBtnText}>Cambiar configuración</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-      </ScrollView>
+                {(generateRecs.data?.min_price_in_area ??
+                  cachedResults?.min_price_in_area) != null && (
+                  <Text style={styles.emptyResultsHint}>
+                    Las más económicas en la zona parten desde{" "}
+                    <Text style={{ fontWeight: "700" }}>
+                      S/{" "}
+                      {(
+                        generateRecs.data?.min_price_in_area ??
+                        cachedResults?.min_price_in_area ??
+                        0
+                      ).toLocaleString("es-PE")}
+                    </Text>
+                  </Text>
+                )}
+                {/* Generar solo cuando no hay historial (workplace nuevo) */}
+                {cachedResults === null && (
+                  <TouchableOpacity
+                    style={styles.setupBtn}
+                    onPress={() =>
+                      selectedWorkplaceId &&
+                      generateRecs.mutate({ workplaceId: selectedWorkplaceId })
+                    }
+                    disabled={isAuthGenerating}
+                  >
+                    <Ionicons name="sparkles" size={16} color={Colors.textOnPrimary} />
+                    <Text style={styles.setupBtnText}>Generar recomendaciones</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.changeConfigBtn}
+                  onPress={() => {
+                    const wp = workplaces.find((w) => w.id === selectedWorkplaceId) ?? null;
+                    setEditingWp(wp);
+                    setShowWorkplaceSheet(true);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="settings-outline" size={14} color={Colors.textOnPrimary} />
+                  <Text style={styles.changeConfigBtnText}>Cambiar preferencias</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+          {/* Empty state for guests — backend message explains why */}
+          {!isAuthenticated &&
+            !isLoadingResults &&
+            guestRecommendations !== null &&
+            results.length === 0 && (
+              <View style={styles.emptyResults}>
+                <Ionicons
+                  name="home-outline"
+                  size={48}
+                  color={Colors.textMuted}
+                />
+                <Text style={styles.emptyResultsText}>
+                  {guestRecommendations.message ?? "No encontramos viviendas con esos criterios."}
+                </Text>
+                {guestRecommendations.min_price_in_area !== null && (
+                  <Text style={styles.emptyResultsHint}>
+                    Las más económicas en la zona parten desde{" "}
+                    <Text style={{ fontWeight: "700" }}>
+                      S/ {guestRecommendations.min_price_in_area.toLocaleString("es-PE")}
+                    </Text>
+                  </Text>
+                )}
+                <TouchableOpacity
+                  style={styles.changeConfigBtn}
+                  onPress={() => setShowSetup(true)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="settings-outline" size={14} color={Colors.textOnPrimary} />
+                  <Text style={styles.changeConfigBtnText}>Cambiar configuración</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
+        }
+      />
     </View>
   );
 }

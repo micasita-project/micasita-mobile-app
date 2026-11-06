@@ -48,7 +48,10 @@ export function BottomSheet({
   const scrollOffset = useRef(0);
   const revealFrame = useRef<number | null>(null);
   const closedByPropRef = useRef(false);
-  const wasPresentedRef = useRef(false);
+  const phase = useRef<'closed' | 'opening' | 'open' | 'closing'>('closed');
+  const wantsVisible = useRef(visible);
+  wantsVisible.current = visible;
+  const hasFooter = !!footer;
   const [footerHeight, setFooterHeight] = useState(0);
 
   const revealFocusedInput = useCallback(() => {
@@ -68,7 +71,7 @@ export function BottomSheet({
             inputTop, inputHeight, viewportTop,
             viewportBottom: viewportTop + viewportHeight,
             keyboardTop: Keyboard.metrics()?.screenY ?? screenHeight,
-            footerHeight: footer ? footerHeight : 0,
+            footerHeight: hasFooter ? footerHeight : 0,
           });
           if (Math.abs(next - scrollOffset.current) > 1) {
             scroll.scrollTo({ y: next, animated: true });
@@ -76,7 +79,7 @@ export function BottomSheet({
         });
       });
     });
-  }, [footer, footerHeight, screenHeight]);
+  }, [hasFooter, footerHeight, screenHeight]);
 
   const keyboardContext = useMemo(() => ({
     focus: (input: SheetInputHandle) => {
@@ -105,17 +108,34 @@ export function BottomSheet({
     };
   }, [visible, revealFocusedInput]);
 
+  const present = useCallback(() => {
+    if (!sheetRef.current || phase.current !== 'closed') return;
+    closedByPropRef.current = false;
+    phase.current = 'opening';
+    sheetRef.current.present();
+  }, []);
+
+  const dismiss = useCallback(() => {
+    // Gorhom schedules present() on the next frame. Wait for onChange before
+    // dismissing an opening panel, otherwise its pending present can resurrect it.
+    if (phase.current !== 'open') return;
+    closedByPropRef.current = true;
+    phase.current = 'closing';
+    sheetRef.current?.dismiss();
+  }, []);
+
   useEffect(() => {
-    if (visible) {
-      closedByPropRef.current = false;
-      wasPresentedRef.current = true;
-      sheetRef.current?.present();
-    } else if (wasPresentedRef.current) {
-      wasPresentedRef.current = false;
-      closedByPropRef.current = true;
-      sheetRef.current?.dismiss();
+    if (visible) present();
+    else dismiss();
+  }, [visible, present, dismiss]);
+
+  const handleChange = useCallback((index: number) => {
+    if (index >= 0 && phase.current !== 'closing') {
+      phase.current = 'open';
+      if (!wantsVisible.current) dismiss();
+      else revealFocusedInput();
     }
-  }, [visible]);
+  }, [dismiss, revealFocusedInput]);
 
   // Botón atrás de Android cierra el panel.
   useEffect(() => {
@@ -128,14 +148,20 @@ export function BottomSheet({
   }, [visible, onClose]);
 
   const handleDismiss = useCallback(() => {
-    // Cierre pedido por el usuario (arrastre o toque fuera): avisa al padre.
-    // El panel ya está cerrado, así que no hay que volver a descartarlo.
-    wasPresentedRef.current = false;
+    const requestedClose = closedByPropRef.current;
+    phase.current = 'closed';
     focusedInput.current = null;
-    if (!closedByPropRef.current) onClose();
+    scrollOffset.current = 0;
     closedByPropRef.current = false;
+    // An open requested while the previous close was animating must survive
+    // that old modal's onDismiss callback.
+    if (requestedClose && wantsVisible.current) {
+      present();
+      return;
+    }
+    if (!requestedClose) onClose();
     onClosed?.();
-  }, [onClose, onClosed]);
+  }, [onClose, onClosed, present]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -173,7 +199,7 @@ export function BottomSheet({
       backdropComponent={renderBackdrop}
       footerComponent={footer ? renderFooter : undefined}
       onDismiss={handleDismiss}
-      onChange={revealFocusedInput}
+      onChange={handleChange}
       handleStyle={styles.handleArea}
       handleIndicatorStyle={styles.handle}
       backgroundStyle={styles.background}

@@ -21,6 +21,7 @@ const mockWorkplaceSheet = jest.fn();
 jest.mock('expo-router', () => require('@/__tests__/_helpers/app/expoRouter').expoRouterModule);
 jest.mock('@expo/vector-icons', () => require('@/__tests__/_helpers/app/icons').iconsModule);
 jest.mock('react-native/Libraries/Components/ActivityIndicator/ActivityIndicator', () => require('@/__tests__/_helpers/app/rnPieces').activityIndicatorModule);
+jest.mock('react-native/Libraries/Lists/FlatList', () => require('@/__tests__/_helpers/app/rnPieces').flatListModule);
 jest.mock('react-native-svg', () => {
   const { View } = require('react-native');
   return { __esModule: true, default: View, Circle: View };
@@ -682,5 +683,51 @@ describe('RecommendScreen invitado y recomendaciones guardadas', () => {
     await render(<RecommendScreen />);
     expect(mockLatest).not.toHaveBeenCalledWith(7);
     expect(mockLatest).toHaveBeenCalledWith(null);
+  });
+});
+
+
+describe('Paginación de recomendaciones', () => {
+  it.each([true, false])('muestra bloques de diez y conserva el ranking (sesión: %s)', async (authenticated) => {
+    const results = Array.from({ length: 25 }, (_, i) => rec(String(i + 1)));
+    const ranking = { results, message: null, min_price_in_area: null };
+    if (authenticated) authState({ latest: ranking });
+    else guestState({ recs: ranking });
+    const view = await render(<RecommendScreen />);
+    const ranks = () => screen.getAllByTestId(/^recommend-insight-/);
+    expect(ranks()).toHaveLength(10);
+    expect(screen.getByText('#10')).toBeTruthy();
+    expect(screen.queryByText('#11')).toBeNull();
+    await fireEvent.press(screen.getByTestId('end-reached'));
+    expect(ranks()).toHaveLength(20);
+    expect(screen.getByText('#20')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('end-reached'));
+    expect(ranks()).toHaveLength(25);
+    await fireEvent.press(screen.getByTestId('end-reached'));
+    expect(ranks()).toHaveLength(25);
+    expect(generateMutate).not.toHaveBeenCalled();
+    expect(guestMutateAsync).not.toHaveBeenCalled();
+
+    const updated = { ...ranking, results: results.slice().reverse() };
+    if (authenticated) authState({ latest: updated });
+    else guestState({ recs: updated });
+    await view.rerender(<RecommendScreen />);
+    expect(ranks()).toHaveLength(10);
+    expect(screen.getByText('Distrito 25')).toBeTruthy();
+    expect(screen.queryByText('Distrito 1')).toBeNull();
+  });
+
+  it('reinicia la página al cambiar de lugar de trabajo', async () => {
+    const ranking = { results: Array.from({ length: 30 }, (_, i) => rec(String(i))), message: null, min_price_in_area: null };
+    authState({ latest: ranking });
+    const view = await render(<RecommendScreen />);
+    await fireEvent.press(screen.getByTestId('end-reached'));
+    expect(screen.getAllByTestId(/^recommend-insight-/)).toHaveLength(20);
+    authState({ latest: ranking, selected: 2 });
+    await view.rerender(<RecommendScreen />);
+    expect(screen.getAllByTestId(/^recommend-insight-/)).toHaveLength(10);
+    authState({ latest: ranking, selected: 1 });
+    await view.rerender(<RecommendScreen />);
+    expect(screen.getAllByTestId(/^recommend-insight-/)).toHaveLength(10);
   });
 });

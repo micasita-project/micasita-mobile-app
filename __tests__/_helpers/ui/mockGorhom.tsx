@@ -12,6 +12,7 @@ export const sheet = {
 };
 
 export function resetSheet() {
+  sheet.present.mockImplementation(() => sheet.props.onChange?.(0));
   sheet.props = {};
   sheet.mounts = 0;
   sheet.internal = null;

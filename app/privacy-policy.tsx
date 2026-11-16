@@ -9,12 +9,12 @@ import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "@/shared/config/colors";
+import { Colors } from "@/shared/config";
 import {
   PRIVACY_POLICY_SECTIONS,
   PRIVACY_POLICY_VERSION,
   PRIVACY_POLICY_DATE,
-} from "@/features/auth/model/privacyPolicy";
+} from "@/features/auth";
 
 export default function PrivacyPolicyScreen() {
   const router = useRouter();

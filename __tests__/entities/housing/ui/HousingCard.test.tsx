@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { HousingCard } from '@/entities/housing/ui/HousingCard';
-import { formatPrice } from '@/shared/utils/currency';
+import { formatPrice } from '@/shared/lib/currency';
 import { Colors } from '@/shared/config/colors';
 import { makeHousing } from '@/__tests__/_helpers/ui/fixtures';
 import { allByType } from '@/__tests__/_helpers/ui/host';

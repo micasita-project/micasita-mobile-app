@@ -4,6 +4,8 @@ import EditHousingScreen from '@/app/edit-housing';
 import { router, routeState, resetRouter } from '@/__tests__/_helpers/app/expoRouter';
 
 const mockWizard = jest.fn((_props: any) => null);
+const mockUser = { id: 7, email: 'ana@mail.com' };
+jest.mock('@/features/auth', () => ({ useAuth: () => ({ user: mockUser }) }));
 jest.mock('expo-router', () => require('@/__tests__/_helpers/app/expoRouter').expoRouterModule);
 jest.mock('@expo/vector-icons', () => require('@/__tests__/_helpers/app/icons').iconsModule);
 jest.mock('@/features/publish-housing', () => ({
@@ -73,6 +75,7 @@ describe('EditHousingScreen', () => {
     expect(screen.getByTestId('wizard')).toBeTruthy();
     const props = mockWizard.mock.calls[0][0];
     expect(props.propertyId).toBe('p-9');
+    expect(props.user).toBe(mockUser);
     expect(props.initialDraft).toMatchObject({
       address: 'Av. Larco 123',
       district: 'Miraflores',

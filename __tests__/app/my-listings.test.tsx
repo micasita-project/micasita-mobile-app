@@ -8,8 +8,12 @@ jest.mock('@expo/vector-icons', () => require('@/__tests__/_helpers/app/icons').
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 20, bottom: 10, left: 0, right: 0 }),
 }));
+const mockUser = { id: 7, email: 'ana@mail.com' };
+jest.mock('@/features/auth', () => ({ useAuth: () => ({ user: mockUser }) }));
+const mockPanel = jest.fn();
 jest.mock('@/features/publish-housing', () => ({
-  MyListingsPanel: () => {
+  MyListingsPanel: (props: any) => {
+    mockPanel(props);
     const { Text } = require('react-native');
     return <Text testID="panel">MyListingsPanel</Text>;
   },
@@ -22,6 +26,7 @@ describe('MyListingsScreen', () => {
     await render(<MyListingsScreen />);
     expect(screen.getByText('Mis publicaciones')).toBeTruthy();
     expect(screen.getByTestId('panel')).toBeTruthy();
+    expect(mockPanel.mock.calls[0][0]).toEqual({ user: mockUser });
   });
 
   it('el botón de retroceso vuelve atrás', async () => {

@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { HousingDraft } from '@/shared/types';
+import type { HousingDraft } from '@/shared/model';
 import { submitHousingListing, updateHousingListing } from './publishHousing.service';
 
 const INITIAL_DRAFT: HousingDraft = {

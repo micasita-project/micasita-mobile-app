@@ -13,3 +13,7 @@ export {
 // UI (componentes de presentación)
 export { HousingCard } from './ui/HousingCard';
 export { HousingMarker } from './ui/HousingMarker';
+
+export { createProperty, fetchMyFavorites, fetchMyProperties, updateProperty, uploadPropertyImage } from './api/housing.api';
+export type { CreatePropertyRequest, PropertyFilters, PropertyResponse } from './api/housing.api';
+export { propertyKeys, useDeleteProperty, useProperties, useToggleFavorite } from './model/useProperties';

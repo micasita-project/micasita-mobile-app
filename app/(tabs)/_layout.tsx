@@ -6,8 +6,8 @@
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/shared/config/colors';
-import { getTabBarMetrics } from '@/shared/utils/tabBar';
+import { Colors } from '@/shared/config';
+import { getTabBarMetrics } from '@/shared/lib/tabBar';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();

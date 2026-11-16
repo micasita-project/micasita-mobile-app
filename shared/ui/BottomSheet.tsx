@@ -10,7 +10,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '@/shared/config/colors';
+import { Colors } from '@/shared/config';
 
 interface Props {
   visible: boolean;

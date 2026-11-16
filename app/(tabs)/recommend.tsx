@@ -5,25 +5,16 @@
  * - Invitados: lee latest de AsyncStorage → genera/actualiza bajo demanda.
  */
 
-import type { Workplace } from "@/entities/workplace/api/workplace.api";
-import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
+import { type Workplace, useWorkplaces } from "@/entities/workplace";
 import type { TimeByFranja } from "@/entities/route";
 import { useAuth } from "@/features/auth";
 import { GuestSetupModal, useGuest } from "@/features/guest";
-import type { RecommendationItem } from "@/features/recommendation/api/recommendation.api";
-import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
+import { type RecommendationItem, guestGenerateKey, recommendKeys, useGenerateRecommendations, useGuestRecommendations, useLatestRecommendations } from "@/entities/recommendation";
+import { WorkplaceSheet } from "@/widgets/workplace";
 import { useIsMutating } from "@tanstack/react-query";
-import {
-  guestGenerateKey,
-  recommendKeys,
-  useGenerateRecommendations,
-  useGuestRecommendations,
-  useLatestRecommendations,
-} from "@/features/recommendation/model/useRecommendations";
-import { Colors } from "@/shared/config/colors";
-import { getTransportConfig, normalizeTransportMode } from "@/shared/config/transport";
-import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
-import { formatPrice } from "@/shared/utils/currency";
+import { Colors, getTransportConfig, normalizeTransportMode } from "@/shared/config";
+import { useSelectedWorkplace } from "@/shared/model";
+import { formatPrice } from "@/shared/lib/currency";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";

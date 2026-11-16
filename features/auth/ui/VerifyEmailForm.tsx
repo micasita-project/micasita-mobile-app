@@ -16,16 +16,19 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useAuth } from "@/features/auth/model/AuthContext";
-import { useGuest } from "@/features/guest";
-import { verifyEmail } from "@/features/auth/api/auth.service";
+import { useAuth } from "../model/AuthContext";
+import { verifyEmail } from "../api/auth.service";
 import { OtpInput } from "@/shared/ui/OtpInput";
-import { Colors } from "@/shared/config/colors";
+import { Colors } from "@/shared/config";
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60; // segundos
 
-export function VerifyEmailForm() {
+interface VerifyEmailFormProps {
+  clearGuestData: () => Promise<void>;
+}
+
+export function VerifyEmailForm({ clearGuestData }: VerifyEmailFormProps) {
   const router = useRouter();
   const params = useLocalSearchParams<{ email?: string }>();
   const {
@@ -34,7 +37,6 @@ export function VerifyEmailForm() {
     resendVerification,
     isLoading,
   } = useAuth();
-  const { clearGuestData } = useGuest();
 
   const email = pendingEmail ?? params.email ?? "";
 

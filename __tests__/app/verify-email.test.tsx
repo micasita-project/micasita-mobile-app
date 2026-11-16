@@ -6,8 +6,12 @@ import { router, resetRouter } from '@/__tests__/_helpers/app/expoRouter';
 jest.mock('expo-router', () => require('@/__tests__/_helpers/app/expoRouter').expoRouterModule);
 jest.mock('expo-status-bar', () => ({ StatusBar: () => null }));
 jest.mock('@expo/vector-icons', () => require('@/__tests__/_helpers/app/icons').iconsModule);
+const mockVerifyForm = jest.fn();
+const mockClearGuestData = jest.fn();
+jest.mock('@/features/guest', () => ({ useGuest: () => ({ clearGuestData: mockClearGuestData }) }));
 jest.mock('@/features/auth/ui/VerifyEmailForm', () => ({
-  VerifyEmailForm: () => {
+  VerifyEmailForm: (props: any) => {
+    mockVerifyForm(props);
     const { Text } = require('react-native');
     return <Text testID="verify-form">VerifyEmailForm</Text>;
   },
@@ -18,6 +22,7 @@ beforeEach(resetRouter);
 describe('VerifyEmailScreen', () => {
   it('muestra el título y el formulario de verificación', async () => {
     await render(<VerifyEmailScreen />);
+    expect(mockVerifyForm.mock.calls[0][0].clearGuestData).toBe(mockClearGuestData);
     expect(screen.getByText('Verifica tu correo')).toBeTruthy();
     expect(screen.getByTestId('verify-form')).toBeTruthy();
   });

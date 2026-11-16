@@ -4,7 +4,7 @@ import { render, fireEvent, screen, act } from '@testing-library/react-native';
 import RecommendScreen from '@/app/(tabs)/recommend';
 import { router, resetRouter } from '@/__tests__/_helpers/app/expoRouter';
 import { makeHousing } from '@/__tests__/_helpers/app/housingCard';
-import { formatPrice } from '@/shared/utils/currency';
+import { formatPrice } from '@/shared/lib/currency';
 
 const mockAuth = jest.fn();
 const mockGuest = jest.fn();
@@ -47,10 +47,12 @@ jest.mock('@/shared/model/SelectedWorkplaceContext', () => ({
   useSelectedWorkplace: () => mockSelected(),
 }));
 jest.mock('@/entities/housing/model/useProperties', () => ({ useToggleFavorite: () => ({ mutate: jest.fn() }) }));
+// El barrel de shared/api crea el QueryClient real al cargarse.
+jest.mock('@/shared/api/queryClient', () => ({ queryClient: {} }));
 jest.mock('@tanstack/react-query', () => ({
   useIsMutating: ({ mutationKey }: any) => mockMutating(mutationKey),
 }));
-jest.mock('@/features/recommendation/model/useRecommendations', () => ({
+jest.mock('@/entities/recommendation/model/useRecommendations', () => ({
   guestGenerateKey: ['guest-generate'],
   recommendKeys: { generate: ['auth-generate'] },
   useLatestRecommendations: (id: any) => mockLatest(id),

@@ -49,7 +49,7 @@ export const addressSearchModule = {
   ),
 };
 
-/** Sustituto de `@/widgets/location-picker/MapPickerModal`: expone sus props y confirma la sugerencia preparada. */
+/** Sustituto de `@/shared/ui/MapPickerModal`: expone sus props y confirma la sugerencia preparada. */
 export const mapPickerModule = {
   MapPickerModal: ({ visible, onClose, onConfirm, title, instruction, initialRegion }: any) =>
     visible ? (

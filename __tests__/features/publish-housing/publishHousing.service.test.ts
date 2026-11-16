@@ -16,7 +16,7 @@ import {
   updateHousingListing,
   getMyListings,
 } from '@/features/publish-housing/model/publishHousing.service';
-import type { HousingDraft } from '@/shared/types';
+import type { HousingDraft } from '@/shared/model';
 
 const mockCreate = createProperty as jest.Mock;
 const mockUpdate = updateProperty as jest.Mock;

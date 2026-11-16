@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { render, fireEvent, screen, act } from '@testing-library/react-native';
 import { HomeSheet } from '@/widgets/home/ui/HomeSheet';
 import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
-import { LIMA_LOCATION_ERROR } from '@/shared/utils/geo';
+import { LIMA_LOCATION_ERROR } from '@/shared/lib/geo';
 import { makeSuggestion, setNextSuggestion, resetNextSuggestion } from '@/__tests__/_helpers/features/mockFeatureUi';
 
 const mockAuth: any = { user: null, setHome: jest.fn() };
@@ -15,7 +15,7 @@ const mockWorkplaces: { data: any[] } = { data: [] };
 
 jest.mock('@/features/auth', () => ({ useAuth: () => mockAuth }));
 jest.mock('@/features/guest', () => ({ useGuest: () => mockGuest }));
-jest.mock('@/features/recommendation/model/useRecommendations', () => ({
+jest.mock('@/entities/recommendation/model/useRecommendations', () => ({
   useGenerateRecommendations: () => mockGenerate,
   useGuestRecommendations: (onResult?: (r: any) => any) => ({
     // Igual que el hook real: guarda el resultado antes de terminar la generación.
@@ -34,7 +34,7 @@ jest.mock('@/shared/model/SelectedWorkplaceContext', () => ({
 }));
 jest.mock('@/shared/ui/BottomSheet', () => require('@/__tests__/_helpers/features/mockFeatureUi').bottomSheetModule);
 jest.mock('@/shared/ui/AddressSearchInput', () => require('@/__tests__/_helpers/features/mockFeatureUi').addressSearchModule);
-jest.mock('@/widgets/location-picker/MapPickerModal', () => require('@/__tests__/_helpers/features/mockFeatureUi').mapPickerModule);
+jest.mock('@/shared/ui/MapPickerModal', () => require('@/__tests__/_helpers/features/mockFeatureUi').mapPickerModule);
 
 const onClose = jest.fn();
 const onSaved = jest.fn();

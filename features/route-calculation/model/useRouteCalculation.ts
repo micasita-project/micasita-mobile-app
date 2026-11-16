@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import type { Coordinate, RouteSegment, TransportMode } from '@/shared/types';
+import type { Coordinate, RouteSegment, TransportMode } from '@/shared/model';
 import { fetchModeRoute } from '@/entities/route';
 
 interface RouteCalculationState {

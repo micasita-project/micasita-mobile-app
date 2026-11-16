@@ -27,12 +27,12 @@ jest.mock('@/entities/route', () => ({
   fetchTimeByFranja: (...a: any[]) => mockFetchFranja(...a),
   formatTravelTime: (m: number) => `${m}min`,
 }));
-jest.mock('@/entities/recommendation-preferences', () => ({ usePreferences: (id: any) => mockPreferences(id) }));
+jest.mock('@/entities/recommendation-preference', () => ({ usePreferences: (id: any) => mockPreferences(id) }));
 jest.mock('@/entities/workplace/model/useWorkplaces', () => ({ useWorkplaces: (e: any) => mockWorkplaces(e) }));
 jest.mock('@/features/auth', () => ({ useAuth: () => mockAuth() }));
 jest.mock('@/features/guest', () => ({ useGuest: () => mockGuest() }));
 jest.mock('@/shared/model/SelectedWorkplaceContext', () => ({ useSelectedWorkplace: () => mockSelected() }));
-jest.mock('@/features/recommendation/model/recommendationMessage', () => ({
+jest.mock('@/entities/recommendation/model/recommendationMessage', () => ({
   scoreLabel: (s: number) => `Etiqueta ${s}`,
   buildInsightTitle: () => 'Título IA',
   buildInsightBody: () => 'Cuerpo IA',

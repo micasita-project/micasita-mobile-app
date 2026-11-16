@@ -8,12 +8,14 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/shared/config/colors';
+import { Colors } from '@/shared/config';
+import { useAuth } from '@/features/auth';
 import { MyListingsPanel } from '@/features/publish-housing';
 
 export default function MyListingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
 
   return (
     <View style={styles.container}>
@@ -29,7 +31,7 @@ export default function MyListingsScreen() {
           </View>
         </View>
       </View>
-      <MyListingsPanel />
+      <MyListingsPanel user={user} />
       <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push('/publish-housing')}

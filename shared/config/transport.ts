@@ -1,5 +1,5 @@
-import type { TransportMode } from "@/shared/types";
-import { TRANSPORT_MODE_COLORS } from "@/shared/types";
+import type { TransportMode } from "@/shared/model";
+import { TRANSPORT_MODE_COLORS } from "@/shared/model";
 
 export interface TransportModeConfig {
   id: TransportMode;

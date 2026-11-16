@@ -7,23 +7,17 @@ import {
   useCreatePreference,
   usePreferences,
   useUpdatePreference,
-} from "@/entities/recommendation-preferences";
-import type { Workplace } from "@/entities/workplace/api/workplace.api";
-import {
-  useCreateWorkplace,
-  useDeleteWorkplace,
-  useUpdateWorkplace,
-} from "@/entities/workplace/model/useWorkplaces";
-import { useGenerateRecommendations } from "@/features/recommendation/model/useRecommendations";
-import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
-import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
-import { Colors } from "@/shared/config/colors";
-import { TRANSPORT_MODE_CONFIG } from "@/shared/config/transport";
-import type { TransportMode } from "@/shared/types";
+} from "@/entities/recommendation-preference";
+import { type Workplace, useCreateWorkplace, useDeleteWorkplace, useUpdateWorkplace } from "@/entities/workplace";
+import { useGenerateRecommendations } from "@/entities/recommendation";
+import type { GeocodeSuggestion } from "@/shared/api";
+import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/lib/geo";
+import { Colors, TRANSPORT_MODE_CONFIG } from "@/shared/config";
+import type { TransportMode } from "@/shared/model";
 import { SheetTextInput } from '@/shared/ui/SheetTextInput';
 import { BottomSheet } from "@/shared/ui/BottomSheet";
 import { AddressSearchInput } from "@/shared/ui/AddressSearchInput";
-import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
+import { MapPickerModal } from "@/shared/ui/MapPickerModal";
 import Slider from "@react-native-community/slider";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";

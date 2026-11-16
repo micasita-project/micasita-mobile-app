@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { HousingMarker } from '@/entities/housing/ui/HousingMarker';
-import { formatPrice } from '@/shared/utils/currency';
+import { formatPrice } from '@/shared/lib/currency';
 import { Colors } from '@/shared/config/colors';
-import { TRANSPORT_MODE_COLORS } from '@/shared/types';
+import { TRANSPORT_MODE_COLORS } from '@/shared/model';
 import { makeHousing } from '@/__tests__/_helpers/ui/fixtures';
 import { allByType, flat } from '@/__tests__/_helpers/ui/host';
 

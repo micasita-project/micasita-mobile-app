@@ -12,17 +12,17 @@
  * dirección, hay que volver a correr el motor.
  */
 
-import { useGenerateRecommendations, useGuestRecommendations } from "@/features/recommendation/model/useRecommendations";
+import { useGenerateRecommendations, useGuestRecommendations } from "@/entities/recommendation";
 import { useAuth } from "@/features/auth";
 import { useGuest } from "@/features/guest";
-import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
-import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
-import { Colors } from "@/shared/config/colors";
-import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
+import { useWorkplaces } from "@/entities/workplace";
+import type { GeocodeSuggestion } from "@/shared/api";
+import { Colors } from "@/shared/config";
+import { useSelectedWorkplace } from "@/shared/model";
 import { AddressSearchInput } from "@/shared/ui/AddressSearchInput";
 import { BottomSheet } from "@/shared/ui/BottomSheet";
-import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
-import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
+import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/lib/geo";
+import { MapPickerModal } from "@/shared/ui/MapPickerModal";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {

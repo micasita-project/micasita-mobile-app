@@ -4,7 +4,7 @@
  * Guards: guests land on tabs; authenticated users check workplaces → onboarding or tabs.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
@@ -15,11 +15,11 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { AuthProvider, useAuth, ConsentModal } from '@/features/auth';
 import { GuestProvider } from '@/features/guest';
-import { SelectedWorkplaceProvider } from '@/shared/model/SelectedWorkplaceContext';
+import { SelectedWorkplaceProvider } from '@/shared/model';
 import { queryClient } from '@/shared/api';
 
 
-import { useWorkplaces } from '@/entities/workplace/model/useWorkplaces';
+import { useWorkplaces } from '@/entities/workplace';
 
 function useProtectedRoute() {
   const { isAuthenticated, isInitialized, user } = useAuth();
@@ -157,6 +157,12 @@ function RootNavigator() {
   );
 }
 
+// Reinicia el workplace seleccionado cuando se cierra la sesión.
+function SessionWorkplaceProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  return <SelectedWorkplaceProvider isAuthenticated={isAuthenticated}>{children}</SelectedWorkplaceProvider>;
+}
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -164,12 +170,12 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <GuestProvider>
-            <SelectedWorkplaceProvider>
+            <SessionWorkplaceProvider>
               <BottomSheetModalProvider>
                 <RootNavigator />
                 <StatusBar style="light" />
               </BottomSheetModalProvider>
-            </SelectedWorkplaceProvider>
+            </SessionWorkplaceProvider>
           </GuestProvider>
         </AuthProvider>
       </QueryClientProvider>

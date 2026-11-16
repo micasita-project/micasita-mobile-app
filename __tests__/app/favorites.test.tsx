@@ -22,7 +22,7 @@ jest.mock('@/entities/housing/model/useProperties', () => ({
   useToggleFavorite: () => ({ mutate: mockMutate }),
   propertyKeys: {},
 }));
-jest.mock('@/entities/housing', () => require('@/__tests__/_helpers/app/housingCard').housingEntityModule);
+jest.mock('@/entities/housing', () => ({ ...(() => require('@/__tests__/_helpers/app/housingCard').housingEntityModule)(), ...jest.requireMock('@/entities/housing/api/housing.api'), ...jest.requireMock('@/entities/housing/model/useProperties') }));
 
 const a = makeHousing({ id: 'a', title: 'Casa A', isFavorite: true });
 const b = makeHousing({ id: 'b', title: 'Casa B', isFavorite: true });

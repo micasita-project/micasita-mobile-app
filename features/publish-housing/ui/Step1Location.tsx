@@ -16,10 +16,10 @@ import {
 import { AppMapView, AppMarker } from '@/shared/ui/map';
 import type { AppMapViewHandle } from '@/shared/ui/map';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/shared/config/colors';
-import type { HousingDraft } from '@/shared/types';
+import { Colors } from '@/shared/config';
+import type { HousingDraft } from '@/shared/model';
 import { AddressSearchInput } from '@/shared/ui/AddressSearchInput';
-import type { GeocodeSuggestion } from '@/shared/api/geocode.service';
+import type { GeocodeSuggestion } from '@/shared/api';
 
 const LIMA_DISTRICTS = [
   'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Chorrillos', 'Comas',

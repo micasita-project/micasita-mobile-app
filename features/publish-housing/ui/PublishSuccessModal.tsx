@@ -14,7 +14,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/shared/config/colors';
+import { Colors } from '@/shared/config';
 
 interface PublishSuccessModalProps {
   visible: boolean;

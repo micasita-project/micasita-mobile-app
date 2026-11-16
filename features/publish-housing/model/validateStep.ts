@@ -3,8 +3,8 @@
  * @description Validación de cada paso del wizard de publicación.
  */
 
-import type { HousingDraft } from '@/shared/types';
-import { isWithinLima, LIMA_LOCATION_ERROR } from '@/shared/utils/geo';
+import type { HousingDraft } from '@/shared/model';
+import { isWithinLima, LIMA_LOCATION_ERROR } from '@/shared/lib/geo';
 
 export function validateStep(step: number, draft: HousingDraft): string | null {
   switch (step) {

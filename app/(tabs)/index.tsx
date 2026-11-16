@@ -17,35 +17,31 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { AppMapView, AppMarker, AppCircle, AppUrlTile } from "@/shared/ui/map";
-import type { AppMapViewHandle } from "@/shared/ui/map";
+import { AppMapView, AppMarker, AppCircle, AppUrlTile, type AppMapViewHandle } from "@/shared/ui/map";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { usePreferences } from "@/entities/recommendation-preferences";
-import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
+import { usePreferences } from "@/entities/recommendation-preference";
+import { useWorkplaces } from "@/entities/workplace";
 import { useAuth } from "@/features/auth";
 import { GuestSetupModal, useGuest } from "@/features/guest";
 import {
   guestGenerateKey,
   recommendKeys,
   useLatestRecommendations,
-} from "@/features/recommendation/model/useRecommendations";
+} from "@/entities/recommendation";
 import { useIsMutating } from "@tanstack/react-query";
 import { useRouteCalculation } from "@/features/route-calculation";
-import { buildMapKey } from "@/shared/utils/mapKey";
-import { WorkplaceSheet } from "@/widgets/workplace/ui/WorkplaceSheet";
-import { HomeSheet } from "@/widgets/home/ui/HomeSheet";
+import { buildMapKey } from "@/shared/lib/mapKey";
+import { WorkplaceSheet } from "@/widgets/workplace";
+import { HomeSheet } from "@/widgets/home";
 
 import { HousingMarker } from "@/entities/housing";
 import { RoutePolyline, formatTravelTime } from "@/entities/route";
 
-import { Colors } from "@/shared/config/colors";
-import { LIMA_REGION, OSM_TILE_URL } from "@/shared/config/map";
-import { getTransportConfig, normalizeTransportMode } from "@/shared/config/transport";
-import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
-import type { Housing, TransportMode } from "@/shared/types";
-import { formatPrice } from "@/shared/utils/currency";
-import { spreadOverlappingMarkers } from "@/shared/utils/geo";
+import { Colors, LIMA_REGION, OSM_TILE_URL, getTransportConfig, normalizeTransportMode } from "@/shared/config";
+import { useSelectedWorkplace, type Housing, type TransportMode } from "@/shared/model";
+import { formatPrice } from "@/shared/lib/currency";
+import { spreadOverlappingMarkers } from "@/shared/lib/geo";
 
 // ── Local component: floating housing card ────────────────────────
 // Exclusive to this page — no need for a separate file.

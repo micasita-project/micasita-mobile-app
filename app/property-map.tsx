@@ -6,9 +6,8 @@
  * (home + trabajo + N candidatas + polyline): acá solo hace falta un pin.
  */
 
-import { Colors } from "@/shared/config/colors";
+import { Colors, OSM_TILE_URL } from "@/shared/config";
 import { AppMapView, AppMarker, AppUrlTile } from "@/shared/ui/map";
-import { OSM_TILE_URL } from "@/shared/config/map";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";

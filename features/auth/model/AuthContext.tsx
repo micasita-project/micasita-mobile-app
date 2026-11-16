@@ -4,12 +4,12 @@
  * Conectado al backend real (FastAPI + JWT).
  */
 
-import { createPreference } from "@/entities/recommendation-preferences";
+import { createPreference } from "@/entities/recommendation-preference";
 import {
   importGuestRecommendations,
   type RecommendationPageResponse,
-} from "@/features/recommendation/api/recommendation.api";
-import { createWorkplace } from "@/entities/workplace/api/workplace.api";
+} from "@/entities/recommendation";
+import { createWorkplace } from "@/entities/workplace";
 import { getAuthToken, queryClient } from "@/shared/api";
 import React, {
   createContext,

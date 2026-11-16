@@ -19,29 +19,28 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StepIndicator } from '@/shared/ui/StepIndicator';
-import { MapPickerModal } from '@/widgets/location-picker/MapPickerModal';
-import { LIMA_REGION } from '@/shared/config/map';
+import { MapPickerModal } from '@/shared/ui/MapPickerModal';
+import { LIMA_REGION, Colors } from '@/shared/config';
 import { usePublishForm } from '../model/usePublishForm';
 import { Step1Location } from './Step1Location';
 import { Step2Features } from './Step2Features';
 import { Step3Photos } from './Step3Photos';
 import { Step4Amenities } from './Step4Amenities';
 import { PublishSuccessModal } from './PublishSuccessModal';
-import { Colors } from '@/shared/config/colors';
-import { useAuth } from '@/features/auth';
 import { getPublishDraft, savePublishDraft, clearPublishDraft } from '../model/publishDraft.storage';
 import { validateStep } from '../model/validateStep';
 
 const STEP_LABELS = ['Ubicación', 'Características', 'Fotos', 'Amenidades'];
 
 export interface PublishWizardProps {
+  /** Usuario con sesión iniciada; sin él no se puede publicar. */
+  user: { id: number; email: string } | null;
   initialDraft?: ReturnType<typeof usePublishForm>['draft'];
   propertyId?: string;
 }
 
-export function PublishWizard({ initialDraft, propertyId }: PublishWizardProps) {
+export function PublishWizard({ user, initialDraft, propertyId }: PublishWizardProps) {
   const router = useRouter();
-  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { currentStep, draft, isSubmitting, error, updateDraft, nextStep, prevStep, submit, update, reset } =
     usePublishForm(initialDraft, propertyId);

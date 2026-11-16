@@ -8,8 +8,8 @@
  * lets the backend apply the same time correction used in recommendations.
  */
 
-import type { Coordinate, RouteSegment, TransportMode } from '@/shared/types';
-import { TRANSPORT_MODE_SPEEDS } from '@/shared/types';
+import type { Coordinate, RouteSegment, TransportMode } from '@/shared/model';
+import { TRANSPORT_MODE_SPEEDS } from '@/shared/model';
 import { apiClient } from '@/shared/api';
 
 const routeCache = new Map<string, RouteSegment>();

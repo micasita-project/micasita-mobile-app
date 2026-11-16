@@ -18,7 +18,7 @@ jest.mock('@/entities/housing/model/useProperties', () => ({
   useProperties: (f: any) => mockUseProperties(f),
   useToggleFavorite: () => ({ mutate: mockMutate }),
 }));
-jest.mock('@/entities/housing', () => require('@/__tests__/_helpers/app/housingCard').housingEntityModule);
+jest.mock('@/entities/housing', () => ({ ...(() => require('@/__tests__/_helpers/app/housingCard').housingEntityModule)(), ...jest.requireMock('@/entities/housing/model/useProperties') }));
 jest.mock('@/shared/ui/BottomSheet', () => require('@/__tests__/_helpers/app/sheets').bottomSheetModule);
 jest.mock('@/shared/ui/SheetTextInput', () => require('@/__tests__/_helpers/app/sheets').sheetTextInputModule);
 

@@ -19,16 +19,15 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
-import { MapPickerModal } from '@/widgets/location-picker/MapPickerModal';
+import { MapPickerModal } from '@/shared/ui/MapPickerModal';
 import { SheetTextInput } from '@/shared/ui/SheetTextInput';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
-import { type GeocodeSuggestion } from '@/shared/api/geocode.service';
+import { type GeocodeSuggestion } from '@/shared/api';
 import { AddressSearchInput } from '@/shared/ui/AddressSearchInput';
-import { Colors } from '@/shared/config/colors';
-import { TRANSPORT_MODE_CONFIG } from '@/shared/config/transport';
+import { Colors, TRANSPORT_MODE_CONFIG } from '@/shared/config';
 import { useGuest, type GuestHome, type GuestWorkplace, type TransportOption } from '../model/GuestContext';
-import { useGuestRecommendations } from '@/features/recommendation/model/useRecommendations';
-import { isWithinLima, LIMA_LOCATION_ERROR } from '@/shared/utils/geo';
+import { useGuestRecommendations } from '@/entities/recommendation';
+import { isWithinLima, LIMA_LOCATION_ERROR } from '@/shared/lib/geo';
 import {
   SETUP_STEPS,
   nextStep,

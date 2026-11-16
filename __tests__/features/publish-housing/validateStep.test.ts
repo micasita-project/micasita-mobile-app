@@ -1,5 +1,5 @@
 import { validateStep } from '@/features/publish-housing/model/validateStep';
-import type { HousingDraft } from '@/shared/types';
+import type { HousingDraft } from '@/shared/model';
 
 const BASE_DRAFT: HousingDraft = {
   address: 'Av. Larco 123',

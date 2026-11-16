@@ -2,7 +2,7 @@ import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Map, Camera, RasterSource, Layer, LogManager } from '@maplibre/maplibre-react-native';
 import type { CameraRef } from '@maplibre/maplibre-react-native';
-import { OSM_TILE_URL } from '@/shared/config/map';
+import { OSM_TILE_URL } from '@/shared/config';
 import type { MapRegion, AppMapViewHandle } from './types';
 
 const EMPTY_STYLE = JSON.stringify({ version: 8, sources: {}, layers: [] });

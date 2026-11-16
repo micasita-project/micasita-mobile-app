@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { HousingDraft } from '@/shared/types';
+import type { HousingDraft } from '@/shared/model';
 
 const STORAGE_KEY = 'publish_draft';
 

@@ -6,14 +6,16 @@
 import React, { useMemo } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useAuth } from '@/features/auth';
 import { PublishWizard } from '@/features/publish-housing';
-import type { PublishedHousing, HousingDraft } from '@/shared/types';
-import { Colors } from '@/shared/config/colors';
+import type { PublishedHousing, HousingDraft } from '@/shared/model';
+import { Colors } from '@/shared/config';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function EditHousingScreen() {
   const { data } = useLocalSearchParams<{ data: string }>();
   const router = useRouter();
+  const { user } = useAuth();
 
   const propertyData = useMemo(() => {
     if (!data) return null;
@@ -75,7 +77,7 @@ export default function EditHousingScreen() {
     );
   }
 
-  return <PublishWizard initialDraft={propertyData.draft} propertyId={propertyData.id} />;
+  return <PublishWizard user={user} initialDraft={propertyData.draft} propertyId={propertyData.id} />;
 }
 
 const styles = StyleSheet.create({

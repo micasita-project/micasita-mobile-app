@@ -16,8 +16,8 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { ForgotPasswordForm } from "@/features/auth/ui/ForgotPasswordForm";
-import { Colors } from "@/shared/config/colors";
+import { ForgotPasswordForm } from "@/features/auth";
+import { Colors } from "@/shared/config";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();

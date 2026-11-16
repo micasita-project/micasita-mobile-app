@@ -3,11 +3,10 @@
  * @description Custom housing marker for the map.
  */
 
-import { Colors } from "@/shared/config/colors";
-import { getTransportConfig } from "@/shared/config/transport";
-import type { Housing, TransportMode } from "@/shared/types";
-import type { GeoPoint } from "@/shared/utils/geo";
-import { formatPrice } from "@/shared/utils/currency";
+import { Colors, getTransportConfig } from "@/shared/config";
+import type { Housing, TransportMode } from "@/shared/model";
+import type { GeoPoint } from "@/shared/lib/geo";
+import { formatPrice } from "@/shared/lib/currency";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";

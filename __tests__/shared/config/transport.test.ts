@@ -3,7 +3,7 @@ import {
   getTransportConfig,
   normalizeTransportMode,
 } from '@/shared/config/transport';
-import { TRANSPORT_MODE_COLORS } from '@/shared/types';
+import { TRANSPORT_MODE_COLORS } from '@/shared/model';
 
 describe('TRANSPORT_MODE_CONFIG', () => {
   it('tiene los tres modos en orden driving, cycling, walking', () => {

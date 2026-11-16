@@ -13,7 +13,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { Colors } from '@/shared/config/colors';
+import { Colors } from '@/shared/config';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
 type ButtonSize = 'small' | 'medium' | 'large';

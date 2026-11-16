@@ -18,11 +18,9 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth';
-import { HousingCard } from '@/entities/housing';
-import { useProperties, useToggleFavorite } from '@/entities/housing/model/useProperties';
-import type { PropertyFilters } from '@/entities/housing/api/housing.api';
-import { Colors } from '@/shared/config/colors';
-import type { Housing } from '@/shared/types';
+import { HousingCard, useProperties, useToggleFavorite, type PropertyFilters } from '@/entities/housing';
+import { Colors } from '@/shared/config';
+import type { Housing } from '@/shared/model';
 import { SheetTextInput } from '@/shared/ui/SheetTextInput';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 

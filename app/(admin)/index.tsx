@@ -1,10 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, RefreshControl, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { Colors } from '@/shared/config/colors';
+import { Colors } from '@/shared/config';
 import { Ionicons } from '@expo/vector-icons';
-import { getPendingProperties, updatePropertyStatus } from '@/features/admin/api/admin.api';
-import { AdminPropertyCard } from '@/features/admin/ui/AdminPropertyCard';
-import type { Housing } from '@/shared/types';
+import { getPendingProperties, updatePropertyStatus, AdminPropertyCard } from '@/features/admin';
+import type { Housing } from '@/shared/model';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 type PendingProperty = Housing & { status: string; publisher_id: number };

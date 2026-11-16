@@ -5,3 +5,6 @@
 
 export { apiClient, saveAuthToken, getAuthToken, removeAuthToken } from './apiClient';
 export { queryClient } from './queryClient';
+
+export { reverseAddress, searchAddress } from './geocode.service';
+export type { GeocodeSuggestion } from './geocode.service';

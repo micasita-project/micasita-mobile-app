@@ -2,8 +2,8 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { render, fireEvent, screen, act } from '@testing-library/react-native';
 import { WorkplaceSheet } from '@/widgets/workplace/ui/WorkplaceSheet';
-import { usePreferences } from '@/entities/recommendation-preferences';
-import { LIMA_LOCATION_ERROR } from '@/shared/utils/geo';
+import { usePreferences } from '@/entities/recommendation-preference';
+import { LIMA_LOCATION_ERROR } from '@/shared/lib/geo';
 import { makeSuggestion, setNextSuggestion, resetNextSuggestion } from '@/__tests__/_helpers/features/mockFeatureUi';
 
 const mockMut = () => ({ mutateAsync: jest.fn(), isPending: false });
@@ -17,7 +17,7 @@ const mockM = {
 };
 const mockPrefs: { data: any[] } = { data: [] };
 
-jest.mock('@/entities/recommendation-preferences', () => ({
+jest.mock('@/entities/recommendation-preference', () => ({
   usePreferences: jest.fn(() => mockPrefs),
   useCreatePreference: () => mockM.createPref,
   useUpdatePreference: () => mockM.updatePref,
@@ -27,13 +27,13 @@ jest.mock('@/entities/workplace/model/useWorkplaces', () => ({
   useUpdateWorkplace: () => mockM.updateWp,
   useDeleteWorkplace: () => mockM.deleteWp,
 }));
-jest.mock('@/features/recommendation/model/useRecommendations', () => ({
+jest.mock('@/entities/recommendation/model/useRecommendations', () => ({
   useGenerateRecommendations: () => mockM.generate,
 }));
 jest.mock('@/shared/ui/BottomSheet', () => require('@/__tests__/_helpers/features/mockFeatureUi').bottomSheetModule);
 jest.mock('@/shared/ui/SheetTextInput', () => require('@/__tests__/_helpers/features/mockFeatureUi').sheetTextInputModule);
 jest.mock('@/shared/ui/AddressSearchInput', () => require('@/__tests__/_helpers/features/mockFeatureUi').addressSearchModule);
-jest.mock('@/widgets/location-picker/MapPickerModal', () => require('@/__tests__/_helpers/features/mockFeatureUi').mapPickerModule);
+jest.mock('@/shared/ui/MapPickerModal', () => require('@/__tests__/_helpers/features/mockFeatureUi').mapPickerModule);
 jest.mock('@react-native-community/slider', () => require('@/__tests__/_helpers/features/mockFeatureUi').sliderModule);
 
 const onClose = jest.fn();

@@ -28,7 +28,6 @@ jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(),
   launchImageLibraryAsync: jest.fn(),
 }));
-jest.mock('@/features/auth', () => ({ useAuth: () => mockAuth }));
 jest.mock('@/features/publish-housing/model/publishHousing.service', () => ({
   submitHousingListing: jest.fn(),
   updateHousingListing: jest.fn(),
@@ -46,7 +45,7 @@ jest.mock('@/shared/ui/StepIndicator', () => ({
 }));
 jest.mock('@/shared/ui/AddressSearchInput', () => require('@/__tests__/_helpers/features/mockFeatureUi').addressSearchModule);
 jest.mock('@/shared/ui/map', () => require('@/__tests__/_helpers/features/mockFeatureUi').mapModule);
-jest.mock('@/widgets/location-picker/MapPickerModal', () => require('@/__tests__/_helpers/features/mockFeatureUi').mapPickerModule);
+jest.mock('@/shared/ui/MapPickerModal', () => require('@/__tests__/_helpers/features/mockFeatureUi').mapPickerModule);
 
 const submitMock = submitHousingListing as jest.Mock;
 const updateMock = updateHousingListing as jest.Mock;
@@ -117,7 +116,7 @@ async function fillStep3() {
 }
 
 async function reachStep4() {
-  await render(<PublishWizard />);
+  await render(<PublishWizard user={mockAuth.user} />);
   await fillStep1();
   await fillStep2();
   await fillStep3();
@@ -125,7 +124,7 @@ async function reachStep4() {
 
 describe('PublishWizard navegación y validaciones', () => {
   it('empieza en el paso 1 sin botón Atrás', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     expect(screen.getByText('Publicar vivienda')).toBeTruthy();
     expect(screen.getByText('Paso 1 de 4')).toBeTruthy();
     expect(screen.getByTestId('step-indicator').props.children).toBe(
@@ -135,7 +134,7 @@ describe('PublishWizard navegación y validaciones', () => {
   });
 
   it('el botón de volver del encabezado solo existe en el paso 1 y sale de la pantalla', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     const header = screen.getByText('Publicar vivienda').parent!.parent!;
     await fireEvent.press(header.children[0] as any);
     expect(mockRouter.back).toHaveBeenCalledTimes(1);
@@ -145,21 +144,21 @@ describe('PublishWizard navegación y validaciones', () => {
   });
 
   it('Siguiente sin dirección avisa y no avanza', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     await next();
     expect(alertSpy).toHaveBeenCalledWith('Datos incompletos', 'Por favor ingresa la dirección.');
     expect(screen.getByText('Paso 1 de 4')).toBeTruthy();
   });
 
   it('con dirección elegida avanza al paso 2 y aparece Atrás', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     await fillStep1();
     expect(screen.getByText('Paso 2 de 4')).toBeTruthy();
     expect(screen.getByText('Atrás')).toBeTruthy();
   });
 
   it('Atrás vuelve al paso anterior conservando lo escrito', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     await fillStep1();
     await fireEvent.press(screen.getByText('Atrás'));
     expect(screen.getByText('Paso 1 de 4')).toBeTruthy();
@@ -167,7 +166,7 @@ describe('PublishWizard navegación y validaciones', () => {
   });
 
   it('el paso 2 exige título antes de avanzar', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     await fillStep1();
     await next();
     expect(alertSpy).toHaveBeenCalledWith('Datos incompletos', 'Por favor ingresa el título del anuncio.');
@@ -175,7 +174,7 @@ describe('PublishWizard navegación y validaciones', () => {
   });
 
   it('el paso 3 exige al menos una foto', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     await fillStep1();
     await fillStep2();
     await next();
@@ -196,7 +195,7 @@ describe('PublishWizard navegación y validaciones', () => {
 
 describe('PublishWizard selector de mapa', () => {
   it('abre el selector centrado en las coordenadas del borrador', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     await fireEvent.press(screen.getByText('Elegir en el mapa'));
     expect(JSON.parse(screen.getByTestId('map-picker-region').props.children)).toEqual({
       latitude: -12.0464,
@@ -207,7 +206,7 @@ describe('PublishWizard selector de mapa', () => {
   });
 
   it('confirmar una ubicación rellena dirección y coordenadas y cierra el selector', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     await fireEvent.press(screen.getByText('Elegir en el mapa'));
     setNextSuggestion(makeSuggestion({ display_name: 'Calle Mar 5', latitude: -12.1, longitude: -77.05, district: 'Barranco' }));
     await fireEvent.press(screen.getByTestId('map-picker-confirm'));
@@ -219,7 +218,7 @@ describe('PublishWizard selector de mapa', () => {
   });
 
   it('sin distrito en la ubicación usa Lima y permite continuar', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     await fireEvent.press(screen.getByText('Elegir en el mapa'));
     setNextSuggestion(makeSuggestion({ display_name: 'Calle Mar 5' }));
     await fireEvent.press(screen.getByTestId('map-picker-confirm'));
@@ -229,7 +228,7 @@ describe('PublishWizard selector de mapa', () => {
   });
 
   it('cerrar el selector no cambia el borrador', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     await fireEvent.press(screen.getByText('Elegir en el mapa'));
     await fireEvent.press(screen.getByTestId('map-picker-close'));
     expect(screen.queryByTestId('map-picker')).toBeNull();
@@ -331,7 +330,7 @@ describe('PublishWizard publicación', () => {
 });
 
 describe('PublishWizard modo edición', () => {
-  const setupEdit = () => render(<PublishWizard initialDraft={FULL_DRAFT} propertyId="p-42" />);
+  const setupEdit = () => render(<PublishWizard user={mockAuth.user} initialDraft={FULL_DRAFT} propertyId="p-42" />);
 
   it('muestra el título de edición y los datos de la vivienda', async () => {
     await setupEdit();
@@ -378,14 +377,14 @@ describe('PublishWizard modo edición', () => {
 
 describe('PublishWizard borrador guardado', () => {
   it('sin borrador no muestra aviso', async () => {
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     expect(getDraftMock).toHaveBeenCalledTimes(1);
     expect(alertCalls('Borrador encontrado')).toHaveLength(0);
   });
 
   it('con borrador ofrece recuperarlo o ignorarlo', async () => {
     getDraftMock.mockResolvedValue(FULL_DRAFT);
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     expect(alertSpy).toHaveBeenCalledWith(
       'Borrador encontrado',
       'Tienes un borrador anterior sin publicar. ¿Deseas recuperarlo?',
@@ -398,7 +397,7 @@ describe('PublishWizard borrador guardado', () => {
 
   it('Recuperar carga los datos del borrador en el asistente', async () => {
     getDraftMock.mockResolvedValue(FULL_DRAFT);
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     const buttons = alertSpy.mock.calls[0][2];
     await act(async () => {
       buttons.find((b: any) => b.text === 'Recuperar').onPress();
@@ -409,7 +408,7 @@ describe('PublishWizard borrador guardado', () => {
 
   it('Ignorar borra el borrador guardado', async () => {
     getDraftMock.mockResolvedValue(FULL_DRAFT);
-    await render(<PublishWizard />);
+    await render(<PublishWizard user={mockAuth.user} />);
     const buttons = alertSpy.mock.calls[0][2];
     await act(async () => {
       buttons.find((b: any) => b.text === 'Ignorar').onPress();
@@ -419,7 +418,7 @@ describe('PublishWizard borrador guardado', () => {
   });
 
   it('al salir guarda el borrador con lo escrito', async () => {
-    const view = await render(<PublishWizard />);
+    const view = await render(<PublishWizard user={mockAuth.user} />);
     await fireEvent.changeText(screen.getByTestId('address-input'), 'Av. Sol 1');
     saveDraftMock.mockClear();
     await view.unmount();

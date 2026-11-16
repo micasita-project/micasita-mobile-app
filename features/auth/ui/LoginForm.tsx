@@ -16,15 +16,19 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/features/auth/model/AuthContext';
-import { useGuest } from '@/features/guest';
-import { Colors } from '@/shared/config/colors';
+import { useAuth, type GuestDataForTransfer } from '../model/AuthContext';
+import { Colors } from '@/shared/config';
 
 type AuthMode = 'login' | 'register';
 
-export function LoginForm() {
+interface LoginFormProps {
+  /** Datos de la sesión de invitado que se transfieren al registrarse. */
+  guestData: GuestDataForTransfer;
+  clearGuestData: () => Promise<void>;
+}
+
+export function LoginForm({ guestData, clearGuestData }: LoginFormProps) {
   const { login, register, isLoading } = useAuth();
-  const { guestHome, guestWorkplace, guestRecommendations, clearGuestData } = useGuest();
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -57,20 +61,7 @@ export function LoginForm() {
       const result = await register(
         email.trim(),
         password,
-        {
-          home: guestHome ? { lat: guestHome.lat, lon: guestHome.lon, address: guestHome.address } : undefined,
-          workplace: guestWorkplace
-            ? {
-                lat: guestWorkplace.lat,
-                lon: guestWorkplace.lon,
-                budget: guestWorkplace.budget,
-                transport: guestWorkplace.transport,
-                address: guestWorkplace.address,
-                maxDistanceKm: guestWorkplace.maxDistanceKm,
-              }
-            : undefined,
-          recommendations: guestRecommendations ?? undefined,
-        },
+        guestData,
         name.trim() || undefined,
         lastName.trim() || undefined,
         acceptedTerms,

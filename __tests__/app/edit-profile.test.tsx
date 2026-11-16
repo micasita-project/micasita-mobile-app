@@ -18,7 +18,7 @@ jest.mock('@expo/vector-icons', () => require('@/__tests__/_helpers/app/icons').
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 20, bottom: 10, left: 0, right: 0 }),
 }));
-jest.mock('@/features/auth', () => ({ useAuth: () => mockAuth() }));
+jest.mock('@/features/auth', () => ({ ...(() => ({ useAuth: () => mockAuth() }))(), ...jest.requireMock('@/features/auth/api/auth.service'), ...jest.requireMock('@/features/auth/model/deleteAccountFlow') }));
 jest.mock('@/features/auth/api/auth.service', () => ({
   updateProfile: (...a: any[]) => mockUpdateProfile(...a),
   changePassword: (...a: any[]) => mockChangePassword(...a),

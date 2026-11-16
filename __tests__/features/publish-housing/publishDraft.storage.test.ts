@@ -10,7 +10,7 @@ import {
   getPublishDraft,
   clearPublishDraft,
 } from '@/features/publish-housing/model/publishDraft.storage';
-import type { HousingDraft } from '@/shared/types';
+import type { HousingDraft } from '@/shared/model';
 
 const mockGet = AsyncStorage.getItem as jest.Mock;
 const mockSet = AsyncStorage.setItem as jest.Mock;

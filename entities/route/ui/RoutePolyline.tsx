@@ -4,9 +4,8 @@
  */
 
 import React from 'react';
-import type { Coordinate } from '@/shared/types';
-import { Colors } from '@/shared/config/colors';
-import { ROUTE_POLYLINE_WIDTH } from '@/shared/config/map';
+import type { Coordinate } from '@/shared/model';
+import { Colors, ROUTE_POLYLINE_WIDTH } from '@/shared/config';
 import { AppPolyline } from '@/shared/ui/map';
 
 interface RoutePolylineProps {

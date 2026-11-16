@@ -2,6 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import { LoginForm } from '@/features/auth/ui/LoginForm';
+import { toGuestTransferData } from '@/features/guest/model/guestTransfer';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn() };
 const mockAuth = {
@@ -18,7 +19,6 @@ const mockGuest: any = {
 
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('@/features/auth/model/AuthContext', () => ({ useAuth: () => mockAuth }));
-jest.mock('@/features/guest', () => ({ useGuest: () => mockGuest }));
 
 let alertSpy: jest.SpyInstance;
 
@@ -30,6 +30,9 @@ beforeEach(() => {
   mockGuest.clearGuestData.mockResolvedValue(undefined);
   alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 });
+
+const renderForm = () =>
+  render(<LoginForm guestData={toGuestTransferData(mockGuest)} clearGuestData={mockGuest.clearGuestData} />);
 
 const type = (placeholder: string, text: string) =>
   fireEvent.changeText(screen.getByPlaceholderText(placeholder), text);
@@ -53,7 +56,7 @@ async function fillRegister(over: Partial<Record<'email' | 'password' | 'confirm
 
 describe('LoginForm modo login', () => {
   it('muestra solo correo, contraseña, ingresar y olvidé mi contraseña', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     expect(screen.getByPlaceholderText('Correo electrónico')).toBeTruthy();
     expect(screen.getByPlaceholderText('Contraseña')).toBeTruthy();
     expect(screen.getByText('Ingresar')).toBeTruthy();
@@ -64,7 +67,7 @@ describe('LoginForm modo login', () => {
   });
 
   it('avisa si faltan correo o contraseña y no llama a login', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await fireEvent.press(screen.getByText('Ingresar'));
     expect(alertSpy).toHaveBeenCalledWith('Campos requeridos', 'Ingresa tu correo y contraseña.');
 
@@ -75,7 +78,7 @@ describe('LoginForm modo login', () => {
   });
 
   it('trata un correo de solo espacios como vacío', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await fillLogin('   ', 'secreto123');
     await fireEvent.press(screen.getByText('Ingresar'));
     expect(alertSpy).toHaveBeenCalledWith('Campos requeridos', 'Ingresa tu correo y contraseña.');
@@ -84,7 +87,7 @@ describe('LoginForm modo login', () => {
 
   it('inicia sesión con el correo recortado y limpia los datos de invitado', async () => {
     mockAuth.login.mockResolvedValue({ success: true });
-    await render(<LoginForm />);
+    await renderForm();
     await fillLogin();
     await fireEvent.press(screen.getByText('Ingresar'));
     expect(mockAuth.login).toHaveBeenCalledWith('ana@mail.com', 'secreto123');
@@ -95,7 +98,7 @@ describe('LoginForm modo login', () => {
 
   it('muestra el error del servidor y conserva los datos de invitado', async () => {
     mockAuth.login.mockResolvedValue({ success: false, error: 'Credenciales inválidas' });
-    await render(<LoginForm />);
+    await renderForm();
     await fillLogin();
     await fireEvent.press(screen.getByText('Ingresar'));
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Credenciales inválidas');
@@ -104,7 +107,7 @@ describe('LoginForm modo login', () => {
 
   it('usa un mensaje por defecto si el servidor no da error', async () => {
     mockAuth.login.mockResolvedValue({ success: false });
-    await render(<LoginForm />);
+    await renderForm();
     await fillLogin();
     await fireEvent.press(screen.getByText('Ingresar'));
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Email o contraseña incorrectos.');
@@ -112,7 +115,7 @@ describe('LoginForm modo login', () => {
 
   it('si la cuenta no está verificada avisa y navega a verify-email con el correo', async () => {
     mockAuth.login.mockResolvedValue({ success: false, needsVerification: true });
-    await render(<LoginForm />);
+    await renderForm();
     await fillLogin();
     await fireEvent.press(screen.getByText('Ingresar'));
     expect(alertSpy).toHaveBeenCalledWith(
@@ -127,14 +130,14 @@ describe('LoginForm modo login', () => {
   });
 
   it('el enlace de contraseña olvidada navega a /forgot-password', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await fireEvent.press(screen.getByText('¿Olvidaste tu contraseña?'));
     expect(mockRouter.push).toHaveBeenCalledWith('/forgot-password');
   });
 
   it('con isLoading no muestra el texto del botón ni permite enviar', async () => {
     mockAuth.isLoading = true;
-    await render(<LoginForm />);
+    await renderForm();
     expect(screen.queryByText('Ingresar')).toBeNull();
     await fillLogin();
     const disabled = screen.container.queryAll((n) => n.props.accessibilityState?.disabled === true);
@@ -144,7 +147,7 @@ describe('LoginForm modo login', () => {
   });
 
   it('el ojo alterna la visibilidad de la contraseña', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     const eye = () => {
       const row = screen.getByPlaceholderText('Contraseña').parent!;
       return row.children[row.children.length - 1] as any;
@@ -159,7 +162,7 @@ describe('LoginForm modo login', () => {
 
 describe('LoginForm modo registro', () => {
   it('al alternar muestra campos de registro, consentimiento y oculta olvidé mi contraseña', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     expect(screen.getByPlaceholderText('Nombre')).toBeTruthy();
     expect(screen.getByPlaceholderText('Apellido')).toBeTruthy();
@@ -171,7 +174,7 @@ describe('LoginForm modo registro', () => {
   });
 
   it('al volver a login se descartan los campos exclusivos del registro', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await type('Nombre', 'Ana');
     await type('Confirmar contraseña', 'x');
@@ -182,7 +185,7 @@ describe('LoginForm modo registro', () => {
   });
 
   it('al volver a registro el consentimiento queda desmarcado', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fireEvent.press(screen.getByRole('checkbox'));
     expect(screen.getByRole('checkbox').props.accessibilityState.checked).toBe(true);
@@ -192,7 +195,7 @@ describe('LoginForm modo registro', () => {
   });
 
   it('rechaza una contraseña de menos de 8 caracteres', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fillRegister({ password: '1234567', confirm: '1234567' });
     await fireEvent.press(screen.getByRole('checkbox'));
@@ -206,7 +209,7 @@ describe('LoginForm modo registro', () => {
 
   it('acepta una contraseña de exactamente 8 caracteres', async () => {
     mockAuth.register.mockResolvedValue({ success: true });
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fillRegister({ password: '12345678', confirm: '12345678' });
     await fireEvent.press(screen.getByRole('checkbox'));
@@ -215,7 +218,7 @@ describe('LoginForm modo registro', () => {
   });
 
   it('rechaza contraseñas que no coinciden', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fillRegister({ confirm: 'otra-clave' });
     await fireEvent.press(screen.getByRole('checkbox'));
@@ -225,7 +228,7 @@ describe('LoginForm modo registro', () => {
   });
 
   it('exige aceptar la Política de Privacidad', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fillRegister();
     await fireEvent.press(screen.getByText('Crear cuenta'));
@@ -237,14 +240,14 @@ describe('LoginForm modo registro', () => {
   });
 
   it('en registro también exige correo y contraseña', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fireEvent.press(screen.getByText('Crear cuenta'));
     expect(alertSpy).toHaveBeenCalledWith('Campos requeridos', 'Ingresa tu correo y contraseña.');
   });
 
   it('el enlace de la política navega a /privacy-policy', async () => {
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fireEvent.press(screen.getByText('Política de Privacidad'));
     expect(mockRouter.push).toHaveBeenCalledWith('/privacy-policy');
@@ -252,7 +255,7 @@ describe('LoginForm modo registro', () => {
 
   it('registra sin datos de invitado y navega a verify-email', async () => {
     mockAuth.register.mockResolvedValue({ success: true });
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fillRegister();
     await fireEvent.press(screen.getByRole('checkbox'));
@@ -274,7 +277,7 @@ describe('LoginForm modo registro', () => {
 
   it('envía nombre y apellido vacíos como undefined', async () => {
     mockAuth.register.mockResolvedValue({ success: true });
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fillRegister({ name: '  ', last: '' });
     await fireEvent.press(screen.getByRole('checkbox'));
@@ -298,7 +301,7 @@ describe('LoginForm modo registro', () => {
     };
     mockGuest.guestRecommendations = recs;
     mockAuth.register.mockResolvedValue({ success: true });
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fillRegister();
     await fireEvent.press(screen.getByRole('checkbox'));
@@ -319,7 +322,7 @@ describe('LoginForm modo registro', () => {
 
   it('si el registro falla muestra el error y no navega', async () => {
     mockAuth.register.mockResolvedValue({ success: false, error: 'Correo ya registrado' });
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fillRegister();
     await fireEvent.press(screen.getByRole('checkbox'));
@@ -330,7 +333,7 @@ describe('LoginForm modo registro', () => {
 
   it('usa un mensaje por defecto si el registro falla sin detalle', async () => {
     mockAuth.register.mockResolvedValue({ success: false });
-    await render(<LoginForm />);
+    await renderForm();
     await goRegister();
     await fillRegister();
     await fireEvent.press(screen.getByRole('checkbox'));

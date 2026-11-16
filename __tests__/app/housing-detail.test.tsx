@@ -48,13 +48,15 @@ jest.mock('react-native/Libraries/Lists/FlatList', () => ({
     );
   },
 }));
+// El barrel de shared/api crea el QueryClient real al cargarse.
+jest.mock('@/shared/api/queryClient', () => ({ queryClient: {} }));
 jest.mock('@tanstack/react-query', () => ({ useQuery: (o: any) => mockUseQuery(o) }));
 jest.mock('@/entities/housing/api/housing.api', () => ({ fetchPropertyById: jest.fn() }));
 jest.mock('@/entities/route', () => ({
   fetchModeRoute: (...a: any[]) => mockFetchRoute(...a),
   formatTravelTime: (m: number) => `${m}min`,
 }));
-jest.mock('@/entities/recommendation-preferences', () => ({ usePreferences: (id: any) => mockPreferences(id) }));
+jest.mock('@/entities/recommendation-preference', () => ({ usePreferences: (id: any) => mockPreferences(id) }));
 jest.mock('@/entities/housing/model/useProperties', () => ({
   useToggleFavorite: () => ({ mutate: mockMutate }),
 }));

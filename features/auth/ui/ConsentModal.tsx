@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../model/AuthContext';
 import { needsConsent } from '../model/consent';
 import { acceptPrivacyPolicy } from '../api/auth.service';
-import { Colors } from '@/shared/config/colors';
+import { Colors } from '@/shared/config';
 
 export function ConsentModal() {
   const { user, refreshUser, logout } = useAuth();

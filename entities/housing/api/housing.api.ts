@@ -5,7 +5,7 @@
  */
 
 import { apiClient } from '@/shared/api';
-import type { Housing } from '@/shared/types';
+import type { Housing } from '@/shared/model';
 
 // ── Types (alineadas con el backend Python) ─────────────────────
 

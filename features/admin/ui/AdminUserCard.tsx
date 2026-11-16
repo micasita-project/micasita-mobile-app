@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Switch } from 'react-native';
-import { Colors } from '@/shared/config/colors';
+import { Colors } from '@/shared/config';
 import { Ionicons } from '@expo/vector-icons';
 import type { AdminUserResponse } from '../api/admin.api';
 

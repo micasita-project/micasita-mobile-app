@@ -18,11 +18,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LoginForm } from '@/features/auth';
-import { Colors } from '@/shared/config/colors';
+import { toGuestTransferData, useGuest } from '@/features/guest';
+import { Colors } from '@/shared/config';
 
 export default function LoginScreen() {
   const router = useRouter();
   const canGoBack = router.canGoBack();
+  const guest = useGuest();
 
   return (
     <View style={styles.container}>
@@ -64,7 +66,7 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          <LoginForm />
+          <LoginForm guestData={toGuestTransferData(guest)} clearGuestData={guest.clearGuestData} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

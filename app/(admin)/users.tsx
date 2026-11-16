@@ -1,9 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, RefreshControl, TextInput } from 'react-native';
-import { Colors } from '@/shared/config/colors';
-import { getAllUsers, updateUserStatus } from '@/features/admin/api/admin.api';
-import type { AdminUserResponse } from '@/features/admin/api/admin.api';
-import { AdminUserCard } from '@/features/admin/ui/AdminUserCard';
+import { Colors } from '@/shared/config';
+import { getAllUsers, updateUserStatus, type AdminUserResponse, AdminUserCard } from '@/features/admin';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 

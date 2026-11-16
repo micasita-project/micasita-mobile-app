@@ -19,7 +19,6 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
 }));
 jest.mock('@/features/auth/model/AuthContext', () => ({ useAuth: () => mockAuth }));
-jest.mock('@/features/guest', () => ({ useGuest: () => mockGuest }));
 jest.mock('@/features/auth/api/auth.service', () => ({ verifyEmail: jest.fn() }));
 
 const verifyMock = verifyEmail as jest.Mock;
@@ -52,7 +51,7 @@ async function advance(seconds: number) {
 
 describe('VerifyEmailForm presentación', () => {
   it('muestra el correo pendiente de verificación', async () => {
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     expect(screen.getByText('pendiente@mail.com')).toBeTruthy();
     expect(screen.getByText('Verificar')).toBeTruthy();
   });
@@ -60,27 +59,27 @@ describe('VerifyEmailForm presentación', () => {
   it('sin correo pendiente usa el parámetro de la ruta', async () => {
     mockAuth.pendingEmail = null;
     mockParams.email = 'ruta@mail.com';
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     expect(screen.getByText('ruta@mail.com')).toBeTruthy();
   });
 
   it('con el correo pendiente y el de la ruta prefiere el pendiente', async () => {
     mockParams.email = 'ruta@mail.com';
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     expect(screen.getByText('pendiente@mail.com')).toBeTruthy();
     expect(screen.queryByText('ruta@mail.com')).toBeNull();
   });
 
   it('sin ningún correo muestra "tu correo"', async () => {
     mockAuth.pendingEmail = null;
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     expect(screen.getByText('tu correo')).toBeTruthy();
   });
 });
 
 describe('VerifyEmailForm verificación con sesión pendiente', () => {
   it('el botón con código incompleto avisa y no verifica', async () => {
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('123');
     await fireEvent.press(screen.getByText('Verificar'));
     expect(alertSpy).toHaveBeenCalledWith('Código incompleto', 'Ingresa los 6 dígitos del código.');
@@ -88,7 +87,7 @@ describe('VerifyEmailForm verificación con sesión pendiente', () => {
   });
 
   it('completar los 6 dígitos verifica automáticamente y limpia los datos de invitado', async () => {
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('528301');
     expect(mockAuth.completePendingVerification).toHaveBeenCalledWith('528301');
     expect(mockAuth.completePendingVerification).toHaveBeenCalledTimes(1);
@@ -98,7 +97,7 @@ describe('VerifyEmailForm verificación con sesión pendiente', () => {
   });
 
   it('el botón Verificar usa el código escrito', async () => {
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('52830');
     await enterCode('528301');
     mockAuth.completePendingVerification.mockClear();
@@ -108,7 +107,7 @@ describe('VerifyEmailForm verificación con sesión pendiente', () => {
 
   it('si el servidor rechaza el código avisa, lo vacía y no limpia datos de invitado', async () => {
     mockAuth.completePendingVerification.mockResolvedValue({ success: false, error: 'Código vencido' });
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('528301');
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Código vencido');
     expect(digits()).toEqual(['', '', '', '', '', '']);
@@ -117,7 +116,7 @@ describe('VerifyEmailForm verificación con sesión pendiente', () => {
 
   it('usa un mensaje por defecto si el rechazo no trae error', async () => {
     mockAuth.completePendingVerification.mockResolvedValue({ success: false });
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('528301');
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Código incorrecto o expirado.');
   });
@@ -126,7 +125,7 @@ describe('VerifyEmailForm verificación con sesión pendiente', () => {
     mockAuth.completePendingVerification.mockRejectedValue({
       response: { data: { detail: 'Demasiados intentos' } },
     });
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('528301');
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Demasiados intentos');
     expect(digits()).toEqual(['', '', '', '', '', '']);
@@ -134,7 +133,7 @@ describe('VerifyEmailForm verificación con sesión pendiente', () => {
 
   it('tras un fallo permite volver a intentar', async () => {
     mockAuth.completePendingVerification.mockResolvedValueOnce({ success: false, error: 'mal' });
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('111111');
     await enterCode('222222');
     expect(mockAuth.completePendingVerification).toHaveBeenNthCalledWith(2, '222222');
@@ -148,7 +147,7 @@ describe('VerifyEmailForm verificación sin sesión pendiente', () => {
   });
 
   it('verifica con el correo de la ruta, avisa y manda a login', async () => {
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('528301');
     expect(verifyMock).toHaveBeenCalledWith('ruta@mail.com', '528301');
     expect(alertSpy).toHaveBeenCalledWith('Correo verificado', 'Tu cuenta fue verificada. Ahora inicia sesión.');
@@ -158,7 +157,7 @@ describe('VerifyEmailForm verificación sin sesión pendiente', () => {
 
   it('si el servicio falla muestra el detalle y no navega', async () => {
     verifyMock.mockRejectedValue({ response: { data: { detail: 'Código inválido' } } });
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('528301');
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Código inválido');
     expect(mockRouter.replace).not.toHaveBeenCalled();
@@ -166,7 +165,7 @@ describe('VerifyEmailForm verificación sin sesión pendiente', () => {
 
   it('si el servicio falla sin detalle usa el mensaje por defecto', async () => {
     verifyMock.mockRejectedValue(new Error('boom'));
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await enterCode('528301');
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Código incorrecto o expirado.');
   });
@@ -175,7 +174,7 @@ describe('VerifyEmailForm verificación sin sesión pendiente', () => {
 describe('VerifyEmailForm estado ocupado', () => {
   it('con isLoading el botón queda deshabilitado y sin texto', async () => {
     mockAuth.isLoading = true;
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     expect(screen.queryByText('Verificar')).toBeNull();
     const disabled = screen.container.queryAll((n) => n.props.accessibilityState?.disabled === true);
     expect(disabled.length).toBeGreaterThanOrEqual(2);
@@ -184,12 +183,12 @@ describe('VerifyEmailForm estado ocupado', () => {
 
 describe('VerifyEmailForm reenvío con cooldown', () => {
   it('al inicio permite reenviar', async () => {
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     expect(screen.getByText('¿No recibiste el código? Reenviar')).toBeTruthy();
   });
 
   it('reenviar llama al contexto, avisa y arranca el cooldown de 60 s', async () => {
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await fireEvent.press(screen.getByText('¿No recibiste el código? Reenviar'));
     expect(mockAuth.resendVerification).toHaveBeenCalledWith('pendiente@mail.com');
     expect(alertSpy).toHaveBeenCalledWith('Código enviado', 'Revisa tu correo (y la carpeta de spam).');
@@ -197,7 +196,7 @@ describe('VerifyEmailForm reenvío con cooldown', () => {
   });
 
   it('la cuenta regresiva baja cada segundo y al llegar a 0 se habilita otra vez', async () => {
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await fireEvent.press(screen.getByText('¿No recibiste el código? Reenviar'));
     await advance(1);
     expect(screen.getByText('Reenviar código en 59s')).toBeTruthy();
@@ -208,7 +207,7 @@ describe('VerifyEmailForm reenvío con cooldown', () => {
   });
 
   it('durante el cooldown no vuelve a llamar al reenvío', async () => {
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await fireEvent.press(screen.getByText('¿No recibiste el código? Reenviar'));
     mockAuth.resendVerification.mockClear();
     await fireEvent.press(screen.getByText('Reenviar código en 60s'));
@@ -217,7 +216,7 @@ describe('VerifyEmailForm reenvío con cooldown', () => {
 
   it('si el reenvío falla muestra el error y no inicia el cooldown', async () => {
     mockAuth.resendVerification.mockResolvedValue({ success: false, error: 'Límite alcanzado' });
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await fireEvent.press(screen.getByText('¿No recibiste el código? Reenviar'));
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Límite alcanzado');
     expect(screen.getByText('¿No recibiste el código? Reenviar')).toBeTruthy();
@@ -225,14 +224,14 @@ describe('VerifyEmailForm reenvío con cooldown', () => {
 
   it('el fallo del reenvío usa un mensaje por defecto', async () => {
     mockAuth.resendVerification.mockResolvedValue({ success: false });
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await fireEvent.press(screen.getByText('¿No recibiste el código? Reenviar'));
     expect(alertSpy).toHaveBeenCalledWith('Error', 'No se pudo reenviar el código.');
   });
 
   it('sin correo conocido no intenta reenviar', async () => {
     mockAuth.pendingEmail = null;
-    await render(<VerifyEmailForm />);
+    await render(<VerifyEmailForm clearGuestData={mockGuest.clearGuestData} />);
     await fireEvent.press(screen.getByText('¿No recibiste el código? Reenviar'));
     expect(mockAuth.resendVerification).not.toHaveBeenCalled();
     expect(alertSpy).not.toHaveBeenCalled();

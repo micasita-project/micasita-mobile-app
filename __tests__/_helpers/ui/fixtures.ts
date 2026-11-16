@@ -1,4 +1,4 @@
-import type { Housing } from '@/shared/types';
+import type { Housing } from '@/shared/model';
 
 /** Vivienda de prueba con valores razonables; cada prueba sobrescribe lo que le importa. */
 export function makeHousing(over: Partial<Housing> = {}): Housing {

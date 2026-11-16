@@ -7,8 +7,8 @@
  * - Mensaje "sin resultados" cuando la búsqueda no devuelve nada
  */
 
-import { searchAddress, type GeocodeSuggestion } from '@/shared/api/geocode.service';
-import { Colors } from '@/shared/config/colors';
+import { searchAddress, type GeocodeSuggestion } from '@/shared/api';
+import { Colors } from '@/shared/config';
 import { Ionicons } from '@expo/vector-icons';
 import { SheetTextInput } from '@/shared/ui/SheetTextInput';
 import React, { useCallback, useRef, useState } from 'react';

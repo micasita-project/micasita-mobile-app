@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { render, fireEvent, screen, act } from '@testing-library/react-native';
 import { GuestSetupModal } from '@/features/guest/ui/GuestSetupModal';
-import { LIMA_LOCATION_ERROR } from '@/shared/utils/geo';
+import { LIMA_LOCATION_ERROR } from '@/shared/lib/geo';
 import { makeSuggestion, setNextSuggestion, resetNextSuggestion } from '@/__tests__/_helpers/features/mockFeatureUi';
 
 const mockGuest: any = {
@@ -17,10 +17,10 @@ const mockMutation = { mutateAsync: jest.fn() };
 jest.mock('@/shared/ui/BottomSheet', () => require('@/__tests__/_helpers/features/mockFeatureUi').bottomSheetModule);
 jest.mock('@/shared/ui/SheetTextInput', () => require('@/__tests__/_helpers/features/mockFeatureUi').sheetTextInputModule);
 jest.mock('@/shared/ui/AddressSearchInput', () => require('@/__tests__/_helpers/features/mockFeatureUi').addressSearchModule);
-jest.mock('@/widgets/location-picker/MapPickerModal', () => require('@/__tests__/_helpers/features/mockFeatureUi').mapPickerModule);
+jest.mock('@/shared/ui/MapPickerModal', () => require('@/__tests__/_helpers/features/mockFeatureUi').mapPickerModule);
 jest.mock('@react-native-community/slider', () => require('@/__tests__/_helpers/features/mockFeatureUi').sliderModule);
 jest.mock('../../../../features/guest/model/GuestContext', () => ({ useGuest: () => mockGuest }));
-jest.mock('@/features/recommendation/model/useRecommendations', () => ({
+jest.mock('@/entities/recommendation/model/useRecommendations', () => ({
   useGuestRecommendations: (onResult?: (r: any) => any) => ({
     // Igual que el hook real: guarda el resultado antes de terminar la generación.
     mutateAsync: async (v: any) => {

@@ -15,3 +15,5 @@ export type {
   CreateWorkplaceRequest,
   UpdateWorkplaceRequest,
 } from './api/workplace.api';
+
+export { useCreateWorkplace, useDeleteWorkplace, useUpdateWorkplace, useWorkplaces } from './model/useWorkplaces';

@@ -1,6 +1,6 @@
 import { apiClient } from '@/shared/api';
-import type { Housing } from '@/shared/types';
-import type { PropertyResponse } from '@/entities/housing/api/housing.api';
+import type { Housing } from '@/shared/model';
+import type { PropertyResponse } from '@/entities/housing';
 
 /** Convierte PropertyResponse a Housing */
 function toHousing(p: PropertyResponse): Housing {

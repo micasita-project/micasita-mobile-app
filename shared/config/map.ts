@@ -4,7 +4,7 @@
  * Includes OSM tile URL, default Lima region, and map settings.
  */
 
-import type { Coordinate } from '@/shared/types';
+import type { Coordinate } from '@/shared/model';
 import { ENV } from './env';
 
 // ── OpenStreetMap Tiles ─────────────────────────────────────

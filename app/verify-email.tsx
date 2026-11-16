@@ -16,12 +16,14 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { VerifyEmailForm } from "@/features/auth/ui/VerifyEmailForm";
-import { Colors } from "@/shared/config/colors";
+import { VerifyEmailForm } from "@/features/auth";
+import { useGuest } from "@/features/guest";
+import { Colors } from "@/shared/config";
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
   const canGoBack = router.canGoBack();
+  const { clearGuestData } = useGuest();
 
   return (
     <View style={styles.container}>
@@ -57,7 +59,7 @@ export default function VerifyEmailScreen() {
             </Text>
           </View>
 
-          <VerifyEmailForm />
+          <VerifyEmailForm clearGuestData={clearGuestData} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

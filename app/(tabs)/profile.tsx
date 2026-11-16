@@ -4,8 +4,8 @@
  */
 
 import { useAuth } from "@/features/auth";
-import { Colors } from "@/shared/config/colors";
-import { HomeSheet } from "@/widgets/home/ui/HomeSheet";
+import { Colors } from "@/shared/config";
+import { HomeSheet } from "@/widgets/home";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";

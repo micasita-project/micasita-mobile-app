@@ -31,7 +31,7 @@ jest.mock('@/entities/route', () => ({
   },
   formatTravelTime: (m: number) => `${m} min`,
 }));
-jest.mock('@/entities/recommendation-preferences', () => ({
+jest.mock('@/entities/recommendation-preference', () => ({
   usePreferences: (id: any) => mockUsePreferences(id),
 }));
 jest.mock('@/entities/workplace/model/useWorkplaces', () => ({
@@ -45,11 +45,13 @@ jest.mock('@/features/guest', () => ({
     return null;
   },
 }));
-jest.mock('@/features/recommendation/model/useRecommendations', () => ({
+jest.mock('@/entities/recommendation/model/useRecommendations', () => ({
   guestGenerateKey: ['guest-generate'],
   recommendKeys: { generate: ['generate'] },
   useLatestRecommendations: (id: any) => mockUseLatest(id),
 }));
+// El barrel de shared/api crea el QueryClient real al cargarse.
+jest.mock('@/shared/api/queryClient', () => ({ queryClient: {} }));
 jest.mock('@tanstack/react-query', () => ({
   useIsMutating: (opts: any) => mockUseIsMutating(opts),
 }));

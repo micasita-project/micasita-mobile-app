@@ -11,13 +11,13 @@ jest.mock('@/shared/api', () => ({
   getAuthToken: jest.fn(),
   queryClient: { clear: jest.fn() },
 }));
-jest.mock('@/entities/recommendation-preferences', () => ({
+jest.mock('@/entities/recommendation-preference', () => ({
   createPreference: jest.fn(),
 }));
 jest.mock('@/entities/workplace/api/workplace.api', () => ({
   createWorkplace: jest.fn(),
 }));
-jest.mock('@/features/recommendation/api/recommendation.api', () => ({
+jest.mock('@/entities/recommendation/api/recommendation.api', () => ({
   importGuestRecommendations: jest.fn(),
 }));
 
@@ -26,9 +26,9 @@ import { act } from 'react-test-renderer';
 import { AuthProvider, useAuth } from '@/features/auth/model/AuthContext';
 import * as authService from '@/features/auth/api/auth.service';
 import { getAuthToken, queryClient } from '@/shared/api';
-import { createPreference } from '@/entities/recommendation-preferences';
+import { createPreference } from '@/entities/recommendation-preference';
 import { createWorkplace } from '@/entities/workplace/api/workplace.api';
-import { importGuestRecommendations } from '@/features/recommendation/api/recommendation.api';
+import { importGuestRecommendations } from '@/entities/recommendation/api/recommendation.api';
 import { mountHook, flush } from '../../_helpers/state/mountHook';
 
 const svc = authService as jest.Mocked<typeof authService>;

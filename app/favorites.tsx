@@ -17,11 +17,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchMyFavorites } from '@/entities/housing/api/housing.api';
-import { HousingCard } from '@/entities/housing';
-import { useToggleFavorite, propertyKeys } from '@/entities/housing/model/useProperties';
-import { Colors } from '@/shared/config/colors';
-import type { Housing } from '@/shared/types';
+import { fetchMyFavorites, HousingCard, useToggleFavorite, propertyKeys } from '@/entities/housing';
+import { Colors } from '@/shared/config';
+import type { Housing } from '@/shared/model';
 
 export default function FavoritesScreen() {
   const router = useRouter();

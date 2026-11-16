@@ -1,17 +1,10 @@
-jest.mock('@/features/auth', () => ({
-  useAuth: jest.fn(),
-}));
-
 import React, { type ReactNode } from 'react';
 import { act } from 'react-test-renderer';
-import { useAuth } from '@/features/auth';
 import {
   SelectedWorkplaceProvider,
   useSelectedWorkplace,
 } from '@/shared/model/SelectedWorkplaceContext';
 import { mountHook, flush } from '../../_helpers/state/mountHook';
-
-const mockUseAuth = useAuth as jest.Mock;
 
 let authFlag = true;
 let setAuth: (v: boolean) => void = () => {};
@@ -21,17 +14,16 @@ function authWrapper({ children }: { children: ReactNode }) {
   const [flag, setFlag] = React.useState(true);
   authFlag = flag;
   setAuth = setFlag;
-  return <SelectedWorkplaceProvider>{children}</SelectedWorkplaceProvider>;
+  return <SelectedWorkplaceProvider isAuthenticated={flag}>{children}</SelectedWorkplaceProvider>;
 }
 
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <SelectedWorkplaceProvider>{children}</SelectedWorkplaceProvider>
+  <SelectedWorkplaceProvider isAuthenticated>{children}</SelectedWorkplaceProvider>
 );
 
 describe('useSelectedWorkplace', () => {
   beforeEach(() => {
     authFlag = true;
-    mockUseAuth.mockImplementation(() => ({ isAuthenticated: authFlag }));
   });
 
   it('lanza un error fuera del provider', () => {

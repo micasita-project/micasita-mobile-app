@@ -4,22 +4,15 @@
  * Explica por qué una vivienda fue recomendada: score, tiempo, ahorro y características.
  */
 
-import type { RecommendationItem } from "@/features/recommendation/api/recommendation.api";
-import {
-  buildInsightBody,
-  buildInsightTitle,
-  scoreLabel,
-} from "@/features/recommendation/model/recommendationMessage";
-import { fetchTimeByFranja, fetchModeRoute, formatTravelTime, formatDistance } from "@/entities/route";
-import type { TimeByFranja } from "@/entities/route";
+import { type RecommendationItem, buildInsightBody, buildInsightTitle, scoreLabel } from "@/entities/recommendation";
+import { fetchTimeByFranja, fetchModeRoute, formatTravelTime, formatDistance, type TimeByFranja } from "@/entities/route";
 import { useAuth } from "@/features/auth";
 import { useGuest } from "@/features/guest";
-import { usePreferences } from "@/entities/recommendation-preferences";
-import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
-import { Colors } from "@/shared/config/colors";
-import { normalizeTransportMode } from "@/shared/config/transport";
-import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
-import { formatPrice } from "@/shared/utils/currency";
+import { usePreferences } from "@/entities/recommendation-preference";
+import { useWorkplaces } from "@/entities/workplace";
+import { Colors, normalizeTransportMode } from "@/shared/config";
+import { useSelectedWorkplace } from "@/shared/model";
+import { formatPrice } from "@/shared/lib/currency";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";

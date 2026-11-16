@@ -3,9 +3,9 @@
  * @description Servicio para publicar viviendas conectado al backend real.
  */
 
-import { createProperty, uploadPropertyImage, updateProperty, fetchMyProperties } from '@/entities/housing/api/housing.api';
-import type { CreatePropertyRequest } from '@/entities/housing/api/housing.api';
-import type { HousingDraft, PublishedHousing } from '@/shared/types';
+import { createProperty, uploadPropertyImage, updateProperty, fetchMyProperties } from '@/entities/housing';
+import type { CreatePropertyRequest } from '@/entities/housing';
+import type { HousingDraft, PublishedHousing } from '@/shared/model';
 
 // ── Public API ──────────────────────────────────────────────────
 

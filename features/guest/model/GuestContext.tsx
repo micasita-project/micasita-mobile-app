@@ -8,8 +8,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { RecommendationPageResponse } from '@/features/recommendation/api/recommendation.api';
-import type { TransportMode } from '@/shared/types';
+import type { RecommendationPageResponse } from '@/entities/recommendation';
+import type { TransportMode } from '@/shared/model';
 
 const GUEST_HOME_KEY = 'micasita_guest_home';
 const GUEST_WORKPLACE_KEY = 'micasita_guest_workplace';

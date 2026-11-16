@@ -21,10 +21,8 @@ import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "@/features/auth";
-import { updateProfile, changePassword, deleteAccount } from "@/features/auth/api/auth.service";
-import { deleteAccountAndLeave } from "@/features/auth/model/deleteAccountFlow";
-import { Colors } from "@/shared/config/colors";
+import { useAuth, updateProfile, changePassword, deleteAccount, deleteAccountAndLeave } from "@/features/auth";
+import { Colors } from "@/shared/config";
 
 export default function EditProfileScreen() {
   const router = useRouter();

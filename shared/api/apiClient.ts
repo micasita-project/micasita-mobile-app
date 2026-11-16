@@ -6,7 +6,7 @@
 
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ENV } from '@/shared/config/env';
+import { ENV } from '@/shared/config';
 
 const AUTH_TOKEN_KEY = 'micasita_auth_token';
 

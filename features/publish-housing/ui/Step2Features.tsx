@@ -15,8 +15,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/shared/config/colors';
-import type { HousingDraft } from '@/shared/types';
+import { Colors } from '@/shared/config';
+import type { HousingDraft } from '@/shared/model';
 
 const PROPERTY_TYPES = ['Departamento', 'Casa', 'Habitación'];
 

@@ -5,6 +5,7 @@ import { router, routeState, resetRouter } from '@/__tests__/_helpers/app/expoRo
 
 const mockAuth = jest.fn();
 const mockUseWorkplaces = jest.fn();
+const mockSelectedProvider = jest.fn();
 
 const passthrough = ({ children }: any) => children;
 
@@ -16,7 +17,10 @@ jest.mock('@gorhom/bottom-sheet', () => ({ BottomSheetModalProvider: ({ children
 jest.mock('@tanstack/react-query', () => ({ QueryClientProvider: ({ children }: any) => children }));
 jest.mock('@/shared/api', () => ({ queryClient: {} }));
 jest.mock('@/shared/model/SelectedWorkplaceContext', () => ({
-  SelectedWorkplaceProvider: ({ children }: any) => children,
+  SelectedWorkplaceProvider: ({ children, isAuthenticated }: any) => {
+    mockSelectedProvider(isAuthenticated);
+    return children;
+  },
 }));
 jest.mock('@/features/guest', () => ({ GuestProvider: ({ children }: any) => children }));
 jest.mock('@/features/auth', () => ({
@@ -67,6 +71,12 @@ describe('RootLayout estructura', () => {
       ]),
     );
     expect(screen.getByTestId('consent-modal')).toBeTruthy();
+  });
+
+  it('pasa el estado de la sesión al proveedor del workplace seleccionado', async () => {
+    state({ auth: { isAuthenticated: true, user: normalUser } });
+    await render(<RootLayout />);
+    expect(mockSelectedProvider).toHaveBeenLastCalledWith(true);
   });
 });
 

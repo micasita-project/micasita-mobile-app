@@ -4,8 +4,10 @@
  * Renderiza el PublishWizard del feature publish-housing.
  */
 
+import { useAuth } from '@/features/auth';
 import { PublishWizard } from '@/features/publish-housing';
 
 export default function PublishHousingScreen() {
-  return <PublishWizard />;
+  const { user } = useAuth();
+  return <PublishWizard user={user} />;
 }

@@ -4,11 +4,10 @@
  * Muestra las viviendas publicadas por el usuario con sus estados.
  */
 
-import { useDeleteProperty } from "@/entities/housing/model/useProperties";
-import { useAuth } from "@/features/auth";
-import { Colors } from "@/shared/config/colors";
-import type { ListingStatus, PublishedHousing } from "@/shared/types";
-import { formatPrice } from "@/shared/utils/currency";
+import { useDeleteProperty } from "@/entities/housing";
+import { Colors } from "@/shared/config";
+import type { ListingStatus, PublishedHousing } from "@/shared/model";
+import { formatPrice } from "@/shared/lib/currency";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -188,8 +187,12 @@ function ListingCard({
   );
 }
 
-export function MyListingsPanel() {
-  const { user } = useAuth();
+interface MyListingsPanelProps {
+  /** Usuario con sesión iniciada cuyas publicaciones se listan. */
+  user: { id: number } | null;
+}
+
+export function MyListingsPanel({ user }: MyListingsPanelProps) {
   const router = useRouter();
   const [listings, setListings] = useState<PublishedHousing[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -5,7 +5,6 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { useAuth } from '@/features/auth';
 
 interface SelectedWorkplaceContextValue {
   selectedWorkplaceId: number | null;
@@ -14,9 +13,14 @@ interface SelectedWorkplaceContextValue {
 
 const SelectedWorkplaceContext = createContext<SelectedWorkplaceContextValue | undefined>(undefined);
 
-export function SelectedWorkplaceProvider({ children }: { children: ReactNode }) {
+export function SelectedWorkplaceProvider({
+  children,
+  isAuthenticated,
+}: {
+  children: ReactNode;
+  isAuthenticated: boolean;
+}) {
   const [selectedWorkplaceId, setSelectedWorkplaceId] = useState<number | null>(null);
-  const { isAuthenticated } = useAuth();
 
   // Resetear selección al cerrar sesión
   useEffect(() => {

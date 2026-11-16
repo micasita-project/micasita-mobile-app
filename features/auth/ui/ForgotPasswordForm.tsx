@@ -18,9 +18,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { forgotPassword, resetPassword } from "@/features/auth/api/auth.service";
+import { forgotPassword, resetPassword } from "../api/auth.service";
 import { OtpInput } from "@/shared/ui/OtpInput";
-import { Colors } from "@/shared/config/colors";
+import { Colors } from "@/shared/config";
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60;

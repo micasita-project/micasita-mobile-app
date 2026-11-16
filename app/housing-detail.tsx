@@ -15,21 +15,17 @@
  * transporte preferido del workplace activo (nunca los 3 modos a la vez).
  */
 
-import { fetchPropertyById } from "@/entities/housing/api/housing.api";
-import { fetchModeRoute, formatTravelTime } from "@/entities/route";
-import type { TimeByFranja } from "@/entities/route";
-import { usePreferences } from "@/entities/recommendation-preferences";
-import { useToggleFavorite } from "@/entities/housing/model/useProperties";
-import { useWorkplaces } from "@/entities/workplace/model/useWorkplaces";
+import { fetchPropertyById, useToggleFavorite } from "@/entities/housing";
+import { fetchModeRoute, formatTravelTime, type TimeByFranja } from "@/entities/route";
+import { usePreferences } from "@/entities/recommendation-preference";
+import { useWorkplaces } from "@/entities/workplace";
 import { useAuth } from "@/features/auth";
 import { useGuest } from "@/features/guest";
-import { Colors } from "@/shared/config/colors";
-import { getTransportConfig, normalizeTransportMode } from "@/shared/config/transport";
-import { useSelectedWorkplace } from "@/shared/model/SelectedWorkplaceContext";
-import type { Housing } from "@/shared/types";
+import { Colors, getTransportConfig, normalizeTransportMode } from "@/shared/config";
+import { useSelectedWorkplace, type Housing } from "@/shared/model";
 import { ImageLightbox } from "@/shared/ui/ImageLightbox";
-import { getCurrencySymbol } from "@/shared/utils/currency";
-import { getImageSource } from "@/shared/utils/image";
+import { getCurrencySymbol } from "@/shared/lib/currency";
+import { getImageSource } from "@/shared/lib/image";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";

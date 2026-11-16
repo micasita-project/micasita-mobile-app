@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { render, fireEvent, screen, act } from '@testing-library/react-native';
 import OnboardingScreen from '@/app/onboarding';
 import { router, resetRouter } from '@/__tests__/_helpers/app/expoRouter';
-import { LIMA_LOCATION_ERROR } from '@/shared/utils/geo';
+import { LIMA_LOCATION_ERROR } from '@/shared/lib/geo';
 
 const mockAuth = jest.fn();
 const mockSetHome = jest.fn();
@@ -19,10 +19,10 @@ jest.mock('@/features/auth', () => ({ useAuth: () => mockAuth() }));
 jest.mock('@/entities/workplace/model/useWorkplaces', () => ({
   useCreateWorkplace: () => ({ mutateAsync: (...a: any[]) => mockCreateWorkplace(...a) }),
 }));
-jest.mock('@/entities/recommendation-preferences', () => ({
+jest.mock('@/entities/recommendation-preference', () => ({
   createPreference: (...a: any[]) => mockCreatePreference(...a),
 }));
-jest.mock('@/features/recommendation/model/useRecommendations', () => ({
+jest.mock('@/entities/recommendation/model/useRecommendations', () => ({
   useGenerateRecommendations: () => ({ mutateAsync: (...a: any[]) => mockGenerate(...a) }),
 }));
 jest.mock('@react-native-community/slider', () => ({
@@ -43,7 +43,7 @@ jest.mock('@/shared/ui/AddressSearchInput', () => ({
     );
   },
 }));
-jest.mock('@/widgets/location-picker/MapPickerModal', () => ({
+jest.mock('@/shared/ui/MapPickerModal', () => ({
   MapPickerModal: (props: any) => {
     mockMapPicker(props);
     const { Pressable } = require('react-native');

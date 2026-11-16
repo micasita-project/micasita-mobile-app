@@ -6,16 +6,15 @@
  * Paso 3: Preferencias.
  */
 
-import { useCreateWorkplace } from "@/entities/workplace/model/useWorkplaces";
-import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/utils/geo";
-import { createPreference } from "@/entities/recommendation-preferences";
+import { useCreateWorkplace } from "@/entities/workplace";
+import { isWithinLima, LIMA_LOCATION_ERROR } from "@/shared/lib/geo";
+import { createPreference } from "@/entities/recommendation-preference";
 import { useAuth } from "@/features/auth";
-import { useGenerateRecommendations } from "@/features/recommendation/model/useRecommendations";
-import type { GeocodeSuggestion } from "@/shared/api/geocode.service";
+import { useGenerateRecommendations } from "@/entities/recommendation";
+import type { GeocodeSuggestion } from "@/shared/api";
 import { AddressSearchInput } from "@/shared/ui/AddressSearchInput";
-import { Colors } from "@/shared/config/colors";
-import { TRANSPORT_MODE_CONFIG } from "@/shared/config/transport";
-import type { TransportMode } from "@/shared/types";
+import { Colors, TRANSPORT_MODE_CONFIG } from "@/shared/config";
+import type { TransportMode } from "@/shared/model";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
@@ -32,7 +31,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { MapPickerModal } from "@/widgets/location-picker/MapPickerModal";
+import { MapPickerModal } from "@/shared/ui/MapPickerModal";
 
 
 // ── Loading screen ────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/shared/config/colors';
+import { Colors } from '@/shared/config';
 import { useAuth } from '@/features/auth';
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { BottomSheet } from '@/shared/ui/BottomSheet';

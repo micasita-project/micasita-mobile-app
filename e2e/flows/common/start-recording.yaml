@@ -1,0 +1,12 @@
+appId: pe.edu.upc.micasita
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          notVisible: "Downloading .*|Loading from localhost.*|Descargando .*%.*"
+          timeout: 15000
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runScript: ../../scripts/start_recording.js

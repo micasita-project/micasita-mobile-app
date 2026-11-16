@@ -1,0 +1,21 @@
+# Sincronizar cada dígito con el campo controlado evita caracteres perdidos por la inyección rápida.
+appId: pe.edu.upc.micasita
+---
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "${FIELD_ID}"
+          waitToSettleTimeoutMs: 500
+      - eraseText
+      - evalScript: ${output.numberInputIndex = 0}
+      - repeat:
+          times: ${String(FIELD_VALUE).length}
+          commands:
+            - inputText: "${String(FIELD_VALUE).substring(output.numberInputIndex, output.numberInputIndex + 1)}"
+            - evalScript: ${output.numberInputIndex = output.numberInputIndex + 1}
+            - extendedWaitUntil:
+                visible:
+                  id: "${FIELD_ID}"
+                  text: "${String(FIELD_VALUE).substring(0, output.numberInputIndex)}"
+                timeout: 1500

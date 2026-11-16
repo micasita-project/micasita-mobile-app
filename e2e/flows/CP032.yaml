@@ -2,14 +2,15 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/admin.yaml
+- runFlow: common/start-recording.yaml
 - scrollUntilVisible:
     element:
-      id: "approve-E2E Pendiente Admin A"
+      id: "approve-Departamento amplio en San Borja"
     direction: DOWN
     timeout: 45000
 - tapOn:
     waitToSettleTimeoutMs: 2000
-    id: "approve-E2E Pendiente Admin A"
+    id: "approve-Departamento amplio en San Borja"
 - tapOn:
     text: ".*Sí, confirmar.*"
     waitToSettleTimeoutMs: 2000
@@ -17,18 +18,16 @@ appId: pe.edu.upc.micasita
 - tapOn:
     text: ".*OK.*"
     waitToSettleTimeoutMs: 2000
-- assertNotVisible: ".*E2E Pendiente Admin A.*"
+- assertNotVisible: ".*Departamento amplio en San Borja.*"
 - runFlow: common/user.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
+- runFlow: common/open-catalog.yaml
+- runFlow:
+    file: common/filter-price.yaml
+    env:
+      MIN_PRICE: "1501"
+      MAX_PRICE: "1501"
 - extendedWaitUntil:
-    visible: ".*Filtros.*"
-    timeout: 45000
-- scrollUntilVisible:
-    element:
-      text: ".*E2E Pendiente Admin A.*"
-    direction: DOWN
-    timeout: 120000
-- assertVisible: ".*E2E Pendiente Admin A.*"
+    visible: ".*Departamento amplio en San Borja.*"
+    timeout: 15000
+- assertVisible: ".*Departamento amplio en San Borja.*"
 - takeScreenshot: CP032-resultado

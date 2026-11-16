@@ -1,23 +1,28 @@
 # Completa y envía el registro desde el perfil de invitado. Parámetro: EMAIL.
 appId: pe.edu.upc.micasita
 ---
-- tapOn:
-    text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
-- tapOn:
-    text: ".*Crear cuenta.*"
-    waitToSettleTimeoutMs: 2000
+- runFlow:
+    when:
+      notVisible:
+        id: email-input
+    commands:
+      - tapOn:
+          text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
+          waitToSettleTimeoutMs: 2000
+      - tapOn:
+          text: ".*Crear cuenta.*"
+          waitToSettleTimeoutMs: 2000
 - tapOn:
     text: ".*Regístrate.*"
     waitToSettleTimeoutMs: 2000
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: "name-input"
-- inputText: "Nuevo"
+- inputText: "Valeria"
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: "lastname-input"
-- inputText: "Usuario"
+- inputText: "Salazar"
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: "email-input"
@@ -31,7 +36,7 @@ appId: pe.edu.upc.micasita
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: "password-input"
-- inputText: "Test-1234"
+- inputText: "Primavera2026!"
 - runFlow: hide-keyboard.yaml
 - scrollUntilVisible:
     element:
@@ -41,7 +46,7 @@ appId: pe.edu.upc.micasita
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: "confirm-password-input"
-- inputText: "Test-1234"
+- inputText: "Primavera2026!"
 - runFlow: hide-keyboard.yaml
 - tapOn:
     waitToSettleTimeoutMs: 2000

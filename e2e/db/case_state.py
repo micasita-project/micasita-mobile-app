@@ -3,6 +3,7 @@ import json,sys,time,os
 from pathlib import Path
 from context import *
 ROOT=Path(__file__).resolve().parents[1]
+SAMPLE=json.loads((ROOT/'sample_data.json').read_text())
 def media_urls(value,base):
     if isinstance(value,dict):return {key:media_urls(item,base) for key,item in value.items()}
     if isinstance(value,list):return [media_urls(item,base) for item in value]
@@ -12,14 +13,14 @@ def prepare(case):
     fixtures=json.loads((ROOT/'results/fixtures.json').read_text())
     media_base=os.environ.get('E2E_MEDIA_BASE_URL','http://10.0.2.2:8001').rstrip('/')
     with SessionLocal() as db:
-        u=db.query(User).filter_by(email='usuario@e2e-micasita.com').one()
+        u=db.query(User).filter_by(email='camila.rojas@example.com').one()
         w=db.query(Workplace).filter_by(user_id=u.id).order_by(Workplace.id).first()
         for extra in db.query(Workplace).filter(Workplace.user_id==u.id,Workplace.id!=w.id).all(): db.delete(extra)
         w.work_address='Primax, San Miguel';w.work_lat=-12.077;w.work_lon=-77.087
         pref=db.query(RecommendationPreference).filter_by(workplace_id=w.id).one()
         pref.budget=100 if case=='CP010' else 1400;pref.preferred_transportation='driving'
-        db.query(Favorite).delete()
-        db.query(RecommendationHistory).delete()
+        db.query(Favorite).filter_by(user_id=u.id).delete()
+        db.query(RecommendationHistory).filter_by(workplace_id=w.id).delete()
         baseline=ROOT/'results/baseline-recommendations.json'
         if baseline.exists() and case not in ['CP009','CP010']:
             db.add(RecommendationHistory(workplace_id=w.id,results=json.dumps(media_urls(json.loads(baseline.read_text()),media_base))))
@@ -27,9 +28,17 @@ def prepare(case):
             p=db.get(Property,row['id'])
             p.status=row['status'];p.price=row['price'];p.rejection_reason=row['reason'];p.hidden_by_user_block=False
             p.images=media_urls(p.images,media_base)
-        for p in db.query(Property).filter(Property.title.like('E2E Nuevo%')).all(): db.delete(p)
-        for usr in db.query(User).filter(User.email.in_(['victima@e2e-micasita.com','bloqueado@e2e-micasita.com'])):
-            usr.is_active=usr.email!='bloqueado@e2e-micasita.com'
+        owner=db.query(User).filter_by(email=SAMPLE['accounts']['owner']['email']).one()
+        created_titles=[SAMPLE['new_listing_default'],*SAMPLE['new_listing_titles'].values()]
+        for p in db.query(Property).filter(Property.publisher_id==owner.id,Property.title.in_(created_titles)).all(): db.delete(p)
+        if case=='CP001':
+            previous=db.query(User).filter_by(email=SAMPLE['registration']['email']).one_or_none()
+            if previous:
+                db.delete(previous)
+            from app.models.otp_code import OtpCode
+            db.query(OtpCode).filter_by(email=SAMPLE['registration']['email']).delete()
+        for usr in db.query(User).filter(User.email.in_(['diego.vargas@example.com','lucia.herrera@example.com'])):
+            usr.is_active=usr.email!='lucia.herrera@example.com'
         db.commit()
     (ROOT/'results/active-case').write_text(case)
     (ROOT/'results/api-events.jsonl').write_text('')
@@ -40,9 +49,11 @@ def verify(case):
     events=[e for e in events if e['case']==case]
     def calls(path,method=None):return [e for e in events if e['path']==path and (not method or e['method']==method) and e['status']==200]
     with SessionLocal() as db:
-        u=db.query(User).filter_by(email='usuario@e2e-micasita.com').one()
+        u=db.query(User).filter_by(email='camila.rojas@example.com').one()
         w=db.query(Workplace).filter_by(user_id=u.id).order_by(Workplace.id).first()
-        p=lambda title:db.query(Property).filter_by(title=title).one()
+        fixture_ids={row['title']:row['id'] for row in json.loads((ROOT/'results/fixtures.json').read_text())['properties']}
+        owner=db.query(User).filter_by(email=SAMPLE['accounts']['owner']['email']).one()
+        p=lambda title:db.get(Property,fixture_ids[title]) if title in fixture_ids else db.query(Property).filter_by(title=title,publisher_id=owner.id).one()
         if case=='CP002':assert db.query(User).filter_by(email=u.email).count()==1,'Se duplicó la cuenta'
         elif case=='CP003':
             works=db.query(Workplace).filter_by(user_id=u.id).all()
@@ -90,11 +101,11 @@ def verify(case):
                 assert hypot(pts[0]['latitude']-float(q['origin_lat']),pts[0]['longitude']-float(q['origin_lon']))<.003
                 assert hypot(pts[-1]['latitude']-float(q['dest_lat']),pts[-1]['longitude']-float(q['dest_lon']))<.003
             if case=='CP042':assert any(e['body'].get('franjas') and len(e['body']['franjas'])==3 for e in routes)
-        elif case=='CP017':assert db.query(Favorite).filter_by(user_id=u.id,property_id=p('E2E Ficha Completa').id).count()==1
+        elif case=='CP017':assert db.query(Favorite).filter_by(user_id=u.id,property_id=p('Departamento luminoso en San Miguel').id).count()==1
         elif case in ['CP025','CP026']:
-            prop=p('E2E Nuevo '+case);assert prop.status=='pending' and len(prop.images)>0
+            prop=p(SAMPLE['new_listing_titles'][case]);assert prop.status=='pending' and len(prop.images)>0
             if case=='CP025':assert {'Gimnasio','Piscina','WiFi'}.issubset(set(prop.features))
-        elif case=='CP027':assert p('E2E Pendiente Dueno').status=='pending' and p('E2E Pendiente Dueno').price==1300
+        elif case=='CP027':assert p('Departamento cerca de la universidad').status=='pending' and p('Departamento cerca de la universidad').price==1300
         elif case=='CP030':
             pending=calls('/admin/properties/pending','GET')
             assert pending,'No se solicitó la lista de moderación'
@@ -104,30 +115,33 @@ def verify(case):
             fetched={row['id'] for e in calls('/admin/users','GET') for row in e['body']}
             assert fetched=={usr.id for usr in db.query(User).all()},'No se cargaron todos los usuarios'
         elif case=='CP035':
-            filtered=[e for e in calls('/admin/users','GET') if e['query'].get('search')=='usuario@e2e-micasita.com']
-            assert filtered and [x['email'] for x in filtered[-1]['body']]==['usuario@e2e-micasita.com']
+            filtered=[e for e in calls('/admin/users','GET') if e['query'].get('search')=='camila.rojas@example.com']
+            assert filtered and [x['email'] for x in filtered[-1]['body']]==['camila.rojas@example.com']
         elif case=='CP028':
-            fetched=calls('/properties/mine','GET');owner=db.query(User).filter_by(email='dueno@e2e-micasita.com').one()
+            fetched=calls('/properties/mine','GET');owner=db.query(User).filter_by(email='carlos.mendoza@example.com').one()
             assert fetched and {x['id'] for x in fetched[-1]['body']}=={p.id for p in db.query(Property).filter_by(publisher_id=owner.id).all()}
         elif case=='CP032':
-            assert p('E2E Pendiente Admin A').status=='approved'
-            assert any(x['title']=='E2E Pendiente Admin A' for e in calls('/properties/','GET') for x in e['body']['items']),'No se sirvió la aprobada en el catálogo del otro usuario'
+            assert p('Departamento amplio en San Borja').status=='approved'
+            assert any(x['title']=='Departamento amplio en San Borja' for e in calls('/properties/','GET') for x in e['body']['items']),'No se sirvió la aprobada en el catálogo del otro usuario'
         elif case=='CP033':
-            assert p('E2E Pendiente Admin B').status=='rejected' and p('E2E Pendiente Admin B').rejection_reason=='Fotos borrosas E2E'
+            assert p('Departamento amoblado en Lince').status=='rejected' and p('Departamento amoblado en Lince').rejection_reason=='Las fotos no son claras'
             feed=calls('/properties/','GET');assert feed
-            assert all(x['title']!='E2E Pendiente Admin B' for e in feed for x in e['body']['items'])
+            assert all(x['title']!='Departamento amoblado en Lince' for e in feed for x in e['body']['items'])
         elif case=='CP036':
-            assert not db.query(User).filter_by(email='victima@e2e-micasita.com').one().is_active
-            assert p('E2E Casa Victima').hidden_by_user_block
+            assert not db.query(User).filter_by(email='diego.vargas@example.com').one().is_active
+            assert p('Departamento junto al centro comercial').hidden_by_user_block
             feed=calls('/properties/','GET');assert feed
-            assert all(x['title']!='E2E Casa Victima' for e in feed for x in e['body']['items'])
+            assert all(x['title']!='Departamento junto al centro comercial' for e in feed for x in e['body']['items'])
         elif case in ['CP044','CP045']:
-            prop=p('E2E Aprobada Dueno' if case=='CP044' else 'E2E Rechazada Dueno')
+            prop=p('Departamento con vista al parque' if case=='CP044' else 'Minidepartamento cerca del mercado')
             assert prop.status=='pending' and prop.price==1450,'Edición no persistida o no regresó a pendiente'
         if case in ['CP033','CP036']:
-            fetched={row['id'] for e in calls('/properties/','GET') for row in e['body']['items']}
-            expected={row.id for row in db.query(Property).filter_by(status='approved',hidden_by_user_block=False).all()}
-            assert fetched==expected,'Se debe revisar el catálogo completo con el otro usuario'
+            price=1601 if case=='CP033' else 1351
+            filtered=[e for e in calls('/properties/','GET') if e['query'].get('min_price')==str(price) and e['query'].get('max_price')==str(price)]
+            assert filtered,'La UI debe buscar por el precio reservado de la vivienda modificada'
+            expected={row.id for row in db.query(Property).filter_by(status='approved',hidden_by_user_block=False,price=price).all()}
+            assert not expected,'La vivienda rechazada u oculta no debe formar parte del catálogo público'
+            assert all(e['body']['items']==[] and e['body']['total']==0 for e in filtered),'El catálogo filtrado debe confirmar la ausencia de la vivienda'
     print(case+': postcondiciones verificadas en BD/tráfico HTTP real')
 if __name__=='__main__':
     (prepare if sys.argv[1]=='prepare' else verify)(sys.argv[2])

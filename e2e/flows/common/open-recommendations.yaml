@@ -1,0 +1,21 @@
+# Entrar a IA y comprobar la pantalla antes de buscar sus tarjetas.
+appId: pe.edu.upc.micasita
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - openLink:
+          link: micasitaapp://recommend
+          autoVerify: true
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          text: "IA(, tab, [0-9]+ of [0-9]+)?"
+          waitToSettleTimeoutMs: 2000
+- extendedWaitUntil:
+    visible: "Recomendaciones IA"
+    timeout: 15000
+- runFlow: dismiss-dev-warning.yaml

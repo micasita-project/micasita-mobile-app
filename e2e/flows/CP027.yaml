@@ -2,23 +2,18 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/owner.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
-- extendedWaitUntil:
-    visible: ".*Filtros.*"
-    timeout: 45000
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: ".*Mis publicaciones.*"
     waitToSettleTimeoutMs: 2000
 - scrollUntilVisible:
     element:
-      id: "edit-E2E Pendiente Dueno"
+      id: "edit-Departamento cerca de la universidad"
     direction: DOWN
     timeout: 45000
 - tapOn:
     waitToSettleTimeoutMs: 2000
-    id: "edit-E2E Pendiente Dueno"
+    id: "edit-Departamento cerca de la universidad"
 - assertVisible: "Publicación en revisión"
 - assertVisible: "Tu anuncio está siendo revisado.*"
 - takeScreenshot: CP027-resultado

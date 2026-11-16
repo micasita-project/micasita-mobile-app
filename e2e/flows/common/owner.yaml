@@ -1,12 +1,13 @@
 # Preparación compartida; no es un caso independiente del Excel.
 appId: pe.edu.upc.micasita
 ---
-- runFlow: start.yaml
+- runFlow: start-login.yaml
 - runFlow:
     file: login.yaml
     env:
-      EMAIL: dueno@e2e-micasita.com
-      PASSWORD: Test-1234
+      EMAIL: carlos.mendoza@example.com
+      PASSWORD: Primavera2026!
 - extendedWaitUntil:
     visible: "Mapa(, tab, [0-9]+ of [0-9]+)?"
     timeout: 45000
+- runFlow: open-catalog.yaml

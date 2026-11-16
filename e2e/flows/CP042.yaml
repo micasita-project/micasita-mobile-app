@@ -2,9 +2,8 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/user.yaml
-- tapOn:
-    text: "IA(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
+- runFlow: common/open-recommendations.yaml
+- runFlow: common/start-recording.yaml
 - scrollUntilVisible:
     element:
       id: "recommend-insight-0"

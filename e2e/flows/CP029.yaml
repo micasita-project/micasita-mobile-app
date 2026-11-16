@@ -2,31 +2,26 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/owner.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
-- extendedWaitUntil:
-    visible: ".*Filtros.*"
-    timeout: 45000
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: ".*Mis publicaciones.*"
     waitToSettleTimeoutMs: 2000
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: listings-filter-pending
-- assertVisible: ".*E2E Pendiente Dueno.*"
-- assertNotVisible: ".*E2E Aprobada Dueno.*"
-- assertNotVisible: ".*E2E Rechazada Dueno.*"
+- assertVisible: ".*Departamento cerca de la universidad.*"
+- assertNotVisible: ".*Departamento con vista al parque.*"
+- assertNotVisible: ".*Minidepartamento cerca del mercado.*"
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: listings-filter-approved
-- assertVisible: ".*E2E Aprobada Dueno.*"
-- assertNotVisible: ".*E2E Pendiente Dueno.*"
-- assertNotVisible: ".*E2E Rechazada Dueno.*"
+- assertVisible: ".*Departamento con vista al parque.*"
+- assertNotVisible: ".*Departamento cerca de la universidad.*"
+- assertNotVisible: ".*Minidepartamento cerca del mercado.*"
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: listings-filter-rejected
-- assertVisible: ".*E2E Rechazada Dueno.*"
-- assertNotVisible: ".*E2E Aprobada Dueno.*"
-- assertNotVisible: ".*E2E Pendiente Dueno.*"
+- assertVisible: ".*Minidepartamento cerca del mercado.*"
+- assertNotVisible: ".*Departamento con vista al parque.*"
+- assertNotVisible: ".*Departamento cerca de la universidad.*"
 - takeScreenshot: CP029-resultado

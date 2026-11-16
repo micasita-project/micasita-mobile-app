@@ -1,0 +1,14 @@
+# Catálogo con estado limpio e independiente del caso anterior.
+appId: pe.edu.upc.micasita
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - clearState
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: start.yaml
+- runFlow: open-catalog.yaml

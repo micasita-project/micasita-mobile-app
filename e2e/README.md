@@ -1,5 +1,7 @@
 # E2E funcionales de la app MiCasita
 
+La revisión de preparación y tiempos de los 44 CP se documenta en [OPTIMIZATION.md](OPTIMIZATION.md).
+
 La referencia versionada es [catalog.json](catalog.json): contiene los pasos,
 precondiciones y resultados esperados de los **44 casos de la app**.
 [TRACEABILITY.md](TRACEABILITY.md) los relaciona con los flujos y sus comprobaciones.
@@ -36,16 +38,18 @@ independientes de ETL, scraping o ejecución de procesos de negocio.
 - Simulador iOS disponible: iPhone 17 Pro, iOS 26.5. Los resultados iOS se registran por separado.
 - App de desarrollo instalada: `pe.edu.upc.micasita`, con Metro en 8081 para
   Android y 8082 para iOS.
-- Backend real en 8001; PostgreSQL en la base **micasita_e2e**.
+- Backend real en 8001; PostgreSQL en **micasita_e2e**, copia de **micasita_db** local
+  poblada con el seed, más las cuentas y viviendas específicas de las pruebas.
 - OSRM **público**: `routing.openstreetmap.de/routed-car`, `routed-bike` y
   `routed-foot`. Geocodificación pública real. No se usan mapas OSRM descargados.
 - Modelo real de recomendaciones. No se inyectan puntajes ni franjas inventadas.
 - Las fotos se seleccionan con los selectores nativos reales de Android e iOS.
   Se preparan seis imágenes identificables: `Pictures/MiCasitaE2E` en Android y
   la fototeca del simulador en iOS mediante `simctl addmedia`.
-- Para evitar envíos externos, solo el transporte de correo y Cloudinary se
-  sustituyen en el servidor E2E: OTP persistido real y fotos guardadas/servidas
-  localmente. La creación, edición, autorización y moderación usan las rutas reales.
+- Se desactiva el transporte de correo para evitar envíos externos; el OTP se
+  persiste realmente. Las imágenes nuevas usan `IMAGE_STORAGE=local`, la misma
+  implementación de disco del backend de desarrollo, sin sustituir el uploader
+  de Cloudinary. Las imágenes existentes del seed conservan sus URLs.
 
 No ejecutar esta suite contra producción. El acceso de los scripts de datos está
 limitado explícitamente a `micasita_e2e`. Metro recibe sus variables de entorno sin
@@ -141,12 +145,30 @@ en `environment.json`. El consolidador rechaza mezclar Android e iOS y produce
 
 ## Preparación de datos
 
-Reconstruir los datos conocidos (este paso **borra únicamente la base E2E**):
+Primero, la base local `micasita_db` debe estar poblada con el seed actual. Si se
+quiere reconstruirla, desde el backend ejecutar `venv/bin/python scripts/local_database.py --rebuild-local`;
+ese comando hace un respaldo y reemplaza explícitamente la base local.
+
+Preparar E2E (este paso **reemplaza únicamente la base E2E**, con respaldo previo):
 
 ```sh
 cd ../micasita-ai-backend
 PYTHONPATH=. venv/bin/python ../micasita-mobile-app/e2e/db/reset_and_seed.py
 ```
+
+La preparación clona `micasita_db`, conserva todas sus viviendas y agrega 25
+viviendas y seis usuarios E2E. No reconstruye el esquema como un catálogo vacío.
+Los datos del seed permanecen en la copia. Las cuentas de prueba usan los correos
+de dominio `e2e-micasita.com`.
+
+Los flujos de detalle, favoritos y moderación encuentran las viviendas de prueba
+mediante los filtros de precio reales de la app. Se reservan 1301, 1501, 1601 y
+1351, ausentes del seed actual. CP033 y CP036 verifican el catálogo filtrado vacío
+y su respuesta HTTP después del rechazo o bloqueo, además del estado en BD.
+La paginación CP006 se comprueba independientemente de los títulos del seed.
+
+Al preparar una copia nueva, se archiva la referencia anterior de recomendaciones.
+Se debe generar una nueva con `e2e/prepare.sh` antes de ejecutar la suite.
 
 Desde la carpeta de la app, en terminales separadas:
 
@@ -202,11 +224,121 @@ bash e2e/run_flow.sh CP038
 
 Esta ejecución individual no reemplaza el caso completo gestionado por la suite.
 
+### Grabar iPhone: un video y timeline por CP
+
+Con el iPhone abierto en Device Hub, el build de desarrollo instalado y los
+servicios de iOS iniciados:
+
+```sh
+npm run test:e2e -- --platform ios --device UDID_DEL_SIMULADOR --record-video
+```
+
+Cada flujo marca su pantalla inicial después de preparar los datos y navegar.
+La grabación comienza antes de la primera acción evaluada, con la app abierta y
+sin el aviso de descarga de desarrollo. Conserva las acciones completas del caso
+y mantiene el resultado final visible unos segundos. Los relanzamientos que son
+parte de CP040/CP041 sí quedan registrados. CP001 conserva registro y OTP en un
+solo video.
+
+En `results/suite-ios-FECHA-HORA/`, `videos.md` enlaza todos los resultados. Cada
+carpeta `CPxxx/` contiene su MP4 original, `timeline.md`, `timeline.csv`,
+`timeline.json` y un SRT independiente. No se editan ni incrustan rótulos en los
+videos. CP043 se informa sin video si no se cumple la precondición de WhatsApp.
+
+Para una filmación sin imágenes importadas anteriormente, usar un simulador
+limpio. La grabación no borra la fototeca del dispositivo existente.
+
+Los datos visibles están definidos en [sample_data.json](sample_data.json):
+nombres de personas, correos de ejemplo sin números ni códigos, títulos y
+descripciones naturales. El registro usa un correo fijo de demostración cuya
+cuenta anterior se elimina solo de la base aislada al preparar CP001. Las fotos
+se descargan del catálogo existente y las nuevas cargas usan almacenamiento
+local. Los identificadores técnicos permanecen en los archivos e informes.
+
+### Grabar Android y generar el timeline
+
+Con el emulador, Metro y el backend E2E ya iniciados:
+
+```sh
+python3 e2e/record_android.py --device emulator-5554
+```
+
+Ejecuta todos los casos con el mismo runner y graba su pantalla continuamente,
+sin editar el video. Para grabar solo algunos, añadir `--cases CP003,CP006`.
+Se requiere un Android cuyo `screenrecord` admita `--time-limit 0`; el Pixel 7a
+de esta ejecución lo permite. No ejecutar otra suite ni manipular la app durante
+la grabación: las pruebas controlan sus pantallas y comparten la base E2E.
+
+Los archivos se generan en `e2e/results/recording-android-FECHA-HORA/`:
+
+- `android-original.mp4`: video vertical de 720 × 1600, sin cortes ni rótulos.
+- `timeline.md`, `timeline.csv` y `timeline.json`: inicio, fin, nombre y resultado
+  de cada CP, incluyendo preparación y verificación posterior.
+- `cases.srt`: subtítulos independientes para importar al editor; no modifican
+  el MP4. Los casos bloqueados figuran en el timeline, sin simular su ejecución.
+- `suite/`: informes y evidencias de esta pasada, incluidos los eventos reales
+  `case-events.jsonl`; `execution.log` y `screenrecord.log` conservan los logs.
+
+Las marcas se calculan respecto al inicio del comando ADB y pueden tener un
+pequeño desfase por el arranque del encoder; no son marcas exactas por fotograma.
+El JSON indica `capture_complete` tras verificar la duración del MP4 y los eventos
+de todos los CP seleccionados. Si una prueba falla, se conserva ese resultado y
+la grabación continúa con los demás casos.
+
+El video se almacena primero en Android y después se copia a la Mac. Reservar
+espacio suficiente en ambos. La tasa de 800 kb/s reduce el tamaño en este emulador;
+el archivo temporal de Android se conserva hasta comprobar la copia local.
+
+### Preparación y tiempo de cada caso
+
+Un caso independiente necesita precondiciones controladas, pero no tiene que
+repetir todas las pantallas de navegación de la app. En Android:
+
+- CP006, CP007, CP008, CP011 y CP043 usan `common/catalog.yaml`: estado limpio y
+  entrada al catálogo con el enlace real `micasitaapp://housing`.
+- `common/user.yaml`, `common/owner.yaml` y `common/admin.yaml` preparan sus
+  cuentas desde `micasitaapp://login`. Escriben las credenciales y envían el
+  formulario real. El propietario termina en el catálogo para no repetir esa
+  navegación en cada caso de publicación.
+- Registro, correo duplicado, credenciales inválidas, bloqueo, cierre de sesión
+  y persistencia también pueden empezar en el formulario. Se conservan sus
+  comprobaciones de OTP, errores, cierre y relanzamiento, según el caso.
+- CP038 mantiene el recorrido desde Perfil para cubrir también el acceso al
+  formulario por navegación normal.
+
+La entrada a Recomendaciones usa `common/open-recommendations.yaml` y comprueba
+su encabezado antes de buscar tarjetas. El botón Publicar y la aplicación de
+filtros comprueban que la pantalla cambió, con un máximo de dos reintentos ante
+un toque que no se procesó. En Android se cierra mediante su botón el aviso de
+LogBox del build de desarrollo si está presente; los mensajes permanecen en los
+logs y los errores no se suprimen.
+
+CP006 sigue verificando 10 viviendas iniciales, 20 después de desplazarse y
+respuestas reales de páginas con `skip=0` y `skip=10`, ambas de 10 elementos.
+
+En una comparación local del 5 de noviembre de 2026, el video completo de CP006,
+incluida su preparación, pasó de 61,6 a 24,3 segundos. Son dos ejecuciones medidas,
+no una duración garantizada. La mejora no recorta ni acelera el video.
+
+Los casos siguen limpiando el estado de la app y preparando sus datos de forma
+independiente. No se hereda la sesión que dejó otro CP. Los enlaces directos
+acortan la navegación y no inyectan sesiones, respuestas ni resultados de negocio.
+Los formularios, el teclado, los selectores de fotos, las acciones de moderación
+y las comprobaciones en BD/HTTP permanecen en sus flujos.
+
+El campo de dirección verifica el texto completo antes de esperar sugerencias.
+Si la escritura pierde un carácter, el helper vuelve a escribirlo y deja la
+evidencia del intento; no espera al geocodificador con una dirección incorrecta.
+Los timeouts de búsqueda, rutas y animaciones se mantienen como límites máximos,
+no se convierten en esperas fijas ni se eliminan para aparentar menor duración.
+
 ## Resultados y evidencias
 
 El [resumen versionado de iOS del 4 de noviembre de 2026](RESULTS.md)
 consolida una pasada completa y sus repeticiones: **43 PASS, 0 FAIL y CP043 BLOCKED**
 por WhatsApp. Los tres casos de fotografías aprobaron con el selector nativo de iOS.
+Esa ejecución usó el catálogo E2E anterior; no valida automáticamente la preparación
+actual basada en la copia del seed.
 
 Cada ejecución genera `e2e/results/suite-FECHA-HORA/`:
 

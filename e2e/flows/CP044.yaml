@@ -2,27 +2,20 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/owner.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
-- extendedWaitUntil:
-    visible: ".*Filtros.*"
-    timeout: 45000
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: ".*Mis publicaciones.*"
     waitToSettleTimeoutMs: 2000
 - scrollUntilVisible:
     element:
-      id: "edit-E2E Aprobada Dueno"
+      id: "edit-Departamento con vista al parque"
     direction: DOWN
     timeout: 45000
 - tapOn:
     waitToSettleTimeoutMs: 2000
-    id: "edit-E2E Aprobada Dueno"
+    id: "edit-Departamento con vista al parque"
 - assertVisible: "Paso 1 de 4"
-- tapOn:
-    waitToSettleTimeoutMs: 2000
-    id: "publish-next"
+- runFlow: common/publish-next.yaml
 - scrollUntilVisible:
     element:
       id: "publish-price"
@@ -34,13 +27,9 @@ appId: pe.edu.upc.micasita
 - eraseText
 - inputText: "1450"
 - runFlow: common/hide-keyboard.yaml
-- tapOn:
-    waitToSettleTimeoutMs: 2000
-    id: "publish-next"
+- runFlow: common/publish-next.yaml
 - assertVisible: "Paso 3 de 4"
-- tapOn:
-    waitToSettleTimeoutMs: 2000
-    id: "publish-next"
+- runFlow: common/publish-next.yaml
 - assertVisible: "Paso 4 de 4"
 - tapOn:
     waitToSettleTimeoutMs: 2000
@@ -53,7 +42,7 @@ appId: pe.edu.upc.micasita
     waitToSettleTimeoutMs: 2000
 - scrollUntilVisible:
     element:
-      text: ".*E2E Aprobada Dueno.*"
+      text: ".*Departamento con vista al parque.*"
     direction: DOWN
     timeout: 45000
 - assertVisible: ".*Pendiente.*"

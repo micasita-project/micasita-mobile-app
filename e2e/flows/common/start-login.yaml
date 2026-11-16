@@ -1,0 +1,20 @@
+# Entrada limpia al formulario; las credenciales se escriben desde la UI.
+appId: pe.edu.upc.micasita
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - clearState
+      - openLink:
+          link: micasitaapp://login
+          autoVerify: true
+      - extendedWaitUntil:
+          visible:
+            id: email-input
+          timeout: 45000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: start.yaml

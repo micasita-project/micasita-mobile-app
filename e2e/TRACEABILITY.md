@@ -1,15 +1,22 @@
 # Trazabilidad E2E de la app: 44 casos activos
 
+La revisión de preparación y tiempos de los 44 CP se documenta en [OPTIMIZATION.md](OPTIMIZATION.md).
+
 Referencia versionada: [catalog.json](catalog.json), con los pasos, precondiciones
 y resultados esperados de cada caso. El documento externo de origen no es
 necesario para consultar esta matriz ni para ejecutar la suite.
 
 Esta matriz describe cobertura implementada. Los resultados ejecutados se registran en `results/suite-*/resumen.md` (Android) y `results/suite-ios-*/resumen.md` (iOS); tener un archivo no equivale a una prueba aprobada. Los informes consolidados no mezclan plataformas.
 
-Ejecución iOS del **4 de noviembre de 2026**: iPhone 17 Pro, iOS 26.5, Device Hub.
-Resultado consolidado de la pasada completa y sus repeticiones: **43 PASS, 0 FAIL,
-1 BLOCKED (CP043, WhatsApp)**. CP024–CP026 aprobaron con el selector nativo de Fotos.
-[Resumen versionado de resultados de iOS](RESULTS.md).
+Última ejecución iOS: iniciada el **5 de noviembre** y finalizada el
+**6 de noviembre de 2026**, iPhone 17 Pro, iOS 26.5. Resultado consolidado de la
+pasada y sus repeticiones: **43 PASS, 0 FAIL, 1 BLOCKED (CP043, WhatsApp)**.
+Se generaron **43 videos individuales y 44 timelines**, con la app ya abierta al
+inicio de cada captura y datos visibles naturales. Backend real, copia del seed
+completo e imágenes nuevas en disco local. [Resumen versionado](RESULTS.md).
+
+Las ejecuciones Android y el iOS del 4 de noviembre se conservan como históricos
+en ese mismo resumen; no se mezclan plataformas ni se ocultan intentos fallidos.
 
 El catálogo contiene **44 casos de prueba activos**. CP005 (HU03, limpieza ETL)
 permanece únicamente como referencia histórica excluida. Se mantienen los
@@ -21,7 +28,7 @@ identificadores de los demás casos, sin renumerarlos.
 | CP002 | Impedir el registro con un correo ya registrado | [CP002.yaml](flows/CP002.yaml) | Cuenta única en BD |
 | CP003 | Guardar un lugar de trabajo con una dirección válida de Lima | [CP003.yaml](flows/CP003.yaml) | Trabajo y coordenadas persistidos; pin visible en captura |
 | CP004 | Rechazar una dirección no seleccionada de la lista o fuera de Lima | [CP004.yaml](flows/CP004.yaml) | Sin trabajo inválido persistido |
-| CP006 | Mostrar el catálogo de 10 en 10 con carga al desplazarse | [CP006.yaml](flows/CP006.yaml) | Peticiones de páginas 0 y 10 con 10 elementos |
+| CP006 | Mostrar el catálogo de 10 en 10 con carga al desplazarse | [CP006.yaml](flows/CP006.yaml) | Android: entrada directa al catálogo con estado limpio; peticiones de páginas 0 y 10 con 10 elementos |
 | CP007 | Mostrar solo las viviendas aprobadas | [CP007.yaml](flows/CP007.yaml) | Estados de todas las respuestas públicas |
 | CP008 | Filtrar viviendas por rango de precio | [CP008.yaml](flows/CP008.yaml) | Precios de cada respuesta filtrada |
 | CP009 | Mostrar las recomendaciones ordenadas por puntaje de coincidencia | [CP009.yaml](flows/CP009.yaml) | Orden, tiempos e historial persistido |
@@ -48,10 +55,10 @@ identificadores de los demás casos, sin renumerarlos.
 | CP030 | Listar las propiedades pendientes en el panel del administrador | [CP030.yaml](flows/CP030.yaml) | Lista completa de pendientes comparada con BD |
 | CP031 | Mostrar los botones de moderación en cada tarjeta | [CP031.yaml](flows/CP031.yaml) | Aserciones UI y captura |
 | CP032 | Aprobar una publicación y verla en el catálogo | [CP032.yaml](flows/CP032.yaml) | Estado aprobado persistido y catálogo con otro usuario |
-| CP033 | Rechazar una publicación con motivo | [CP033.yaml](flows/CP033.yaml) | Rechazo y motivo persistidos; catálogo completo con otro usuario |
+| CP033 | Rechazar una publicación con motivo | [CP033.yaml](flows/CP033.yaml) | Rechazo y motivo persistidos; búsqueda por precio reservado vacía con otro usuario |
 | CP034 | Mostrar el listado de usuarios registrados | [CP034.yaml](flows/CP034.yaml) | Lista completa recibida comparada con los usuarios en BD |
 | CP035 | Buscar un usuario por correo | [CP035.yaml](flows/CP035.yaml) | Petición filtrada y respuesta con un único correo esperado |
-| CP036 | Bloquear una cuenta y desactivar sus propiedades | [CP036.yaml](flows/CP036.yaml) | Cuenta bloqueada, propiedades ocultas y catálogo completo con otro usuario |
+| CP036 | Bloquear una cuenta y desactivar sus propiedades | [CP036.yaml](flows/CP036.yaml) | Cuenta bloqueada, propiedades ocultas y búsqueda por precio reservado vacía con otro usuario |
 | CP037 | Denegar el inicio de sesión a una cuenta bloqueada | [CP037.yaml](flows/CP037.yaml) | Aserciones UI y captura |
 | CP038 | Iniciar sesión con credenciales correctas | [CP038.yaml](flows/CP038.yaml) | Aserciones UI y captura |
 | CP039 | Rechazar credenciales incorrectas | [CP039.yaml](flows/CP039.yaml) | Aserciones UI y captura |
@@ -71,5 +78,5 @@ identificadores de los demás casos, sin renumerarlos.
 - CP013 comprueba visualmente los pines. CP014/CP015 localizan el pin en la captura original y `run_suite.py` inyecta un toque físico Android en ese punto; CP015 también detecta la línea renderizada y verifica los extremos de la geometría vial.
 - CP043 comprueba la aplicación externa y el mensaje prellenado sin enviarlo. No se sustituye WhatsApp con una aplicación falsa.
 - El backend, PostgreSQL, geocodificación, OSRM y el modelo de recomendaciones son reales.
-- Solo el transporte de correo y el almacenamiento de imágenes Cloudinary se sustituyen por almacenamiento local en el servidor E2E.
+- Solo se sustituye el transporte de correo. Las imágenes nuevas usan el almacenamiento local nativo del backend (`IMAGE_STORAGE=local`); las URLs de imágenes del seed se conservan.
 - Una precondición externa faltante se informa como BLOCKED, nunca como PASS.

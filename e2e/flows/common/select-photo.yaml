@@ -31,7 +31,7 @@ appId: pe.edu.upc.micasita
           index: 0
           waitToSettleTimeoutMs: 2000
       - tapOn:
-          text: "OK"
+          text: "OK|Done|Listo|Add.*|Agregar.*|Añadir.*"
           waitToSettleTimeoutMs: 2000
 - assertVisible:
     id: "selected-photo-0"

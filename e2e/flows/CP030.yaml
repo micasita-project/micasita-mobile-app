@@ -2,17 +2,18 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/admin.yaml
-- assertVisible: ".*E2E Pendiente Dueno.*"
+- runFlow: common/start-recording.yaml
+- assertVisible: ".*Departamento cerca de la universidad.*"
 - scrollUntilVisible:
     element:
-      text: ".*E2E Pendiente Admin A.*"
+      text: ".*Departamento amplio en San Borja.*"
     direction: DOWN
     timeout: 45000
-- assertVisible: ".*E2E Pendiente Admin A.*"
+- assertVisible: ".*Departamento amplio en San Borja.*"
 - scrollUntilVisible:
     element:
-      text: ".*E2E Pendiente Admin B.*"
+      text: ".*Departamento amoblado en Lince.*"
     direction: DOWN
     timeout: 45000
-- assertVisible: ".*E2E Pendiente Admin B.*"
+- assertVisible: ".*Departamento amoblado en Lince.*"
 - takeScreenshot: CP030-resultado

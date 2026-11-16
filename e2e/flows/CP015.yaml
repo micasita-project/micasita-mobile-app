@@ -1,5 +1,6 @@
 appId: pe.edu.upc.micasita
 ---
+- runFlow: common/start-recording.yaml
 - runFlow:
     when:
       platform: iOS

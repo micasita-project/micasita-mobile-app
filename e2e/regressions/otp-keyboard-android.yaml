@@ -1,0 +1,46 @@
+# Pixel 7a, 1080x2400: pegar con el menú nativo y reabrir el teclado desde ambas puntas.
+# Código parcial para no ejecutar la verificación automática de una cuenta.
+appId: pe.edu.upc.micasita
+---
+- runFlow: ../flows/common/start.yaml
+- openLink:
+    link: 'micasitaapp://verify-email?email=valeria.salazar@example.com'
+    autoVerify: true
+- extendedWaitUntil:
+    visible:
+      id: otp-input
+    timeout: 15000
+- tapOn:
+    id: otp-input
+- inputText: '5283'
+- longPressOn:
+    point: '12%,43%'
+- takeScreenshot: otp-menu-copiar-android
+- tapOn: 'Copiar|Copy'
+- eraseText: 4
+- longPressOn:
+    id: otp-input
+- tapOn: 'Pegar|Paste'
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: otp-pegado-android
+- eraseText: 4
+- inputText: '12'
+- pressKey: Back
+- tapOn:
+    id: otp-box
+    index: 0
+- inputText: '3'
+- assertVisible:
+    id: otp-input
+    text: '123'
+- takeScreenshot: otp-primer-toque-android
+- pressKey: Back
+- tapOn:
+    id: otp-box
+    index: 5
+- inputText: '4'
+- assertVisible:
+    id: otp-input
+    text: '1234'
+- takeScreenshot: otp-ultimo-toque-android

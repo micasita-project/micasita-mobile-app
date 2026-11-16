@@ -1,7 +1,10 @@
 """Acceso exclusivo a micasita_e2e; importar antes de los modelos del backend."""
 from sqlalchemy.engine.url import make_url
 from app.core.config import settings
-settings.DATABASE_URL = make_url(settings.DATABASE_URL).set(database='micasita_e2e').render_as_string(hide_password=False)
+source_url = make_url(settings.DATABASE_URL)
+if source_url.host not in {'localhost', '127.0.0.1', '::1'} or source_url.query:
+    raise RuntimeError('E2E exige PostgreSQL local, sin parámetros adicionales de conexión')
+settings.DATABASE_URL = source_url.set(database='micasita_e2e').render_as_string(hide_password=False)
 from app.core.database import Base, SessionLocal, engine
 if engine.url.database != 'micasita_e2e':
     raise RuntimeError('Solo se permite micasita_e2e')

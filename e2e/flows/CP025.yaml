@@ -2,17 +2,10 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/owner.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
-- extendedWaitUntil:
-    visible: ".*Filtros.*"
-    timeout: 45000
-- tapOn:
-    text: ".*Publicar.*"
-    waitToSettleTimeoutMs: 2000
+- runFlow: common/open-publish.yaml
 - assertVisible: "Paso 1 de 4"
 - runFlow: common/publish-step4.yaml
+- runFlow: common/start-recording.yaml
 - scrollUntilVisible:
     element:
       id: "amenity-Gimnasio"
@@ -58,13 +51,13 @@ appId: pe.edu.upc.micasita
     waitToSettleTimeoutMs: 2000
 - scrollUntilVisible:
     element:
-      text: ".*E2E Nuevo CP025.*"
+      text: ".*Departamento luminoso frente al parque.*"
     direction: DOWN
     timeout: 45000
 - assertVisible: ".*Pendiente.*"
 - tapOn:
     waitToSettleTimeoutMs: 2000
-    id: "listing-card-E2E Nuevo CP025"
+    id: "listing-card-Departamento luminoso frente al parque"
 - scrollUntilVisible:
     element:
       text: Características

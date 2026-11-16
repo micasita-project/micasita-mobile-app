@@ -2,13 +2,14 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/admin.yaml
+- runFlow: common/start-recording.yaml
 - scrollUntilVisible:
     element:
-      id: "approve-E2E Pendiente Dueno"
+      id: "approve-Departamento cerca de la universidad"
     direction: DOWN
     timeout: 45000
 - assertVisible:
-    id: "approve-E2E Pendiente Dueno"
+    id: "approve-Departamento cerca de la universidad"
 - assertVisible:
-    id: "reject-E2E Pendiente Dueno"
+    id: "reject-Departamento cerca de la universidad"
 - takeScreenshot: CP031-resultado

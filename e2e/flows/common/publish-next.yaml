@@ -1,0 +1,8 @@
+# El aviso de LogBox puede aparecer al cargar el mapa y tapar el pie del wizard.
+# Cada caso conserva su aserción de avance o de error de validación.
+appId: pe.edu.upc.micasita
+---
+- runFlow: dismiss-dev-warning.yaml
+- tapOn:
+    waitToSettleTimeoutMs: 2000
+    id: "publish-next"

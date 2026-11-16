@@ -2,9 +2,8 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/user.yaml
-- tapOn:
-    text: "IA(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
+- runFlow: common/open-recommendations.yaml
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: ".*Agregar lugar de trabajo.*"
     waitToSettleTimeoutMs: 2000
@@ -18,10 +17,10 @@ appId: pe.edu.upc.micasita
     id: "workplace-budget"
 - inputText: "1400"
 - runFlow: common/hide-keyboard.yaml
-- tapOn:
-    waitToSettleTimeoutMs: 2000
-    id: "address-search-input"
-- inputText: "xyz123"
+- runFlow:
+    file: common/type-address.yaml
+    env:
+      ADDRESS_TEXT: "Avenida Las Flores"
 - runFlow: common/hide-keyboard.yaml
 - tapOn:
     waitToSettleTimeoutMs: 2000
@@ -30,11 +29,10 @@ appId: pe.edu.upc.micasita
 - tapOn:
     text: ".*OK.*"
     waitToSettleTimeoutMs: 2000
-- tapOn:
-    waitToSettleTimeoutMs: 2000
-    id: "address-search-input"
-- eraseText
-- inputText: "Trujillo, La Libertad"
+- runFlow:
+    file: common/type-address.yaml
+    env:
+      ADDRESS_TEXT: "Trujillo, La Libertad"
 - extendedWaitUntil:
     visible: ".*Trujillo, La Libertad,.*"
     timeout: 30000

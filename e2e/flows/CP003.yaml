@@ -2,16 +2,15 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/user.yaml
-- tapOn:
-    text: "IA(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
+- runFlow: common/open-recommendations.yaml
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: ".*Agregar lugar de trabajo.*"
     waitToSettleTimeoutMs: 2000
-- tapOn:
-    waitToSettleTimeoutMs: 2000
-    id: "address-search-input"
-- inputText: "Primax"
+- runFlow:
+    file: common/type-address.yaml
+    env:
+      ADDRESS_TEXT: "Primax"
 - extendedWaitUntil:
     visible:
       id: address-suggestion-0

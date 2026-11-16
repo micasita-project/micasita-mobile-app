@@ -1,0 +1,13 @@
+# Abrir el formulario mediante el botón real y comprobar la navegación.
+appId: pe.edu.upc.micasita
+---
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow: dismiss-dev-warning.yaml
+      - tapOn:
+          text: ".*Publicar.*"
+          waitToSettleTimeoutMs: 2000
+      - extendedWaitUntil:
+          visible: "Paso 1 de 4|Borrador encontrado"
+          timeout: 3000

@@ -2,15 +2,16 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/admin.yaml
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: "Usuarios(, tab, [0-9]+ of [0-9]+)?"
     waitToSettleTimeoutMs: 2000
 - tapOn:
     text: "Buscar por nombre o correo..."
     waitToSettleTimeoutMs: 2000
-- inputText: "usuario@e2e-micasita.com"
+- inputText: "camila.rojas@example.com"
 - runFlow: common/hide-keyboard.yaml
-- assertVisible: ".*usuario@e2e-micasita.com.*"
-- assertNotVisible: ".*dueno@e2e-micasita.com.*"
-- assertNotVisible: ".*admin@e2e-micasita.com.*"
+- assertVisible: ".*camila.rojas@example.com.*"
+- assertNotVisible: ".*carlos.mendoza@example.com.*"
+- assertNotVisible: ".*andrea.torres@example.com.*"
 - takeScreenshot: CP035-resultado

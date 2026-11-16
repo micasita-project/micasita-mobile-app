@@ -1,20 +1,29 @@
 # CP006: trazable al caso homónimo de catalog.json (Excel original).
 appId: pe.edu.upc.micasita
 ---
-- runFlow: common/start.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
-- extendedWaitUntil:
-    visible: ".*Filtros.*"
-    timeout: 45000
+- runFlow: common/catalog.yaml
+- runFlow: common/start-recording.yaml
 - assertVisible:
     id: "housing-list-count-10"
-- scrollUntilVisible:
-    element:
-      id: "housing-card-E2E Catalogo 10"
-    direction: DOWN
-    timeout: 45000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "housing-list-count-20"
+          direction: DOWN
+          speed: 60
+          timeout: 45000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "housing-list-count-20"
+          direction: DOWN
+          timeout: 45000
 - assertVisible:
     id: "housing-list-count-20"
 - takeScreenshot: CP006-resultado

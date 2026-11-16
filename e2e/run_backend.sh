@@ -4,6 +4,7 @@ app_root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$app_root/../micasita-ai-backend"
 export PYTHONPATH="$PWD"
 export SENDGRID_API_KEY=e2e-sin-correo
+export IMAGE_STORAGE=local
 if [[ "${E2E_PLATFORM:-android}" == "ios" ]]; then
   export E2E_MEDIA_BASE_URL="${E2E_MEDIA_BASE_URL:-http://localhost:8001}"
 fi

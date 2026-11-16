@@ -1,27 +1,25 @@
-"""Servidor E2E real; solo correo y almacenamiento Cloudinary se sustituyen localmente."""
-import sys, json, time, uuid, os
+"""Servidor E2E real con almacenamiento local nativo y correo sin envío externo."""
+import sys, json, time, os
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'db'))
 from context import engine
 from app.core.email import email_service
 email_service.send_email = lambda *args, **kwargs: True
-import cloudinary.uploader
+from app.core.config import settings
 MEDIA = ROOT / 'results' / 'media'
 MEDIA.mkdir(parents=True, exist_ok=True)
 MEDIA_BASE_URL = os.environ.get('E2E_MEDIA_BASE_URL', 'http://10.0.2.2:8001').rstrip('/')
-def local_upload(content, **kwargs):
-    name = uuid.uuid4().hex + '.jpg'
-    (MEDIA / name).write_bytes(content)
-    return {'secure_url': MEDIA_BASE_URL + '/e2e-media/' + name}
-cloudinary.uploader.upload = local_upload
+settings.IMAGE_STORAGE = 'local'
+settings.LOCAL_MEDIA_DIR = str(MEDIA)
+settings.LOCAL_MEDIA_BASE_URL = MEDIA_BASE_URL + '/e2e-media'
 from app.main import app
-from app.core.config import settings
 from starlette.staticfiles import StaticFiles
 app.mount('/e2e-media', StaticFiles(directory=MEDIA), name='e2e-media')
 @app.get('/e2e-info')
 def environment_info():
     return {'database': engine.url.database,
+            'image_storage': settings.IMAGE_STORAGE,
             'media_base_url': MEDIA_BASE_URL,
             'osrm_urls': {'driving': settings.OSRM_DRIVING_URL,
                           'cycling': settings.OSRM_CYCLING_URL,

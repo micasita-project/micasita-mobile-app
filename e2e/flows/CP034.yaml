@@ -2,13 +2,14 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/admin.yaml
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: "Usuarios(, tab, [0-9]+ of [0-9]+)?"
     waitToSettleTimeoutMs: 2000
 - extendedWaitUntil:
-    visible: ".*usuario@e2e-micasita.com.*"
+    visible: ".*camila.rojas@example.com.*"
     timeout: 45000
-- assertVisible: ".*dueno@e2e-micasita.com.*"
+- assertVisible: ".*carlos.mendoza@example.com.*"
 - assertVisible: "Admin"
 - repeat:
     times: 3

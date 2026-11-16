@@ -1,0 +1,24 @@
+# Verificar lo escrito evita esperar al geocodificador con texto incompleto.
+# El primer carácter se confirma antes del resto: Android puede perder el
+# segundo carácter durante la primera actualización del campo controlado.
+appId: pe.edu.upc.micasita
+---
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: address-search-input
+          waitToSettleTimeoutMs: 500
+      - eraseText
+      - inputText: "${ADDRESS_TEXT.substring(0, 1)}"
+      - extendedWaitUntil:
+          visible:
+            id: address-search-input
+            text: "${ADDRESS_TEXT.substring(0, 1)}"
+          timeout: 1500
+      - inputText: "${ADDRESS_TEXT.substring(1)}"
+      - extendedWaitUntil:
+          visible:
+            id: address-search-input
+            text: "${ADDRESS_TEXT}"
+          timeout: 1500

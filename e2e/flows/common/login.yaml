@@ -1,18 +1,23 @@
 # Inicio de sesión desde la pestaña Perfil. Parámetros: EMAIL, PASSWORD.
 appId: pe.edu.upc.micasita
 ---
-- retry:
-    maxRetries: 2
+- runFlow:
+    when:
+      notVisible:
+        id: email-input
     commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - tapOn:
+                text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
+                waitToSettleTimeoutMs: 2000
+            - extendedWaitUntil:
+                visible: ".*Iniciar sesión.*"
+                timeout: 5000
       - tapOn:
-          text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
+          text: ".*Iniciar sesión.*"
           waitToSettleTimeoutMs: 2000
-      - extendedWaitUntil:
-          visible: ".*Iniciar sesión.*"
-          timeout: 5000
-- tapOn:
-    text: ".*Iniciar sesión.*"
-    waitToSettleTimeoutMs: 2000
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: "email-input"

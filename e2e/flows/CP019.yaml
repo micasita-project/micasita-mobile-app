@@ -2,15 +2,8 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/owner.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
-- extendedWaitUntil:
-    visible: ".*Filtros.*"
-    timeout: 45000
-- tapOn:
-    text: ".*Publicar.*"
-    waitToSettleTimeoutMs: 2000
+- runFlow: common/start-recording.yaml
+- runFlow: common/open-publish.yaml
 - assertVisible: "Paso 1 de 4"
 - assertVisible: "Dirección exacta.*"
 - assertVisible: ".*Elegir en el mapa.*"

@@ -5,4 +5,4 @@ appId: pe.edu.upc.micasita
     file: common/login.yaml
     env:
       EMAIL: ${EMAIL}
-      PASSWORD: Test-1234
+      PASSWORD: Primavera2026!

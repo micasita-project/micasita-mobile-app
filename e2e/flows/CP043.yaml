@@ -1,18 +1,21 @@
 # CP043: trazable al caso homónimo de catalog.json (Excel original).
 appId: pe.edu.upc.micasita
 ---
-- runFlow: common/start.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
+- runFlow: common/catalog.yaml
+- runFlow: common/start-recording.yaml
+- runFlow:
+    file: common/filter-price.yaml
+    env:
+      MIN_PRICE: "1301"
+      MAX_PRICE: "1301"
 - extendedWaitUntil:
-    visible: ".*Filtros.*"
+    visible: ".*Departamento luminoso en San Miguel.*"
     timeout: 45000
 - tapOn:
     waitToSettleTimeoutMs: 2000
-    id: "housing-card-E2E Ficha Completa"
+    id: "housing-card-Departamento luminoso en San Miguel"
 - extendedWaitUntil:
-    visible: ".*E2E Ficha Completa.*"
+    visible: ".*Departamento luminoso en San Miguel.*"
     timeout: 45000
 - tapOn:
     text: ".*Contactar por WhatsApp.*"

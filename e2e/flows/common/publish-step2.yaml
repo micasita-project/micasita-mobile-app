@@ -2,7 +2,5 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: publish-location.yaml
-- tapOn:
-    waitToSettleTimeoutMs: 2000
-    id: "publish-next"
+- runFlow: publish-next.yaml
 - assertVisible: "Paso 2 de 4"

@@ -2,12 +2,7 @@
 appId: pe.edu.upc.micasita
 ---
 - runFlow: common/owner.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
-- extendedWaitUntil:
-    visible: ".*Filtros.*"
-    timeout: 45000
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: ".*Mis publicaciones.*"
     waitToSettleTimeoutMs: 2000
@@ -17,20 +12,30 @@ appId: pe.edu.upc.micasita
 - assertVisible: "3 propiedades"
 - scrollUntilVisible:
     element:
-      text: ".*E2E Aprobada Dueno.*"
+      text: ".*Departamento con vista al parque.*"
     direction: DOWN
     timeout: 20000
-- assertVisible: ".*E2E Aprobada Dueno.*"
+- assertVisible: ".*Departamento con vista al parque.*"
 - scrollUntilVisible:
     element:
-      text: ".*E2E Pendiente Dueno.*"
+      text: "3 propiedades"
     direction: UP
-    timeout: 45000
-- assertVisible: ".*E2E Pendiente Dueno.*"
+    timeout: 15000
 - scrollUntilVisible:
     element:
-      text: ".*E2E Rechazada Dueno.*"
+      text: ".*Departamento cerca de la universidad.*"
     direction: DOWN
-    timeout: 45000
-- assertVisible: ".*E2E Rechazada Dueno.*"
+    timeout: 20000
+- assertVisible: ".*Departamento cerca de la universidad.*"
+- scrollUntilVisible:
+    element:
+      text: "3 propiedades"
+    direction: UP
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: ".*Minidepartamento cerca del mercado.*"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: ".*Minidepartamento cerca del mercado.*"
 - takeScreenshot: CP028-resultado

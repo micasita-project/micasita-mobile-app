@@ -1,0 +1,43 @@
+# Regresión iOS: el teclado debe reabrir con un toque tras pulsar Done.
+# Ejecutar con Metro recién iniciado (e2e/run_metro.sh, E2E_PLATFORM=ios).
+appId: pe.edu.upc.micasita
+---
+- runFlow: ../flows/common/start.yaml
+- openLink: 'micasitaapp://verify-email?email=valeria.salazar@example.com'
+- runFlow:
+    when:
+      visible: Abrir
+    commands:
+      - tapOn: Abrir
+- extendedWaitUntil:
+    visible: 'Verifica tu correo'
+    timeout: 30000
+- tapOn:
+    id: otp-input
+- assertVisible:
+    id: inputView
+- inputText: '12'
+- tapOn:
+    text: Done|Listo
+- assertNotVisible:
+    id: inputView
+- tapOn:
+    id: otp-input
+- assertVisible:
+    id: inputView
+- inputText: '3'
+- tapOn:
+    text: Done|Listo
+- assertNotVisible:
+    id: inputView
+- tapOn:
+    id: otp-box
+    index: 5
+- assertVisible:
+    id: inputView
+- inputText: '4'
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible:
+    id: inputView
+- takeScreenshot: otp-keyboard-corregido

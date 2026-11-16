@@ -1,6 +1,6 @@
 """Ejecutor de los casos funcionales de la app con informes y postcondiciones reales."""
 import argparse,datetime,json,os,shutil,subprocess,sys,time,xml.etree.ElementTree as ET
-import hashlib,urllib.request
+import hashlib,urllib.request,signal
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent
 APP=ROOT.parent
@@ -8,6 +8,7 @@ BACKEND=APP.parent/'micasita-ai-backend'
 PYTHON=BACKEND/'venv/bin/python'
 ADB=Path(os.environ.get('ANDROID_HOME',str(Path.home()/'Library/Android/sdk')))/'platform-tools/adb'
 CATALOG=json.loads((ROOT/'catalog.json').read_text())
+SAMPLE=json.loads((ROOT/'sample_data.json').read_text())
 
 def backend_script(script,*args,capture=False):
     return subprocess.run([str(PYTHON),str(ROOT/script),*map(str,args)],cwd=BACKEND,
@@ -30,6 +31,7 @@ def main():
     parser.add_argument('--platform',choices=['android','ios'],default=os.environ.get('E2E_PLATFORM','android'))
     parser.add_argument('--device',default=os.environ.get('E2E_DEVICE'),help='Serial Android o UDID del simulador iOS')
     parser.add_argument('--ios-photo-error-log',type=Path,help='Reutilizar un error de fototeca ya observado y registrar CP024–CP026 como BLOCKED sin reimportar')
+    parser.add_argument('--record-video',action='store_true',help='iOS: un video y timeline por CP, comenzando con su pantalla preparada')
     args=parser.parse_args()
     selected=args.cases.split(',') if args.cases else [c['id'] for c in CATALOG['cases']]
     known={c['id'] for c in CATALOG['cases']}
@@ -45,6 +47,7 @@ def main():
             if case['id'] in selected:print(case['id']+' — '+case['title'])
         return 0
     platform=args.platform
+    if args.record_video and platform!='ios':parser.error('--record-video corresponde a iOS; para Android usar record_android.py')
     device=args.device or ('emulator-5554' if platform=='android' else None)
     if not device:parser.error('En iOS indicar --device con el UDID del simulador.')
     if args.ios_photo_error_log and (platform!='ios' or not args.ios_photo_error_log.is_file()):
@@ -60,6 +63,8 @@ def main():
             info=json.load(response)
         if info.get('database')!='micasita_e2e' or info.get('osrm_public') is not True:
             raise SystemExit('Se exige el servidor E2E con micasita_e2e y OSRM público.')
+        if info.get('image_storage') != 'local':
+            raise SystemExit('Se exige almacenamiento local de imágenes para E2E.')
         if info.get('media_base_url',os.environ['E2E_MEDIA_BASE_URL'])!=os.environ['E2E_MEDIA_BASE_URL']:
             raise SystemExit('Reiniciar el backend con E2E_PLATFORM='+platform+' para servir las fotos al simulador correcto.')
     stamp=datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -89,11 +94,31 @@ def main():
                 subprocess.run([*adb,'push',str(photo),remote],check=True,stdout=subprocess.DEVNULL)
                 subprocess.run([*adb,'shell','am','broadcast','-a','android.intent.action.MEDIA_SCANNER_SCAN_FILE','-d','file://'+remote],check=True,stdout=subprocess.DEVNULL)
     outcomes=[]
+    interrupted=False
+    recordings=None
+    if args.record_video:
+        from support.ios_recording import IOSRecordings
+        recordings=IOSRecordings(device,results)
+        if shutil.which('caffeinate'):
+            subprocess.Popen(['caffeinate','-i','-w',str(os.getpid())],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    def timeline_event(event,case,**details):
+        with (results/'case-events.jsonl').open('a') as stream:
+            stream.write(json.dumps({'event':event,'case':case,'timestamp':time.time(),**details},ensure_ascii=False)+'\n')
     def maestro(flow,**variables):
+        if recordings:variables['RECORDING_CONTROL_URL']=recordings.url
         cmd=['bash','e2e/run_flow.sh',flow]+[f'{k}={v}' for k,v in variables.items()]
-        return subprocess.run(cmd,cwd=APP,env=env).returncode
+        process=subprocess.Popen(cmd,cwd=APP,env=env,start_new_session=True)
+        try:return process.wait()
+        except KeyboardInterrupt:
+            os.killpg(process.pid,signal.SIGINT)
+            try:process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid,signal.SIGTERM);process.wait(timeout=10)
+            raise
     for case in selected:
         dest=results/case;dest.mkdir(exist_ok=True);start=time.monotonic();status='PASS';message=''
+        if recordings:recordings.begin_case(case,next(c['title'] for c in CATALOG['cases'] if c['id']==case),dest)
+        timeline_event('case_start',case,title=next(c['title'] for c in CATALOG['cases'] if c['id']==case))
         print('\n'+case+' — '+next(c['title'] for c in CATALOG['cases'] if c['id']==case),flush=True)
         try:
             if case in ['CP024','CP025','CP026'] and photo_setup_error:
@@ -115,7 +140,7 @@ def main():
             else:subprocess.run([*adb,'shell','am','force-stop','pe.edu.upc.micasita'],check=True)
             backend_script('db/case_state.py','prepare',case)
             if case=='CP001':
-                email='nuevo-'+stamp+'-'+str(os.getpid())+'@e2e-micasita.com'
+                email=SAMPLE['registration']['email']
                 if maestro('CP001_a',EMAIL=email):raise AssertionError('Falló el registro inicial')
                 otp=backend_script('db/otp.py',email,capture=True).stdout.strip()
                 if maestro('CP001_b',OTP=otp):raise AssertionError('Falló la verificación OTP')
@@ -140,7 +165,7 @@ def main():
                     subprocess.run([*adb,'shell','input','tap',*map(str,detected['housing_pin_pixel'])],check=True)
                     point='0%,0%'
                 if maestro(case,BEFORE_PRICE=before,PIN_POINT=point):raise AssertionError('Falló la interacción con el pin real')
-            elif maestro(case,LISTING_TITLE='E2E Nuevo '+case):raise AssertionError('Falló el flujo Maestro; revisar captura y jerarquía')
+            elif maestro(case,LISTING_TITLE=SAMPLE['new_listing_titles'].get(case,SAMPLE['new_listing_default'])):raise AssertionError('Falló el flujo Maestro; revisar captura y jerarquía')
             if case in ['CP003','CP013','CP014','CP015']:
                 shot=max(dest.rglob(case+'-resultado.png'),key=lambda p:p.stat().st_mtime)
                 visual=backend_script('support/verify_map.py',case,shot,capture=True)
@@ -149,17 +174,27 @@ def main():
             result=backend_script('db/case_state.py','verify',case,capture=True)
             (dest/'postcondiciones.log').write_text(result.stdout+result.stderr)
             print(case+' PASS',flush=True)
+        except KeyboardInterrupt:
+            status='FAIL';message='Ejecución interrumpida antes de completar el caso.';interrupted=True
+            (dest/'error.log').write_text(message);synthetic_report(case,dest,status,message)
         except (AssertionError,subprocess.CalledProcessError,OSError,ValueError) as exc:
             status='FAIL';message=str(exc)
             if isinstance(exc,subprocess.CalledProcessError):message+='\n'+(exc.stdout or '')+(exc.stderr or '')
             (dest/'error.log').write_text(message);synthetic_report(case,dest,status,message)
             print(case+' FAIL: '+message[-600:],flush=True)
         finally:
+            if recordings:
+                try:recordings.finish(status,message)
+                except (OSError,ValueError,RuntimeError,subprocess.SubprocessError) as exc:
+                    status='FAIL';message+='\nGrabación: '+str(exc)
+                    synthetic_report(case,dest,status,message)
             marker=ROOT/'results/active-case'
             if (ROOT/'results/api-events.jsonl').exists() and case!='CP043' and marker.exists() and marker.read_text().strip()==case:
                 shutil.copyfile(ROOT/'results/api-events.jsonl',dest/'api-events.jsonl')
+            timeline_event('case_end',case,status=status,message=message)
         outcomes.append({'case':case,'status':status,'message':message,'seconds':round(time.monotonic()-start,2)})
         (results/'results.json').write_text(json.dumps(outcomes,ensure_ascii=False,indent=2))
+        if interrupted:break
     all_reports=ET.Element('testsuites')
     for outcome in outcomes:
         report=results/outcome['case']/'report.xml'
@@ -178,6 +213,7 @@ def main():
         if o['message']:lines += [f'## {o["case"]} — {o["status"]}','',o['message'],'']
     (results/'resumen.md').write_text('\n'.join(lines))
     counts={s:sum(o['status']==s for o in outcomes) for s in ['PASS','FAIL','BLOCKED']}
+    if recordings:recordings.close()
     print('\n'+json.dumps(counts)+'\nEvidencias: '+str(results),flush=True)
     return 1 if counts['FAIL'] or counts['BLOCKED'] else 0
 if __name__=='__main__':sys.exit(main())

@@ -1,0 +1,52 @@
+{
+  "password": "Primavera2026!",
+  "seed_admin": { "email": "mariana.flores@example.com", "name": "Mariana", "last_name": "Flores" },
+  "accounts": {
+    "admin": { "email": "andrea.torres@example.com", "name": "Andrea", "last_name": "Torres", "role": "admin", "active": true },
+    "user": { "email": "camila.rojas@example.com", "name": "Camila", "last_name": "Rojas", "role": "user", "active": true },
+    "owner": { "email": "carlos.mendoza@example.com", "name": "Carlos", "last_name": "Mendoza", "role": "user", "active": true },
+    "other_owner": { "email": "sofia.castillo@example.com", "name": "Sofia", "last_name": "Castillo", "role": "user", "active": true },
+    "block_target": { "email": "diego.vargas@example.com", "name": "Diego", "last_name": "Vargas", "role": "user", "active": true },
+    "blocked": { "email": "lucia.herrera@example.com", "name": "Lucia", "last_name": "Herrera", "role": "user", "active": false }
+  },
+  "registration": { "email": "valeria.salazar@example.com", "name": "Valeria", "last_name": "Salazar" },
+  "unregistered_email": "fernando.acosta@example.com",
+  "property_titles": {
+    "complete": "Departamento luminoso en San Miguel",
+    "owner_approved": "Departamento con vista al parque",
+    "owner_pending": "Departamento cerca de la universidad",
+    "owner_rejected": "Minidepartamento cerca del mercado",
+    "admin_approve": "Departamento amplio en San Borja",
+    "admin_reject": "Departamento amoblado en Lince",
+    "block_target": "Departamento junto al centro comercial"
+  },
+  "catalog_titles": [
+    "Departamento acogedor en San Miguel",
+    "Departamento familiar en Pueblo Libre",
+    "Departamento con cocina equipada",
+    "Departamento cerca de la avenida La Marina",
+    "Departamento con ambientes amplios",
+    "Departamento frente a una alameda",
+    "Departamento con sala iluminada",
+    "Departamento cerca de comercios",
+    "Departamento con vista a la ciudad",
+    "Departamento con dormitorio principal amplio",
+    "Departamento en zona residencial",
+    "Departamento con lavanderia independiente",
+    "Departamento con buena ventilacion",
+    "Departamento cerca de parques",
+    "Departamento con comedor integrado",
+    "Departamento cerca del transporte publico",
+    "Departamento con entrada independiente",
+    "Departamento con acabados modernos"
+  ],
+  "property_address": "Av. La Marina 1800, San Miguel, Lima",
+  "property_description": "Departamento luminoso y bien distribuido, cerca de parques y comercios.",
+  "new_listing_default": "Departamento con espacios amplios en San Miguel",
+  "new_listing_titles": {
+    "CP025": "Departamento luminoso frente al parque",
+    "CP026": "Departamento amoblado en San Miguel"
+  },
+  "new_listing_description": "Departamento luminoso con espacios amplios y servicios cercanos.",
+  "rejection_reason": "Las fotos no son claras"
+}

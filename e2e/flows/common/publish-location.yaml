@@ -1,10 +1,10 @@
 # Preparación compartida; no es un caso independiente del Excel.
 appId: pe.edu.upc.micasita
 ---
-- tapOn:
-    waitToSettleTimeoutMs: 2000
-    id: "address-search-input"
-- inputText: "Primax San Miguel"
+- runFlow:
+    file: type-address.yaml
+    env:
+      ADDRESS_TEXT: "Primax San Miguel"
 - extendedWaitUntil:
     visible:
       id: address-suggestion-0

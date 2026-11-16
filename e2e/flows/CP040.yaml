@@ -1,19 +1,20 @@
 # CP040: al cerrar sesión desaparecen los datos de la cuenta.
 appId: pe.edu.upc.micasita
 ---
-- runFlow: common/start.yaml
+- runFlow: common/start-login.yaml
 - runFlow:
     file: common/login.yaml
     env:
-      EMAIL: usuario@e2e-micasita.com
-      PASSWORD: Test-1234
+      EMAIL: camila.rojas@example.com
+      PASSWORD: Primavera2026!
 - extendedWaitUntil:
     visible: "Mapa(, tab, [0-9]+ of [0-9]+)?"
     timeout: 20000
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
     waitToSettleTimeoutMs: 2000
-- assertVisible: "Usuario Prueba"
+- assertVisible: "Camila Rojas"
 - tapOn:
     text: ".*Cerrar sesión.*"
     waitToSettleTimeoutMs: 2000
@@ -30,7 +31,7 @@ appId: pe.edu.upc.micasita
           text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
           waitToSettleTimeoutMs: 2000
 - assertVisible: ".*Iniciar sesión.*"
-- assertNotVisible: ".*usuario@e2e-micasita.com.*"
+- assertNotVisible: ".*camila.rojas@example.com.*"
 - stopApp
 - runFlow: common/relaunch.yaml
 - runFlow:
@@ -50,5 +51,5 @@ appId: pe.edu.upc.micasita
     text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
     waitToSettleTimeoutMs: 2000
 - assertVisible: ".*Iniciar sesión.*"
-- assertNotVisible: ".*usuario@e2e-micasita.com.*"
+- assertNotVisible: ".*camila.rojas@example.com.*"
 - takeScreenshot: sesion-cerrada

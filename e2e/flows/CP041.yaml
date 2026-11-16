@@ -1,12 +1,13 @@
 # CP041: relanzar el proceso conserva la sesión sin volver a ingresar credenciales.
 appId: pe.edu.upc.micasita
 ---
-- runFlow: common/start.yaml
+- runFlow: common/start-login.yaml
+- runFlow: common/start-recording.yaml
 - runFlow:
     file: common/login.yaml
     env:
-      EMAIL: usuario@e2e-micasita.com
-      PASSWORD: Test-1234
+      EMAIL: camila.rojas@example.com
+      PASSWORD: Primavera2026!
 - extendedWaitUntil:
     visible: "Mapa(, tab, [0-9]+ of [0-9]+)?"
     timeout: 20000
@@ -18,7 +19,7 @@ appId: pe.edu.upc.micasita
 - tapOn:
     text: "Perfil(, tab, [0-9]+ of [0-9]+)?"
     waitToSettleTimeoutMs: 2000
-- assertVisible: "Usuario Prueba"
-- assertVisible: ".*usuario@e2e-micasita.com.*"
+- assertVisible: "Camila Rojas"
+- assertVisible: ".*camila.rojas@example.com.*"
 - assertVisible: ".*Cerrar sesión.*"
 - takeScreenshot: sesion-restaurada

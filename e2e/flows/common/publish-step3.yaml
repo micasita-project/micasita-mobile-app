@@ -42,9 +42,7 @@ appId: pe.edu.upc.micasita
 - tapOn:
     waitToSettleTimeoutMs: 2000
     id: "publish-description"
-- inputText: "Departamento de prueba con luz natural y servicios."
+- inputText: "Departamento luminoso con espacios amplios y servicios cercanos."
 - runFlow: hide-keyboard.yaml
-- tapOn:
-    waitToSettleTimeoutMs: 2000
-    id: "publish-next"
+- runFlow: publish-next.yaml
 - assertVisible: "Paso 3 de 4"

@@ -1,0 +1,38 @@
+# Filtro de precio real de la app; encuentra las viviendas E2E dentro del seed completo.
+appId: pe.edu.upc.micasita
+---
+- tapOn:
+    text: ".*Filtros.*"
+    waitToSettleTimeoutMs: 2000
+- scrollUntilVisible:
+    element:
+      id: filter-min-price
+    direction: DOWN
+    timeout: 45000
+- runFlow:
+    file: type-number.yaml
+    env:
+      FIELD_ID: filter-min-price
+      FIELD_VALUE: "${MIN_PRICE}"
+- runFlow: hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: filter-max-price
+    direction: DOWN
+    timeout: 45000
+- runFlow:
+    file: type-number.yaml
+    env:
+      FIELD_ID: filter-max-price
+      FIELD_VALUE: "${MAX_PRICE}"
+- runFlow: hide-keyboard.yaml
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow: dismiss-dev-warning.yaml
+      - tapOn:
+          text: ".*Aplicar filtros.*"
+          waitToSettleTimeoutMs: 2000
+      - extendedWaitUntil:
+          notVisible: "Filtros de búsqueda"
+          timeout: 3000

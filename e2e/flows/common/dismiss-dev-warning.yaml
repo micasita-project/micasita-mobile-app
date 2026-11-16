@@ -1,0 +1,13 @@
+# Cerrar solo la notificación de avisos del build de desarrollo de Android.
+# Los logs se conservan; no se ignoran errores ni se cambia la app.
+appId: pe.edu.upc.micasita
+---
+- runFlow:
+    when:
+      platform: Android
+      visible: "!, Open debugger to view warnings."
+    commands:
+      - tapOn:
+          text: "!, Open debugger to view warnings."
+          point: "95%,50%"
+          waitToSettleTimeoutMs: 500

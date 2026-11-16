@@ -1,13 +1,8 @@
 # CP008: trazable al caso homónimo de catalog.json (Excel original).
 appId: pe.edu.upc.micasita
 ---
-- runFlow: common/start.yaml
-- tapOn:
-    text: "Viviendas(, tab, [0-9]+ of [0-9]+)?"
-    waitToSettleTimeoutMs: 2000
-- extendedWaitUntil:
-    visible: ".*Filtros.*"
-    timeout: 45000
+- runFlow: common/catalog.yaml
+- runFlow: common/start-recording.yaml
 - tapOn:
     text: ".*Filtros.*"
     waitToSettleTimeoutMs: 2000
@@ -34,7 +29,8 @@ appId: pe.edu.upc.micasita
 - tapOn:
     text: ".*Aplicar filtros.*"
     waitToSettleTimeoutMs: 2000
-- assertVisible: ".*E2E Ficha Completa.*"
+- assertVisible:
+    id: housing-list-count-10
 - repeat:
     times: 5
     commands:

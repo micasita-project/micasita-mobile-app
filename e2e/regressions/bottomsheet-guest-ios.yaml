@@ -1,0 +1,52 @@
+# Regresión: dirección, sugerencias y presupuesto visibles; no guarda datos.
+appId: pe.edu.upc.micasita
+---
+- launchApp:
+    clearState: true
+    arguments:
+      RCT_jsLocation: localhost:8082
+      RCT_enableDev: 'NO'
+- extendedWaitUntil:
+    visible:
+      id: address-search-input
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: address-search-input
+- assertVisible:
+    id: inputView
+- inputText: 'Plaza San Miguel'
+- extendedWaitUntil:
+    visible:
+      id: address-suggestion-0
+    timeout: 30000
+- takeScreenshot: invitado-direccion-casa
+- tapOn:
+    id: address-suggestion-0
+- tapOn: '.*Siguiente.*'
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: address-search-input
+- assertVisible:
+    id: inputView
+- inputText: 'Primax San Miguel'
+- extendedWaitUntil:
+    visible:
+      id: address-suggestion-0
+    timeout: 30000
+- takeScreenshot: invitado-direccion-trabajo
+- tapOn:
+    id: address-suggestion-0
+- tapOn: '.*Siguiente.*'
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: guest-budget
+- inputText: '1500'
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    id: inputView
+- takeScreenshot: invitado-presupuesto
